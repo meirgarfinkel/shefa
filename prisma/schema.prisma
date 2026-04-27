@@ -1,0 +1,410 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SEEKER
+  EMPLOYER
+  ADMIN
+}
+
+enum ProfileStatus {
+  ACTIVE
+  PAUSED
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  EXPIRED
+  FILLED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  VIEWED
+  RESPONDED
+  CLOSED
+}
+
+enum PingType {
+  SEEKER_STILL_LOOKING
+  JOB_STILL_OPEN
+}
+
+enum PingResponse {
+  CONFIRMED
+  NOT_LOOKING
+  FILLED
+  PAUSED
+  NO_RESPONSE
+}
+
+enum ReportTargetType {
+  USER
+  JOB
+  MESSAGE
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum NotificationFrequency {
+  PER_MESSAGE
+  DAILY_DIGEST
+  OFF
+}
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  EITHER
+}
+
+enum WorkArrangement {
+  REMOTE
+  ON_SITE
+  HYBRID
+}
+
+enum CompanySize {
+  SIZE_1_10
+  SIZE_11_50
+  SIZE_51_200
+  SIZE_201_PLUS
+}
+
+enum EducationLevel {
+  NONE
+  SOME_HIGH_SCHOOL
+  HIGH_SCHOOL
+  SOME_COLLEGE
+  ASSOCIATE
+  BACHELOR
+  GRADUATE
+}
+
+enum Industry {
+  FOOD_SERVICE
+  RETAIL
+  HOSPITALITY
+  HEALTHCARE_SUPPORT
+  TRADES_CONSTRUCTION
+  MANUFACTURING
+  OFFICE_ADMIN
+  TRANSPORTATION_DELIVERY
+  EDUCATION_CHILDCARE
+  PERSONAL_SERVICES
+  NONPROFIT_COMMUNITY
+  OTHER
+}
+
+enum DayOfWeek {
+  SUN
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+}
+
+// ─── Core Models ──────────────────────────────────────────────────────────────
+
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  phone       String?
+  role        Role
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  seekerProfile          SeekerProfile?
+  employerProfile        EmployerProfile?
+  notificationPrefs      NotificationPreferences?
+  postedJobs             JobPosting[]
+  applications           Application[]
+  conversationsAsA       Conversation[]  @relation("ParticipantA")
+  conversationsAsB       Conversation[]  @relation("ParticipantB")
+  initiatedConversations Conversation[]  @relation("ConversationInitiator")
+  sentMessages           Message[]
+  verificationPings      VerificationPing[]
+  reports                Report[]
+}
+
+model SeekerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Required at signup
+  firstName         String
+  lastName          String
+  city              String
+  state             String
+  zip               String
+  workAuthorization Boolean
+  availableDays     DayOfWeek[]
+  jobSeekText       String      @db.VarChar(1000)
+
+  // Optional / encouraged later
+  educationLevel EducationLevel?
+  otherSkills    String?
+  otherLanguages String?
+  about          String?         @db.VarChar(1000)
+  resumeUrl      String?
+
+  // System
+  status              ProfileStatus @default(ACTIVE)
+  isResponsive        Boolean       @default(false)
+  responseRate        Float?
+  medianResponseHours Float?
+  lastVerifiedAt      DateTime      @default(now())
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  skills            SeekerSkill[]
+  languages         SeekerLanguage[]
+  applications      Application[]
+  verificationPings VerificationPing[] @relation("SeekerPings")
+}
+
+model EmployerProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Required at signup
+  firstName   String
+  lastName    String
+  companyName String
+  companySize CompanySize
+  city        String
+  state       String
+  zip         String
+
+  // Optional
+  roleAtCompany String?
+  industry      Industry?
+  website       String?
+  aboutCompany  String?   @db.VarChar(2000)
+  missionText   String?   @db.VarChar(1000)
+
+  // System
+  status              ProfileStatus @default(ACTIVE)
+  isResponsive        Boolean       @default(false)
+  responseRate        Float?
+  medianResponseHours Float?
+  lastVerifiedAt      DateTime      @default(now())
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  jobPostings JobPosting[]
+}
+
+model JobPosting {
+  id                String          @id @default(cuid())
+  employerProfileId String
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
+  postedById        String
+  postedBy          User            @relation(fields: [postedById], references: [id])
+
+  title              String
+  description        String          @db.VarChar(5000)
+  jobType            JobType
+  workArrangement    WorkArrangement
+  city               String
+  state              String
+  zip                String
+  minHourlyRate      Decimal         @db.Decimal(8, 2)
+  payNotes           String?
+  workDays           DayOfWeek[]
+  scheduleNotes      String?
+  workAuthRequired   Boolean
+  whatWeTeach        String?         @db.VarChar(1000)
+  whatWereLookingFor String?         @db.VarChar(1000)
+
+  // System
+  status           JobStatus @default(DRAFT)
+  viewCount        Int       @default(0)
+  applicationCount Int       @default(0)
+  lastVerifiedAt   DateTime  @default(now())
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  preferredSkills   JobSkill[]
+  requiredLanguages JobLanguage[]
+  applications      Application[]
+  conversations     Conversation[]
+  verificationPings VerificationPing[] @relation("JobPings")
+}
+
+model Application {
+  id              String            @id @default(cuid())
+  seekerId        String
+  seeker          User              @relation(fields: [seekerId], references: [id])
+  seekerProfileId String
+  seekerProfile   SeekerProfile     @relation(fields: [seekerProfileId], references: [id])
+  jobId           String
+  job             JobPosting        @relation(fields: [jobId], references: [id])
+  message         String?           @db.VarChar(500)
+  status          ApplicationStatus @default(SUBMITTED)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([seekerId, jobId])
+}
+
+model Conversation {
+  id             String     @id @default(cuid())
+  participantAId String
+  participantA   User       @relation("ParticipantA", fields: [participantAId], references: [id])
+  participantBId String
+  participantB   User       @relation("ParticipantB", fields: [participantBId], references: [id])
+  jobId          String?
+  job            JobPosting? @relation(fields: [jobId], references: [id])
+  initiatedById  String
+  initiatedBy    User       @relation("ConversationInitiator", fields: [initiatedById], references: [id])
+
+  lastMessageAt      DateTime?
+  lastMessagePreview String?   @db.VarChar(100)
+  aBlockedB          Boolean   @default(false)
+  bBlockedA          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+
+  messages Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String       @db.VarChar(5000)
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+// ─── Freshness / Verification ─────────────────────────────────────────────────
+
+model VerificationPing {
+  id          String        @id @default(cuid())
+  type        PingType
+  sentAt      DateTime      @default(now())
+  respondedAt DateTime?
+  response    PingResponse?
+
+  // Either userId (seeker ping) or jobId (job ping) is set — not both
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id])
+  seekerProfileId String?
+  seekerProfile   SeekerProfile? @relation("SeekerPings", fields: [seekerProfileId], references: [id])
+  jobId           String?
+  job             JobPosting?    @relation("JobPings", fields: [jobId], references: [id])
+}
+
+model VerificationToken {
+  id         String    @id @default(cuid())
+  token      String    @unique
+  targetType String
+  targetId   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+}
+
+// ─── Taxonomy ─────────────────────────────────────────────────────────────────
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  createdAt DateTime @default(now())
+
+  seekerSkills SeekerSkill[]
+  jobSkills    JobSkill[]
+}
+
+model Language {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  seekerLanguages SeekerLanguage[]
+  jobLanguages    JobLanguage[]
+}
+
+model SeekerSkill {
+  seekerProfileId String
+  seekerProfile   SeekerProfile @relation(fields: [seekerProfileId], references: [id])
+  skillId         String
+  skill           Skill         @relation(fields: [skillId], references: [id])
+
+  @@id([seekerProfileId, skillId])
+}
+
+model SeekerLanguage {
+  seekerProfileId String
+  seekerProfile   SeekerProfile @relation(fields: [seekerProfileId], references: [id])
+  languageId      String
+  language        Language      @relation(fields: [languageId], references: [id])
+
+  @@id([seekerProfileId, languageId])
+}
+
+model JobSkill {
+  jobId   String
+  job     JobPosting @relation(fields: [jobId], references: [id])
+  skillId String
+  skill   Skill      @relation(fields: [skillId], references: [id])
+
+  @@id([jobId, skillId])
+}
+
+model JobLanguage {
+  jobId      String
+  job        JobPosting @relation(fields: [jobId], references: [id])
+  languageId String
+  language   Language   @relation(fields: [languageId], references: [id])
+
+  @@id([jobId, languageId])
+}
+
+// ─── Notifications & Moderation ───────────────────────────────────────────────
+
+model NotificationPreferences {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
+
+  messageNotifications     NotificationFrequency @default(PER_MESSAGE)
+  applicationNotifications NotificationFrequency @default(PER_MESSAGE)
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  reporterId String
+  reporter   User             @relation(fields: [reporterId], references: [id])
+  targetType ReportTargetType
+  targetId   String
+  reason     String
+  status     ReportStatus     @default(OPEN)
+  createdAt  DateTime         @default(now())
+}
