@@ -31,3 +31,5 @@ This is a nonprofit charity-based job board built with Next.js, TypeScript, tRPC
 - For multi-file changes, list the files you'll touch first.
 - Commit at the end of each phase with a clear message.
 - When in doubt, default to the simpler / more boring solution.
+
+- Never run `prisma migrate dev`, `prisma migrate reset`, `prisma db push`, or `prisma db seed` autonomously. Suggest the command and let me run it manually so I can see what's happening to my database.

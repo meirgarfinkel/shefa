@@ -125,13 +125,18 @@ enum DayOfWeek {
 // ─── Core Models ──────────────────────────────────────────────────────────────
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  phone       String?
-  role        Role
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  phone         String?
+  role          Role?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+
+  // Auth.js
+  accounts Account[]
+  sessions Session[]
 
   seekerProfile          SeekerProfile?
   employerProfile        EmployerProfile?
@@ -318,7 +323,7 @@ model VerificationPing {
   job             JobPosting?    @relation("JobPings", fields: [jobId], references: [id])
 }
 
-model VerificationToken {
+model FreshnessToken {
   id         String    @id @default(cuid())
   token      String    @unique
   targetType String
@@ -326,6 +331,42 @@ model VerificationToken {
   expiresAt  DateTime
   usedAt     DateTime?
   createdAt  DateTime  @default(now())
+}
+
+// ─── Auth.js ──────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 // ─── Taxonomy ─────────────────────────────────────────────────────────────────
