@@ -1,10 +1,10 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/sign-in", "/verify-request", "/api/auth"];
+const ROLE_SELECT_PATH = "/role-select";
 
-export default auth((req: NextRequest & { auth: unknown }) => {
+export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
@@ -12,6 +12,10 @@ export default auth((req: NextRequest & { auth: unknown }) => {
     const signIn = new URL("/sign-in", req.url);
     signIn.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signIn);
+  }
+
+  if (req.auth && !req.auth.user.role && pathname !== ROLE_SELECT_PATH) {
+    return NextResponse.redirect(new URL(ROLE_SELECT_PATH, req.url));
   }
 
   return NextResponse.next();
