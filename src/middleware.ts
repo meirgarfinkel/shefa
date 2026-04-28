@@ -13,22 +13,29 @@ export default auth((req) => {
   const { pathname } = req.nextUrl;
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!req.auth && !isPublic) {
+  if (!req.auth && !isPublic && !pathname.startsWith("/api/")) {
     const signIn = new URL("/sign-in", req.url);
     signIn.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signIn);
   }
 
-  if (req.auth && !req.auth.user.role && pathname !== ROLE_SELECT_PATH) {
+  if (
+    req.auth &&
+    !req.auth.user.role &&
+    pathname !== ROLE_SELECT_PATH &&
+    !pathname.startsWith("/api/")
+  ) {
     return NextResponse.redirect(new URL(ROLE_SELECT_PATH, req.url));
   }
 
   const role = req.auth?.user.role;
-  if (pathname === SEEKER_PROFILE_PATH && role !== "SEEKER") {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-  if (pathname === EMPLOYER_PROFILE_PATH && role !== "EMPLOYER") {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (!pathname.startsWith("/api/")) {
+    if (pathname === SEEKER_PROFILE_PATH && role !== "SEEKER") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+    if (pathname === EMPLOYER_PROFILE_PATH && role !== "EMPLOYER") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
   }
 
   return NextResponse.next();
