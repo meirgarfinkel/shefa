@@ -17,9 +17,10 @@ export const seekerRouter = createTRPCRouter({
         throw new TRPCError({ code: "CONFLICT", message: "Profile already exists" });
       }
 
-      const { skillIds, languageIds, isAdult: _, ...profileFields } = input;
+      const { skillIds, languageIds, isAdult: _isAdult, ...profileFields } = input;
 
-      await ctx.prisma.user.update({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (ctx.prisma.user as any).update({
         where: { id: ctx.user.id },
         data: { isAdult: true },
       });

@@ -22,9 +22,7 @@ export const CreateSeekerProfileSchema = z.object({
   isAdult: z.literal(true, {
     message: "You must be 18 or older to use this platform",
   }),
-  availableDays: z
-    .array(DayOfWeek)
-    .transform((days) => [...new Set(days)]),
+  availableDays: z.array(DayOfWeek).transform((days) => [...new Set(days)]),
   jobSeekText: z.string().min(1).max(1000),
   // Optional
   educationLevel: EducationLevel.optional(),

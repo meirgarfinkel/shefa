@@ -25,8 +25,7 @@ export default function SignInPage() {
           <CardHeader>
             <CardTitle>Check your email</CardTitle>
             <CardDescription>
-              We sent a magic link to <strong>{email}</strong>. Click it to sign
-              in.
+              We sent a magic link to <strong>{email}</strong>. Click it to sign in.
             </CardDescription>
           </CardHeader>
         </Card>
@@ -39,9 +38,7 @@ export default function SignInPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in to Shefa</CardTitle>
-          <CardDescription>
-            Enter your email and we&apos;ll send you a magic link.
-          </CardDescription>
+          <CardDescription>Enter your email and we&apos;ll send you a magic link.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -51,7 +48,7 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
             />
             <Button type="submit" disabled={loading}>
               {loading ? "Sending…" : "Send magic link"}

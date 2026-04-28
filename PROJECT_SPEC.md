@@ -1,9 +1,11 @@
 # Charity Job Board (Shefa) — Project Spec
 
 ## Mission
+
 A charity-based job board where employers give unqualified candidates a chance to learn on the job. Free for both sides. Nonprofit. No payments anywhere in the system. The platform's core promise: fresh, real listings — no ghost jobs, no ghost candidates.
 
 ## Stack (locked in)
+
 - **Frontend + Backend**: Next.js (App Router) with TypeScript
 - **API layer**: tRPC
 - **Database**: PostgreSQL
@@ -14,9 +16,11 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **Validation**: Zod
 - **UI**: Tailwind + shadcn/ui
 - **Local dev**: Docker Compose for Postgres + Redis
+- **Linting/formatting**: ESLint (next config) + Prettier with Tailwind plugin. Husky + lint-staged for pre-commit hooks.
 - **Mobile (later, not now)**: React Native, sharing the same tRPC API
 
 ## Hosting (later)
+
 Vercel (Next.js) + Neon or Supabase (Postgres) + Upstash (Redis) — chosen for nonprofit-friendly pricing.
 
 ---
@@ -24,11 +28,13 @@ Vercel (Next.js) + Neon or Supabase (Postgres) + Upstash (Redis) — chosen for 
 ## Data Model
 
 ### User
+
 Base account. Fields: id, email (verified), phone (collected, unverified), auth method, role (SEEKER / EMPLOYER / ADMIN), isAdult (boolean, default false — set to true when profile is created after user confirms age ≥ 18), createdAt, updatedAt, lastLoginAt.
 
 ### SeekerProfile (1:1 with User)
 
 **Required at signup:**
+
 - First name, last name
 - City, state, zip (no street address)
 - Work authorization (yes/no)
@@ -37,6 +43,7 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 - "Type of job you seek + what you want to learn" (free text, max 1000 chars)
 
 **Optional / encouraged later:**
+
 - Max education level (dropdown: none / some high school / high school / some college / associate / bachelor / graduate)
 - Languages (multi-select from curated list + "other languages" free text)
 - Other skills (comma-separated free text)
@@ -44,6 +51,7 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 - Resume (PDF upload, optional)
 
 **System fields:**
+
 - isResponsive (boolean, computed every 48h)
 - responseRate, medianResponseHours (private, computed)
 - status (ACTIVE / PAUSED — paused = hidden from employer search)
@@ -52,12 +60,14 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 ### EmployerProfile (1:1 with User)
 
 **Required at signup:**
+
 - First name, last name (the contact human)
 - Company name
 - Company size (1–10 / 11–50 / 51–200 / 201+)
 - City, state, zip
 
 **Optional:**
+
 - Role at company (free text)
 - Industry (dropdown, ~10–12 buckets — see below)
 - Website
@@ -67,9 +77,11 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 **System fields:** same as seeker (isResponsive, status, lastVerifiedAt, etc.)
 
 ### Industry list (employer profile)
+
 Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Office & Admin / Transportation / Education / Personal Services / Technology / Business / Finance / Marketing / Media / Real Estate / Other
 
 ### JobPosting (many-to-one with EmployerProfile)
+
 - Title, description (max 5000 chars)
 - Job type (full-time / part-time / either)
 - Work arrangement (remote / on-site / hybrid)
@@ -88,12 +100,14 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 **Note**: Education is NOT on the job posting. Seekers fill in their education on their profile; employers can see it but cannot filter on it. By design.
 
 ### Application (seeker → job)
+
 - seekerId, jobId
 - Application message (optional, max 500 chars)
 - Status (SUBMITTED / VIEWED / RESPONDED / CLOSED)
 - createdAt, updatedAt
 
 ### Conversation
+
 - participantAId, participantBId
 - jobId (nullable — present if conversation arose from an application or about a specific job)
 - initiatedBy
@@ -102,26 +116,33 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - createdAt
 
 ### Message
+
 - conversationId, senderId, body (max 5000 chars), readAt (nullable), createdAt
 
 ### VerificationPing (drives freshness)
+
 - userId or jobId, type (SEEKER_STILL_LOOKING / JOB_STILL_OPEN), sentAt, respondedAt, response (CONFIRMED / NOT_LOOKING / FILLED / PAUSED / NO_RESPONSE)
 
 ### VerificationToken
+
 - token (signed JWT or random string), targetType, targetId, expiresAt (30 days), usedAt
 
 ### Skill (curated taxonomy)
+
 - name, category (optional, nullable for v1), createdAt
 
 ### Language (curated taxonomy)
+
 - name, createdAt
 
 ### NotificationPreferences (1:1 with User)
+
 - messageNotifications (PER_MESSAGE / DAILY_DIGEST / OFF) — default PER_MESSAGE
 - applicationNotifications (same enum) — default PER_MESSAGE
 - verificationEmails (always on, no opt-out)
 
 ### Report / Flag (abuse handling)
+
 - reporterId, targetType (USER / JOB / MESSAGE), targetId, reason, status (OPEN / REVIEWED / ACTIONED / DISMISSED), createdAt
 
 ---
@@ -129,6 +150,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 ## Key Behaviors
 
 ### Freshness / verification system
+
 - Day 0: Listing/profile created or last verified
 - Day 14: Verification email sent — "Are you still looking?" / "Is this job still open?" with one-click action buttons (signed token in URL, no login required)
 - Day 20: If no response, warning email — "Will be paused in 8 days unless confirmed"
@@ -138,6 +160,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Pause-for-30-days option included in verification emails for users on vacation/break.
 
 ### Messaging
+
 - Async only (no real-time chat for v1).
 - **Hybrid initiation**: employers can cold-DM any seeker; seekers can only initiate a conversation by applying to a job.
 - Read receipts: yes ("Read" indicator).
@@ -146,11 +169,13 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Inbox sorted by lastMessageAt. No search for v1.
 
 ### Notifications (email)
+
 - **12-minute debounced batching per conversation**: when a message arrives, schedule notification email 12 min from now. New message in same conversation cancels and reschedules. Active conversations naturally batch.
 - Same pattern for application notifications to employers.
 - User settings: PER_MESSAGE (default) / DAILY_DIGEST / OFF.
 
 ### Responsiveness badge
+
 - Boolean `isResponsive` on both seeker and employer profiles.
 - Computed every 48 hours by background job.
 - Threshold (v1, tunable): replies to ≥70% of conversations within 72-hour median.
@@ -158,12 +183,14 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Underlying numbers (responseRate, medianResponseHours) computed and stored but not shown publicly.
 
 ### Rate limiting
+
 - Seekers: max 25 applications/day.
 - Employers: max 50 cold DMs/day.
 - New accounts (first 7 days, <3 verified actions): tighter limits.
 - No per-message limit within an existing conversation.
 
 ### Auth
+
 - Email magic links via Resend (Auth.js).
 - Email verification baked into magic link flow.
 - Phone numbers collected at signup but not verified (deferred for SMS cost reasons).
@@ -171,6 +198,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 ---
 
 ## Out of scope for v1 (deferred to v2+)
+
 - Mobile apps (React Native)
 - SMS notifications and SMS verification
 - Real-time messaging / WebSockets

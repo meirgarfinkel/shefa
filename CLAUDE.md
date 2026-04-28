@@ -1,7 +1,9 @@
 # Claude Code Instructions — Charity Job Board (Shefa)
 
 ## Required reading at session start
+
 Before doing anything in this project:
+
 1. Read `PROJECT_SPEC.md` fully — it is the source of truth for the data model, design decisions, and 8-phase build plan.
 2. Read `HANDOFF.md` if it exists — it contains in-progress state from the previous session.
 3. Read this file (`CLAUDE.md`) fully.
@@ -9,6 +11,7 @@ Before doing anything in this project:
 If any of these contradict each other, stop and ask the user before proceeding.
 
 ## Project summary
+
 Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 7 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose. Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
 
 ---
@@ -50,7 +53,9 @@ A new session always starts by reading HANDOFF.md before any other action.
 Every feature follows this exact loop:
 
 ### Step 1 — Plan adversarial cases
+
 Before writing any test, list:
+
 - The happy path
 - Boundary cases (empty input, max length, zero, negative, off-by-one ranges)
 - Adversarial inputs (malicious strings, SQL/HTML injection attempts, oversized payloads, unicode edge cases, unauthorized actors)
@@ -60,25 +65,31 @@ Before writing any test, list:
 Show this list to the user before writing tests. Don't skip this step. The default mode of testing only happy paths is forbidden in this project.
 
 ### Step 2 — Write failing tests
+
 Write tests covering the cases from Step 1.
 
 ### Step 3 — Verify tests fail correctly (in a subagent)
+
 Spawn a Task subagent with the instruction: "Run the tests in [path]. Report which tests fail and the exact failure messages. Do not modify any code. Do not implement anything."
 
-The subagent's job is purely to confirm the tests fail for the *right reason* (e.g., "function not implemented" or "assertion not met"), not for the wrong reason (e.g., "import error," "syntax error in test"). If a test fails for the wrong reason, fix it before proceeding.
+The subagent's job is purely to confirm the tests fail for the _right reason_ (e.g., "function not implemented" or "assertion not met"), not for the wrong reason (e.g., "import error," "syntax error in test"). If a test fails for the wrong reason, fix it before proceeding.
 
 ### Step 4 — Implement
+
 Write the minimum code to make the tests pass.
 
 ### Step 5 — Verify tests pass (in a fresh subagent)
-Spawn a *new* Task subagent: "Run the tests in [path]. Report all results. Do not modify any code." Fresh context matters — your reasoning during implementation should not bias the verification.
+
+Spawn a _new_ Task subagent: "Run the tests in [path]. Report all results. Do not modify any code." Fresh context matters — your reasoning during implementation should not bias the verification.
 
 ### Step 6 — Report back to the user
+
 Show the user the test results from step 5. If anything failed, debug and loop. If all green, summarize what was built and what was tested.
 
 ---
 
 ## Environment files — never touch
+
 - **Never edit `.env`, `.env.local`, or any `.env.*` file directly.**
 - If a new environment variable is needed:
   1. Add it to `.env.example` with a placeholder value and a comment explaining it.
@@ -88,12 +99,14 @@ Show the user the test results from step 5. If anything failed, debug and loop. 
 ---
 
 ## UI verification
+
 - For backend/API/data work: tests are sufficient.
 - For UI changes: after building, take a screenshot using Playwright (already a dev dep, or install if not) so the user can see what was rendered. Don't claim a UI works without visual verification.
 
 ---
 
 ## Code style
+
 - TypeScript strict mode, always.
 - Explicit types on function signatures and exports; inference for the rest.
 - Zod schemas for all user input and tRPC procedure inputs/outputs.
@@ -101,8 +114,14 @@ Show the user the test results from step 5. If anything failed, debug and loop. 
 - Next.js App Router conventions (server components by default, "use client" only when needed).
 - shadcn/ui (Radix-based) components for UI; Tailwind for styling. No other CSS or component libraries.
 - shadcn components must always be added via `npx shadcn@latest add <component>`, never hand-written. If a needed component isn't in the shadcn registry, ask before creating it.
+- Run `npm run check` before committing — it runs typecheck, lint, and format check in sequence.
+- Code must pass `npm run lint` and `npm run format:check` to be considered done. Don't claim a task is complete if either fails.
+- Use `npm run lint:fix` and `npm run format` to auto-fix issues. Don't manually fix what tools can fix.
+- Tailwind classes are auto-sorted by `prettier-plugin-tailwindcss`. Don't manually reorder them.
+- Unused variables prefixed with `_` are intentional (signals "intentionally discarded"). Use this convention rather than disabling lint rules. For destructuring out a field to exclude it from a rest spread, prefer `const { foo, ...rest } = obj` — the rest-sibling rule allows it without underscore.
 
 ## Architecture rules
+
 - tRPC routers: `src/server/api/routers/`
 - Prisma schema: `prisma/schema.prisma`
 - Background jobs (BullMQ): `src/server/jobs/`
@@ -112,21 +131,26 @@ Show the user the test results from step 5. If anything failed, debug and loop. 
 - No business logic in React components — call tRPC procedures.
 
 ## Database operations — user runs these manually
+
 Never run autonomously:
+
 - `prisma migrate dev`
 - `prisma migrate reset`
 - `prisma migrate deploy`
 - `prisma db push`
 - `prisma db seed`
 - Any direct `psql` command that modifies data
+- Whenever you modify `prisma/schema.prisma`, immediately tell the user the exact migration command to run, formatted as a copy-pasteable code block, with a descriptive `--name` argument. Do this before writing any code that depends on the new schema, so the user can run the migration in parallel with you continuing to write code.
 
-Instead: write the schema changes, generate the migration with `--create-only` if needed, then *tell the user* the exact command to run and what to expect.
+Instead: write the schema changes, generate the migration with `--create-only` if needed, then _tell the user_ the exact command to run and what to expect.
 
 ## Auth.js
+
 - Auth.js v5 (`next-auth@beta`) is correct despite the "beta" label. Don't downgrade to v4.
 - Use the official Prisma adapter (`@auth/prisma-adapter`).
 
 ## What NOT to do
+
 - Don't add dependencies without explaining why and what the alternatives were.
 - Don't suggest out-of-scope features (mobile, SMS, real-time messaging, message attachments — see PROJECT_SPEC.md "Out of scope").
 - Don't collect or expose protected characteristics (age, marital status, religion, disability, photos pre-hire) — see PROJECT_SPEC.md.
@@ -137,6 +161,7 @@ Instead: write the schema changes, generate the migration with `--create-only` i
 - Don't import `dotenv` in Next.js application code (`src/app/`, `src/server/api/`, etc.) — Next.js loads env vars natively. `dotenv` is only acceptable in standalone Node scripts run outside Next.js (e.g., `prisma.config.ts`, `prisma/seed.ts`, BullMQ worker entry points).
 
 ## Working style
+
 - Always explain what you're about to do before doing it. For multi-file changes, list files first.
 - Pause for confirmation at major decision points; don't blast through a whole phase in one go.
 - Commit to git at the end of each working step with a clear message. Suggest commits proactively.

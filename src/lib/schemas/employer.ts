@@ -1,11 +1,6 @@
 import { z } from "zod";
 
-const CompanySize = z.enum([
-  "SIZE_1_10",
-  "SIZE_11_50",
-  "SIZE_51_200",
-  "SIZE_201_PLUS",
-]);
+const CompanySize = z.enum(["SIZE_1_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_PLUS"]);
 
 const Industry = z.enum([
   "FOOD_SERVICE",

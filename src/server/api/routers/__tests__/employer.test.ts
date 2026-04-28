@@ -22,11 +22,7 @@ function makeMockPrisma() {
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(
-  role: Role | null,
-  prisma: ReturnType<typeof makeMockPrisma>,
-  userId = "user-1"
-) {
+function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -36,6 +32,7 @@ function makeCtx(
             expires: new Date(Date.now() + 86400000).toISOString(),
           }
         : null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prisma: prisma as any,
   };
 }
@@ -92,28 +89,28 @@ describe("employer.createProfile", () => {
   it("accepts aboutCompany at exactly 2000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2000) })
+      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2000) }),
     ).resolves.toBeDefined();
   });
 
   it("rejects aboutCompany longer than 2000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2001) })
+      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2001) }),
     ).rejects.toThrow(TRPCError);
   });
 
   it("accepts missionText at exactly 1000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1000) })
+      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1000) }),
     ).resolves.toBeDefined();
   });
 
   it("rejects missionText longer than 1000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1001) })
+      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1001) }),
     ).rejects.toThrow(TRPCError);
   });
 

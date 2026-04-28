@@ -27,59 +27,43 @@ export default function RoleSelectPage() {
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold">Welcome to Shefa</h1>
-          <p className="mt-1 text-muted-foreground">Are you looking for work or looking to hire?</p>
+          <p className="text-muted-foreground mt-1">Are you looking for work or looking to hire?</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setSelected("SEEKER")}
-            className="text-left"
-          >
+          <button type="button" onClick={() => setSelected("SEEKER")} className="text-left">
             <Card
               className={`cursor-pointer transition-all ${
-                selected === "SEEKER" ? "ring-2 ring-primary" : ""
+                selected === "SEEKER" ? "ring-primary ring-2" : ""
               }`}
             >
               <CardHeader>
                 <CardTitle>I&apos;m looking for work</CardTitle>
-                <CardDescription>
-                  Find employers willing to teach you on the job.
-                </CardDescription>
+                <CardDescription>Find employers willing to teach you on the job.</CardDescription>
               </CardHeader>
             </Card>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setSelected("EMPLOYER")}
-            className="text-left"
-          >
+          <button type="button" onClick={() => setSelected("EMPLOYER")} className="text-left">
             <Card
               className={`cursor-pointer transition-all ${
-                selected === "EMPLOYER" ? "ring-2 ring-primary" : ""
+                selected === "EMPLOYER" ? "ring-primary ring-2" : ""
               }`}
             >
               <CardHeader>
                 <CardTitle>I&apos;m hiring</CardTitle>
-                <CardDescription>
-                  Post jobs and give candidates a chance to grow.
-                </CardDescription>
+                <CardDescription>Post jobs and give candidates a chance to grow.</CardDescription>
               </CardHeader>
             </Card>
           </button>
         </div>
 
-        <Button
-          className="w-full"
-          disabled={!selected || setRole.isPending}
-          onClick={handleSubmit}
-        >
+        <Button className="w-full" disabled={!selected || setRole.isPending} onClick={handleSubmit}>
           {setRole.isPending ? "Saving…" : "Continue"}
         </Button>
 
         {setRole.isError && (
-          <p className="text-center text-sm text-destructive">
+          <p className="text-destructive text-center text-sm">
             Something went wrong. Please try again.
           </p>
         )}

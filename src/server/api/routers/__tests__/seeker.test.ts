@@ -22,11 +22,7 @@ function makeMockPrisma() {
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(
-  role: Role | null,
-  prisma: ReturnType<typeof makeMockPrisma>,
-  userId = "user-1"
-) {
+function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -36,6 +32,7 @@ function makeCtx(
             expires: new Date(Date.now() + 86400000).toISOString(),
           }
         : null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     prisma: prisma as any,
   };
 }
@@ -50,7 +47,9 @@ const VALID_INPUT = {
   zip: "11201",
   workAuthorization: true,
   isAdult: true as const,
-  availableDays: ["MON", "TUE", "WED"] as const,
+  availableDays: ["MON", "TUE", "WED"] as Array<
+    "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT"
+  >,
   jobSeekText: "I want to learn to cook and work in a restaurant.",
 };
 
@@ -101,27 +100,32 @@ describe("seeker.createProfile", () => {
   it("accepts jobSeekText at exactly 1000 chars", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, jobSeekText: "a".repeat(1000) })
+      caller.createProfile({ ...VALID_INPUT, jobSeekText: "a".repeat(1000) }),
     ).resolves.toBeDefined();
   });
 
   it("rejects jobSeekText longer than 1000 chars", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, jobSeekText: "a".repeat(1001) })
+      caller.createProfile({ ...VALID_INPUT, jobSeekText: "a".repeat(1001) }),
     ).rejects.toThrow(TRPCError);
   });
 
   it("accepts an empty availableDays array", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, availableDays: [] })
+      caller.createProfile({ ...VALID_INPUT, availableDays: [] }),
     ).resolves.toBeDefined();
   });
 
   it("deduplicates repeated availableDays values", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.createProfile({ ...VALID_INPUT, availableDays: ["MON", "MON", "TUE"] as any });
+    await caller.createProfile({
+      ...VALID_INPUT,
+      availableDays: ["MON", "MON", "TUE"] as Array<
+        "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT"
+      >,
+    });
     const data = db.seekerProfile.create.mock.calls[0][0].data;
     expect(data.availableDays).toEqual(["MON", "TUE"]);
   });

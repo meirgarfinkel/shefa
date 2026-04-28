@@ -7,12 +7,11 @@ export default function VerifyRequestPage() {
         <CardHeader>
           <CardTitle>Check your email</CardTitle>
           <CardDescription>
-            A magic link has been sent. Click the link to sign in — it expires
-            in 24 hours.
+            A magic link has been sent. Click the link to sign in — it expires in 24 hours.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Didn&apos;t get it? Check your spam folder or go back and try again.
           </p>
         </CardContent>

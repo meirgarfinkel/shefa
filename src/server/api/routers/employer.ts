@@ -17,7 +17,7 @@ export const employerRouter = createTRPCRouter({
         throw new TRPCError({ code: "CONFLICT", message: "Profile already exists" });
       }
 
-      const { isAdult: _, ...profileFields } = input;
+      const { isAdult: _isAdult, ...profileFields } = input;
 
       await ctx.prisma.user.update({
         where: { id: ctx.user.id },
