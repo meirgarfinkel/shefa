@@ -2,107 +2,71 @@
 
 ## Current phase
 
-**Phase 3 — Profiles** (in progress)
+**Phase 3 — Profiles (complete)**
 
 ---
 
 ## What was completed this session
 
-### Phase 2 — Auth + base User (complete)
+### Phase 3 Step 2 — Skill + Language seed
 
-- `src/auth.ts` — Auth.js v5 config: Resend email provider, PrismaAdapter, session callback (exposes `id` + `role`)
-- `src/lib/prisma.ts` — Prisma 7 singleton using `@prisma/adapter-pg`
-- `src/types/next-auth.d.ts` — session type augmentation
-- `src/server/api/trpc.ts` — session injected into tRPC context; `protectedProcedure` + `createCallerFactory` exported
-- `src/app/api/auth/[...nextauth]/route.ts` — Auth.js route handler
-- `src/middleware.ts` — unauthenticated → `/sign-in`; authenticated + no role → `/role-select`
-- `src/app/sign-in/page.tsx` — magic link request form
-- `src/app/verify-request/page.tsx` — "check your email" page
-- `src/app/role-select/page.tsx` — SEEKER / EMPLOYER picker; calls `user.setRole` mutation
-- `src/server/api/routers/user.ts` — `setRole` mutation
+- `prisma/seed.ts` — upserts 31 skills (7 categories) + 22 languages; idempotent
+- `prisma.config.ts` — `migrations.seed` wired to `tsx prisma/seed.ts`
+- `tsx` added as dev dependency (needed to run TypeScript seed outside Next.js)
 
-### Phase 3 Step 1 — Profile create mutations (complete, tests green)
+### Phase 3 Step 3 — Taxonomy API + Profile signup forms
 
-- `src/lib/schemas/seeker.ts` — Zod input schema for SeekerProfile (includes `isAdult: z.literal(true)`)
-- `src/lib/schemas/employer.ts` — Zod input schema for EmployerProfile (includes `isAdult`, updated Industry enum)
-- `src/server/api/routers/seeker.ts` — `createProfile` mutation: role check, duplicate check, `user.isAdult = true`, nested skill/language create
-- `src/server/api/routers/employer.ts` — same pattern for employer
-- `src/server/api/routers/__tests__/seeker.test.ts` — 13 tests, all green
-- `src/server/api/routers/__tests__/employer.test.ts` — 12 tests, all green
-- `prisma/schema.prisma` — `isAdult Boolean @default(false)` added to User; Industry enum updated to match Zod schema
+- `src/server/api/routers/taxonomy.ts` — public `taxonomy.skills` (grouped by category) and `taxonomy.languages` queries
+- `src/server/api/root.ts` — taxonomy router wired in
+- `src/app/seeker/profile/new/page.tsx` — full seeker signup form (react-hook-form + Zod, skills/languages multi-select, available days toggle, required fields)
+- `src/app/employer/profile/new/page.tsx` — employer signup form (company info, size, industry, location, optional about/mission)
+- `src/app/jobs/page.tsx` — stub landing page (Phase 4 target)
+- `react-hook-form` + `@hookform/resolvers` added as dependencies
+- shadcn components added: `input`, `label`, `select`, `textarea`, `checkbox`, `separator`, `form`
 
-### Tooling — Linting, formatting, pre-commit hooks (complete)
+### Auth middleware Edge Runtime fix
 
-- `.prettierrc.json` + `.prettierignore` — Prettier config with `prettier-plugin-tailwindcss`
-- `eslint.config.mjs` — `eslint-config-prettier` added as last entry
-- `package.json` — new scripts: `lint:fix`, `format`, `format:check`, `typecheck`, `check`; `lint-staged` config added
-- `.husky/pre-commit` — runs `npx lint-staged` on commit
-- `npm run check` passes: typecheck ✓, lint ✓ (0 errors), format ✓
+**Root cause**: `middleware.ts` imported `auth` from `@/auth`, which pulled `PrismaAdapter(prisma)` → `@prisma/adapter-pg` → `node:path` into the Edge Runtime bundle. This crashed every page.
 
----
+**Fix**: Split auth config per Auth.js v5 recommended pattern:
 
-## What's in progress / pending
+- `src/auth.config.ts` — Edge-safe: pages, JWT callback (stores id + role in token), session callback (reads from token). No adapter, no providers.
+- `src/auth.ts` — Full Node.js config: spreads authConfig + PrismaAdapter + Resend provider + `session: { strategy: "jwt" }`. Also adds `sendVerificationRequest` to Resend provider: logs magic link in dev, calls Resend REST API in production.
+- `src/middleware.ts` — now constructs its own `NextAuth(authConfig)` so Prisma never enters the edge bundle.
+- `src/types/next-auth.d.ts` — added `JWT` augmentation for `id` and `role`.
+- `src/app/role-select/page.tsx` — calls `useSession().update({ role })` after `setRole` mutation so the JWT cookie is refreshed immediately (otherwise middleware sees stale role until next sign-in).
 
-### Migration not yet run
+### Other
 
-The Prisma schema has two pending changes that require a migration:
-
-```
-npx prisma migrate dev --name add-is-adult-and-update-industry
-```
-
-This will:
-
-- Add `isAdult BOOLEAN NOT NULL DEFAULT false` to `User`
-- Rename 4 Industry enum values (`HEALTHCARE_SUPPORT` → `HEALTHCARE`, `TRADES_CONSTRUCTION` → `TRADES`, `TRANSPORTATION_DELIVERY` → `TRANSPORTATION`, `EDUCATION_CHILDCARE` → `EDUCATION`)
-- Add 6 new Industry values: `TECHNOLOGY`, `BUSINESS`, `FINANCE`, `MARKETING`, `MEDIA`, `REAL_ESTATE`
-- Remove `NONPROFIT_COMMUNITY`
-
-After running the migration, Prisma will regenerate the client. Remove the two `as any` casts in `seeker.ts` and `employer.ts` (`ctx.prisma.user as any` and `ctx.prisma.employerProfile as any`) — they were added only because the generated types were stale.
-
-### Pre-commit hook not yet verified
-
-See the manual test sequence in the session notes (Step 9).
+- Removed `as any` cast from `src/server/api/routers/seeker.ts` (migration was applied, types regenerated)
+- Middleware updated to role-guard `/seeker/profile/new` (SEEKER only) and `/employer/profile/new` (EMPLOYER only)
 
 ---
 
 ## What's next
 
-**Phase 3 Step 2 — Skills + Languages seed**
+**Phase 4 — Job postings**
 
-The curated `Skill` and `Language` tables need to be seeded before the profile signup flows can work. Tasks:
-
-1. Write `prisma/seed.ts` with the skill and language lists from the spec
-2. Tell user to run `npx prisma db seed`
-
-**Phase 3 Step 3 — Profile signup UI**
-
-After the seed:
-
-1. Seeker profile creation form (multi-step or single page): collects all required fields + skill/language multi-select
-2. Employer profile creation form
-3. After profile created → redirect to a "profile complete" or dashboard page (Phase 3 precursor to Phase 4)
+1. `JobPosting` CRUD tRPC router (`jobPosting.create`, `jobPosting.list`, `jobPosting.getById`, `jobPosting.update`, `jobPosting.delete`)
+2. Post-a-job form (employer only) — mirrors the seeker form pattern
+3. Public job listings page at `/jobs` (replace stub)
+4. Job detail page at `/jobs/[id]`
+5. Search/filter: by city/state, job type, work arrangement, skills, days
 
 ---
 
 ## Open questions / blockers
 
-1. **Migration**: Must be run before resuming any Phase 3 code that touches `isAdult` or the new Industry enum values.
-2. **Skill taxonomy**: The spec says "curated list" but doesn't enumerate skills. Do you have a list, or should I generate a reasonable starting set?
-3. **Language taxonomy**: Same question — full world languages, or a curated short list?
-4. **Onboarding redirect**: After profile creation, where does the user land? A "your profile is live" confirmation page, or straight to a job listings page (Phase 4)?
+1. **Resend domain**: `noreply@shefa.jobs` must be verified in Resend before production emails work. Dev is unblocked (magic link logs to server console).
+2. **Profile completion gate**: Currently there's no middleware check for "has profile". Users with a role can skip `/seeker/profile/new` and go directly to `/jobs`. This is intentional for Phase 3 (the mutation itself guards against duplicates). A proper gate (check `hasProfile` in session or via a lightweight DB call) can be added in Phase 4 or 8.
 
 ---
 
-## Commands to run before resuming
+## Commands the user should run before resuming
 
 ```bash
-# 1. Run the pending migration
-npx prisma migrate dev --name add-is-adult-and-update-industry
-
-# 2. Verify tests still pass after regenerated types
-npm test
-
-# 3. Remove the temporary `as any` casts in seeker.ts and employer.ts
-#    (lines using `ctx.prisma.user as any` and `ctx.prisma.employerProfile as any`)
+# Seed the database if not already done
+npx prisma db seed
 ```
+
+All other deps are installed. `npm run check` passes. 25 tests green.

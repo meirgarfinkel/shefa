@@ -19,8 +19,7 @@ export const seekerRouter = createTRPCRouter({
 
       const { skillIds, languageIds, isAdult: _isAdult, ...profileFields } = input;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (ctx.prisma.user as any).update({
+      await ctx.prisma.user.update({
         where: { id: ctx.user.id },
         data: { isAdult: true },
       });

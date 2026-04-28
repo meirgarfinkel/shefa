@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function RoleSelectPage() {
   const router = useRouter();
+  const { update } = useSession();
   const [selected, setSelected] = useState<"SEEKER" | "EMPLOYER" | null>(null);
 
   const setRole = trpc.user.setRole.useMutation({
-    onSuccess: () => {
-      router.refresh();
-      router.push("/");
+    onSuccess: async (_data, variables) => {
+      await update({ role: variables.role });
+      router.push(variables.role === "SEEKER" ? "/seeker/profile/new" : "/employer/profile/new");
     },
   });
 

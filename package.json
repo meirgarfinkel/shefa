@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
+    "@hookform/resolvers": "^5.2.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "@tanstack/react-query": "^5.100.5",
@@ -33,6 +34,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-hook-form": "^7.74.0",
     "resend": "^6.12.2",
     "shadcn": "^4.5.0",
     "superjson": "^2.2.6",
@@ -67,6 +69,7 @@
     "prettier-plugin-tailwindcss": "^0.8.0",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
+    "tsx": "^4.19.4",
     "typescript": "^5",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.5"

@@ -6,3 +6,4 @@ coverage
 prisma/migrations
 src/generated
 *.lock
+.claude/settings.local.json
