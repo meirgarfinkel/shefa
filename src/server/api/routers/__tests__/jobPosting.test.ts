@@ -324,6 +324,89 @@ describe("jobPosting.list", () => {
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.employerProfileId).toBe(EMPLOYER_PROFILE_ID);
   });
+
+  // ── New filter fields ──
+
+  it("applies state filter with case-insensitive contains when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ state: "NY" });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.state).toEqual({ contains: "NY", mode: "insensitive" });
+  });
+
+  it("omits state from where when not provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({});
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.state).toBeUndefined();
+  });
+
+  it("applies city filter with case-insensitive contains when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ city: "Brooklyn" });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.city).toEqual({ contains: "Brooklyn", mode: "insensitive" });
+  });
+
+  it("applies jobType filter when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ jobType: ["FULL_TIME"] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.jobType).toEqual({ in: ["FULL_TIME"] });
+  });
+
+  it("omits jobType from where when empty array is provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ jobType: [] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.jobType).toBeUndefined();
+  });
+
+  it("applies workArrangement filter with multiple values when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ workArrangement: ["REMOTE", "HYBRID"] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.workArrangement).toEqual({ in: ["REMOTE", "HYBRID"] });
+  });
+
+  it("applies workDays filter using hasSome when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ workDays: ["MON", "TUE"] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.workDays).toEqual({ hasSome: ["MON", "TUE"] });
+  });
+
+  it("omits workDays from where when empty array is provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ workDays: [] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.workDays).toBeUndefined();
+  });
+
+  it("applies skillIds filter on preferredSkills relation when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ skillIds: ["skill-1", "skill-2"] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.preferredSkills).toEqual({
+      some: { skillId: { in: ["skill-1", "skill-2"] } },
+    });
+  });
+
+  it("omits preferredSkills from where when skillIds is empty", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ skillIds: [] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.preferredSkills).toBeUndefined();
+  });
+
+  it("non-owner still sees only ACTIVE even when other filters are applied", async () => {
+    const caller = createCaller(makeCtx("SEEKER", db));
+    await caller.list({ state: "NY", jobType: ["FULL_TIME"] });
+    const where = db.jobPosting.findMany.mock.calls[0][0].where;
+    expect(where.status).toEqual({ in: ["ACTIVE"] });
+    expect(where.state).toEqual({ contains: "NY", mode: "insensitive" });
+    expect(where.jobType).toEqual({ in: ["FULL_TIME"] });
+  });
 });
 
 // ── jobPosting.getById ────────────────────────────────────────────────────────

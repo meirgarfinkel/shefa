@@ -60,6 +60,14 @@ export const jobPostingRouter = createTRPCRouter({
       where: {
         ...(input.employerProfileId && { employerProfileId: input.employerProfileId }),
         ...(statusFilter !== undefined && { status: statusFilter }),
+        ...(input.city && { city: { contains: input.city, mode: "insensitive" } }),
+        ...(input.state && { state: { contains: input.state, mode: "insensitive" } }),
+        ...(input.jobType?.length && { jobType: { in: input.jobType } }),
+        ...(input.workArrangement?.length && { workArrangement: { in: input.workArrangement } }),
+        ...(input.workDays?.length && { workDays: { hasSome: input.workDays } }),
+        ...(input.skillIds?.length && {
+          preferredSkills: { some: { skillId: { in: input.skillIds } } },
+        }),
       },
       include: {
         preferredSkills: { include: { skill: true } },

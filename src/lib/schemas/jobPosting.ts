@@ -56,6 +56,12 @@ export const UpdateJobPostingSchema = z.object({
 export const ListJobPostingsSchema = z.object({
   status: z.array(JobStatusEnum).optional(),
   employerProfileId: z.string().optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().max(100).optional(),
+  jobType: z.array(JobType).optional(),
+  workArrangement: z.array(WorkArrangement).optional(),
+  workDays: z.array(DayOfWeek).optional(),
+  skillIds: z.array(z.string()).optional(),
 });
 
 export type CreateJobPostingInput = z.infer<typeof CreateJobPostingSchema>;
