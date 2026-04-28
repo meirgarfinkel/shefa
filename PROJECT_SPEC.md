@@ -24,7 +24,7 @@ Vercel (Next.js) + Neon or Supabase (Postgres) + Upstash (Redis) — chosen for 
 ## Data Model
 
 ### User
-Base account. Fields: id, email (verified), phone (collected, unverified), auth method, role (SEEKER / EMPLOYER / ADMIN), createdAt, updatedAt, lastLoginAt.
+Base account. Fields: id, email (verified), phone (collected, unverified), auth method, role (SEEKER / EMPLOYER / ADMIN), isAdult (boolean, default false — set to true when profile is created after user confirms age ≥ 18), createdAt, updatedAt, lastLoginAt.
 
 ### SeekerProfile (1:1 with User)
 
@@ -67,7 +67,7 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 **System fields:** same as seeker (isResponsive, status, lastVerifiedAt, etc.)
 
 ### Industry list (employer profile)
-Food Service / Retail / Hospitality / Healthcare Support / Trades & Construction / Manufacturing / Office & Admin / Transportation & Delivery / Education & Childcare / Personal Services / Nonprofit & Community / Other
+Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Office & Admin / Transportation / Education / Personal Services / Technology / Business / Finance / Marketing / Media / Real Estate / Other
 
 ### JobPosting (many-to-one with EmployerProfile)
 - Title, description (max 5000 chars)

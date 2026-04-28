@@ -101,14 +101,19 @@ enum Industry {
   FOOD_SERVICE
   RETAIL
   HOSPITALITY
-  HEALTHCARE_SUPPORT
-  TRADES_CONSTRUCTION
+  HEALTHCARE
+  TRADES
   MANUFACTURING
   OFFICE_ADMIN
-  TRANSPORTATION_DELIVERY
-  EDUCATION_CHILDCARE
+  TRANSPORTATION
+  EDUCATION
   PERSONAL_SERVICES
-  NONPROFIT_COMMUNITY
+  TECHNOLOGY
+  BUSINESS
+  FINANCE
+  MARKETING
+  MEDIA
+  REAL_ESTATE
   OTHER
 }
 
@@ -130,6 +135,7 @@ model User {
   emailVerified DateTime?
   phone         String?
   role          Role?
+  isAdult       Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   lastLoginAt   DateTime?
