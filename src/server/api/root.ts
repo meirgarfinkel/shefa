@@ -4,6 +4,7 @@ import { seekerRouter } from "@/server/api/routers/seeker";
 import { employerRouter } from "@/server/api/routers/employer";
 import { taxonomyRouter } from "@/server/api/routers/taxonomy";
 import { jobPostingRouter } from "@/server/api/routers/jobPosting";
+import { applicationRouter } from "@/server/api/routers/application";
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
@@ -11,6 +12,7 @@ export const appRouter = createTRPCRouter({
   employer: employerRouter,
   taxonomy: taxonomyRouter,
   jobPosting: jobPostingRouter,
+  application: applicationRouter,
 });
 
 export type AppRouter = typeof appRouter;

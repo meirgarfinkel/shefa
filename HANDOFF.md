@@ -2,60 +2,75 @@
 
 ## Current phase
 
-**Phase 4 — Job Postings (complete)**
+**Phase 5 — Seeker Applications (complete)**
 
 ---
 
 ## What was completed this session
 
-### Phase 4 Steps 2–5
+### Application tRPC router (`src/server/api/routers/application.ts`)
 
-**Step 2 — Post-a-job form** (`src/app/employer/jobs/new/page.tsx`)
+Five procedures + one auxiliary query, all covered by 38 new tests (124 total, all green):
 
-- Employer-only client page; redirects non-employers immediately
-- react-hook-form + zodResolver using `z.input<>` for form type (required because `workDays` has `.default([]).transform()`)
-- Sections: job details, location, pay, schedule, work days toggles, requirements (work auth + required languages checkboxes), preferred skills (grouped checkboxes), opportunity text
-- On success: redirects to `/jobs`
+| Procedure       | Who           | What                                                                                                                                                                                       |
+| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `submit`        | SEEKER only   | Applies to an ACTIVE job; optional message ≤500 chars. Throws FORBIDDEN for non-ACTIVE jobs, CONFLICT on duplicate. Note: named `submit` not `apply` — `apply` is a reserved word in tRPC. |
+| `listForSeeker` | SEEKER only   | Returns own applications with job + company info, sorted desc.                                                                                                                             |
+| `listForJob`    | EMPLOYER only | Returns applications for a job the caller posted, with seeker name/location/availability.                                                                                                  |
+| `withdraw`      | SEEKER only   | Sets own application to CLOSED. NOT_FOUND (not FORBIDDEN) if app not owned — avoids info disclosure.                                                                                       |
+| `updateStatus`  | EMPLOYER only | Sets status to VIEWED/RESPONDED/CLOSED. SUBMITTED blocked at Zod layer.                                                                                                                    |
+| `myStatus`      | SEEKER only   | Returns `{ id, status }` or null for caller's application to a given job. Used by the job detail page.                                                                                     |
 
-**Step 3 — Public job listings** (`src/app/jobs/page.tsx`)
+Zod schemas in `src/lib/schemas/application.ts`.
 
-- Replaced stub; shows ACTIVE postings in a 2-column card grid
-- Each card: company name, job title, location/type/arrangement chips, min pay, description snippet, "We'll teach you" callout
-- "Post a job" button shown only to authenticated EMPLOYERs
+### UI
 
-**Step 4 — Job detail page** (`src/app/jobs/[id]/page.tsx`)
+**Job detail page** (`src/app/jobs/[id]/page.tsx`)
 
-- Public page using `trpc.jobPosting.getById`
-- Shows: header with chips, quick facts grid (pay, work days, languages), opportunity callout boxes, full description, preferred skills, disabled "Apply" CTA
-- 404-style handling for NOT_FOUND (non-ACTIVE postings return NOT_FOUND to non-owners, matching router behavior)
+- Disabled CTA replaced with role-aware apply flow
+- Non-seekers: "Sign in as a job seeker to apply"
+- SEEKERs (not applied): "Apply for this job" button → Dialog
+- Apply dialog: optional message textarea with 500-char counter, submit/cancel
+- SEEKERs (applied): status badge + Withdraw button (SUBMITTED only) + "View my applications" link
+- SEEKERs (withdrawn): re-apply option
 
-**Step 5 — Search/filter** (`src/app/jobs/page.tsx` + schema + router)
+**Seeker applications page** (`src/app/seeker/applications/page.tsx`)
 
-- Extended `ListJobPostingsSchema` with: `city`, `state`, `jobType[]`, `workArrangement[]`, `workDays[]`, `skillIds[]`
-- Router `list` applies all filters in the Prisma `where` clause:
-  - city/state: `{ contains, mode: "insensitive" }`
-  - jobType/workArrangement: `{ in: [...] }` (only when non-empty)
-  - workDays: `{ hasSome: [...] }` (PostgreSQL array field)
-  - skillIds: `{ preferredSkills: { some: { skillId: { in: [...] } } } }`
-- Filter UI: city/state text inputs (300ms debounce), job type checkboxes, arrangement checkboxes, work-day toggle pills, collapsible skills section with category grouping and count badge
-- 11 new router tests; 59 total, all green
+- Route: `/seeker/applications`
+- Protected: SEEKER only (redirects otherwise)
+- Lists all applications: job title (linked), company, location, status badge, date, withdraw button
+- Empty state with "Browse listings" CTA
+
+**Employer applications view** (`src/app/employer/jobs/[id]/applications/page.tsx`)
+
+- Route: `/employer/jobs/[id]/applications`
+- Protected: EMPLOYER only
+- Lists applicants: name, city/state, available days, work auth, message, status badge
+- Action buttons: "Mark viewed" / "Mark responded" / "Close" based on current status
+- Empty state
+
+**Employer jobs dashboard** (`src/app/employer/jobs/page.tsx`)
+
+- Added "Applications" link per job row → `/employer/jobs/[id]/applications`
+
+### shadcn Dialog component added
+
+`src/components/ui/dialog.tsx` installed via `npx shadcn@latest add dialog`.
 
 ---
 
 ## What's next
 
-**Phase 4 cleanup — Employer job dashboard** (build before Phase 5)
+**Phase 6 — Freshness System**
 
-`/employer/jobs` page: list the authenticated employer's own postings (all statuses). Use `jobPosting.list` with `employerProfileId` set to the caller's profile. Each row shows title, status badge, created date, and links to edit/view. "Post a job" button at the top. After posting a new job, redirect here instead of `/jobs`.
+Per PROJECT_SPEC.md Phase 6:
 
-**Phase 5 — Seeker Applications**
-
-Per PROJECT_SPEC.md Phase 5:
-
-1. `Application` tRPC router — `apply`, `listForSeeker`, `listForJob` (employer-only), `withdraw`, `updateStatus` (employer-only)
-2. Apply button on job detail page (replace the disabled CTA)
-3. Seeker "My applications" page
-4. Employer "Applications for this job" view
+1. BullMQ + Redis worker setup (`src/server/jobs/`)
+2. Daily ping scheduler — queries listings/profiles due for verification (Day 14, 20, 28 logic)
+3. Email templates for verification pings (Resend)
+4. Signed verification tokens (`FreshnessToken` model already in schema)
+5. One-click response endpoints (no login required)
+6. Auto-pause logic on Day 28 non-response
 
 ---
 
@@ -63,12 +78,12 @@ Per PROJECT_SPEC.md Phase 5:
 
 1. **Resend domain**: `noreply@shefa.jobs` must be verified in Resend before production emails work.
 2. **Profile completion gate**: Users with a role can reach `/jobs` without completing a profile. Intentional for now; enforce in Phase 8.
-3. **Employer job dashboard**: Currently no `/employer/jobs` listing page. After posting, employers are sent to `/jobs`. A dashboard showing own postings (all statuses) should be added — either in Phase 5 or as a Phase 4 cleanup item before Phase 5.
+3. **No seeker profile nav link**: There's no nav link to `/seeker/applications` yet. Should be added to the main nav in Phase 8 polish, or earlier if desired.
 
 ---
 
 ## Commands the user should run before resuming
 
-None needed — no schema changes, no new deps.
+None needed — no schema changes, no new deps beyond the Dialog component (already installed).
 
-All deps installed. `npm run check` passes. 59 tests green.
+All deps installed. `npm run check` passes. 124 tests green.

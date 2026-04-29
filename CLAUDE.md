@@ -165,11 +165,17 @@ Instead: write the schema changes, generate the migration with `--create-only` i
 - Don't introduce alternative headless UI libraries (Base UI, Headless UI, etc.) — Radix-based shadcn only.
 - Don't import `dotenv` in Next.js application code (`src/app/`, `src/server/api/`, etc.) — Next.js loads env vars natively. `dotenv` is only acceptable in standalone Node scripts run outside Next.js (e.g., `prisma.config.ts`, `prisma/seed.ts`, BullMQ worker entry points).
 
+## Git — never run git commands
+
+- **Never run any `git` commands** (commit, add, push, status, log, etc.).
+- Instead, at the end of each working step, tell the user exactly what to run and provide a ready-to-paste commit message.
+- Format the suggestion as a code block the user can copy directly.
+
 ## Working style
 
 - Always explain what you're about to do before doing it. For multi-file changes, list files first.
 - Pause for confirmation at major decision points; don't blast through a whole phase in one go.
-- Commit to git at the end of each working step with a clear message. Suggest commits proactively.
+- At the end of each working step, suggest a commit by giving the user the exact commands to run, not by running them yourself.
 - When in doubt, default to the simpler / more boring solution.
 - If something in PROJECT_SPEC.md seems wrong or incomplete, flag it — don't silently work around it.
 - If you're about to install a major version of a library, check that it's compatible with the rest of the stack first. (Bitten by Base UI and Prisma 7 already.)

@@ -110,6 +110,9 @@ export default function EmployerJobsPage() {
               </div>
               <div className="flex shrink-0 gap-2">
                 <Button asChild variant="ghost" size="sm">
+                  <Link href={`/employer/jobs/${job.id}/applications`}>Applications</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
                   <Link href={`/jobs/${job.id}`}>View</Link>
                 </Button>
               </div>
