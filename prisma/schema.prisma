@@ -250,7 +250,7 @@ model JobPosting {
   whatWereLookingFor String?         @db.VarChar(1000)
 
   // System
-  status           JobStatus @default(DRAFT)
+  status           JobStatus @default(ACTIVE)
   viewCount        Int       @default(0)
   applicationCount Int       @default(0)
   lastVerifiedAt   DateTime  @default(now())
