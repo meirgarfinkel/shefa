@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@/generated/prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/server/emails";
 import {
   buildSeekerInitialPingEmail,

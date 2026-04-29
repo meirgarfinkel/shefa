@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import type { PrismaClient, PingResponse } from "@/generated/prisma/client";
+import type { PrismaClient, PingResponse } from "@prisma/client";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

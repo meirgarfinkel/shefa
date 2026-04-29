@@ -12,7 +12,7 @@ If any of these contradict each other, stop and ask the user before proceeding.
 
 ## Project summary
 
-Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 7 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose. Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
+Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 6 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose. Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
 
 ---
 
@@ -110,8 +110,8 @@ Show the user the test results from step 5. If anything failed, debug and loop. 
 - TypeScript strict mode, always.
 - Explicit types on function signatures and exports; inference for the rest.
 - Zod schemas for all user input and tRPC procedure inputs/outputs.
-- Prisma 7 for all database access. Always instantiate the client with `@prisma/adapter-pg` (Prisma 7 requires a driver adapter — no env-var-only connection). No raw SQL unless explicitly justified.
-- Use the standard Prisma generator (`provider = "prisma-client-js"`) with default output location. Don't use the newer `"prisma-client"` provider with custom output paths — it generates Node-specific imports that break in Edge runtime contexts (Next.js middleware especially).
+- Prisma 6 (`prisma-client-js`) for all database access. Instantiate with plain `new PrismaClient()` — no driver adapter needed. `DATABASE_URL` is read from the environment via the datasource block. No raw SQL unless explicitly justified.
+- Use the standard Prisma generator (`provider = "prisma-client-js"`) with **no custom `output` path**. All Prisma types come from `@prisma/client`. Never add a custom output path — it generates Node-specific imports that break in Edge runtime contexts (Next.js middleware especially).
 - Next.js App Router conventions (server components by default, "use client" only when needed).
 - shadcn/ui (Radix-based) components for UI; Tailwind for styling. No other CSS or component libraries.
 - shadcn components must always be added via `npx shadcn@latest add <component>`, never hand-written. If a needed component isn't in the shadcn registry, ask before creating it.
@@ -153,6 +153,12 @@ Instead: write the schema changes, generate the migration with `--create-only` i
 - Session strategy must be `jwt`, not `database`, so middleware can verify sessions without database access.
 - `sendVerificationRequest` lives on the Resend provider in `auth.ts` (not in `auth.config.ts`). In development it logs the magic link to the console; in production it calls the Resend REST API directly.
 - After a mutation that changes session data (e.g. `setRole`), call `useSession().update({ ... })` client-side to refresh the JWT cookie immediately. Without this, middleware reads stale role data until the next sign-in.
+
+### Split config — hard rules
+
+- **`middleware.ts`** must never import from `db.ts`, `auth.ts`, `@prisma/client`, or any generated Prisma path. It may only import from `auth.config.ts` and Next.js built-ins. Enforce with the comment at the top of that file.
+- **`auth.config.ts`** must have zero Prisma imports — not even `import type`. The `Role` type lives in `src/types/role.ts` (a plain string union) so auth.config stays Prisma-free.
+- Violating either of these will silently work in dev (Node runtime) but break at build/deploy time on Vercel (Edge runtime).
 
 ## BullMQ worker process
 

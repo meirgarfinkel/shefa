@@ -1,3 +1,4 @@
+// Edge runtime — never import db, auth.ts, @prisma/client, or generated Prisma client here
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { NextResponse } from "next/server";

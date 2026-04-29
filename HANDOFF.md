@@ -2,103 +2,85 @@
 
 ## Current phase
 
-**Phase 6 — Freshness System (complete, pending migration)**
+**Phase 7 — Notifications + Responsiveness (in progress)**
+
+---
+
+## Phase 7 steps and status
+
+| # | Step | Status |
+|---|------|--------|
+| 1 | `NotificationPreferences` tRPC CRUD (get/update) | ✅ Done |
+| 2 | 12-minute debounced message notification job (BullMQ) | ⬜ Next |
+| 3 | Daily digest aggregation job | ⬜ Todo |
+| 4 | Responsiveness computation job (every 48h) | ⬜ Todo |
+| 5 | Responsiveness badge display on profile pages | ⬜ Todo |
 
 ---
 
 ## What was completed this session
 
-### Schema changes (`prisma/schema.prisma`)
+### Prisma migration: Prisma 7 → Prisma 6 + split config enforcement
 
-Added to `FreshnessToken`:
+**Problem fixed**: The project was using Prisma 7's `prisma-client` provider with a custom output path (`src/generated/prisma`). CLAUDE.md requires the standard `prisma-client-js` provider with no custom output. Additionally, `auth.config.ts` was importing from the generated Prisma client, violating the zero-Prisma-imports rule for Edge-safe files.
 
-- `action PingResponse` — which action (CONFIRMED / PAUSED / NOT_LOOKING / FILLED) this token performs
-- `pingId String?` — FK back to `VerificationPing`
-- `ping VerificationPing?` relation
+**Files changed:**
 
-Added to `VerificationPing`:
-
-- `freshnessTokens FreshnessToken[]` back-relation
-
-### New dependencies
-
-- `bullmq` ^5.76 — background job queue
-- `ioredis` ^5.10 — Redis client required by BullMQ
-
-### New files
-
-| File                                   | Purpose                                                                                             |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `src/server/jobs/redis.ts`             | `createRedisConnection()` factory — creates IORedis instances with BullMQ-required config           |
-| `src/server/jobs/queue.ts`             | `getFreshnessQueue()` singleton + constants                                                         |
-| `src/server/jobs/freshness.job.ts`     | `computeFreshnessAction()` (pure) + `runFreshnessCheck()` (queries DB, creates pings, sends emails) |
-| `src/server/jobs/token.ts`             | `generateTokenString()` + `createFreshnessTokensForPing()`                                          |
-| `src/server/jobs/redeem.ts`            | `redeemToken()` — validates + executes token action, used by the API route                          |
-| `src/server/jobs/worker.ts`            | Standalone worker entry point (`npm run worker`) — registers BullMQ repeatable cron job             |
-| `src/server/emails/index.ts`           | `sendEmail()` — console.log in dev, Resend API in prod                                              |
-| `src/server/emails/freshness-ping.ts`  | HTML email builders for all 4 email types (seeker initial/warning, job initial/warning)             |
-| `src/app/api/verify/[token]/route.ts`  | One-click verify endpoint — no login required, redirects based on result                            |
-| `src/app/verify/confirmed/page.tsx`    | Success confirmation page                                                                           |
-| `src/app/verify/expired/page.tsx`      | Expired token page (links to sign-in)                                                               |
-| `src/app/verify/already-used/page.tsx` | Already-used token page                                                                             |
-| `src/app/verify/invalid/page.tsx`      | Invalid token page                                                                                  |
-
-### Tests
-
-32 new tests (156 total, all green):
-
-- `src/server/jobs/__tests__/freshness.test.ts` — 20 tests for `computeFreshnessAction` (happy paths, boundaries, adversarial)
-- `src/server/jobs/__tests__/redeem.test.ts` — 12 tests for `redeemToken` (happy paths, expired/used/invalid, type-crossing actions)
-
-### `package.json`
-
-Added `"worker": "tsx src/server/jobs/worker.ts"` script.
-
-### `CLAUDE.md`
-
-Added "BullMQ worker process" section documenting `npm run worker`, the standalone worker pattern, and that tsx reads tsconfig paths automatically.
+| File | Change |
+|------|--------|
+| `package.json` | Removed `@prisma/adapter-pg`, downgraded `prisma` + `@prisma/client` to `^6.0.0` |
+| `prisma/schema.prisma` | Changed generator to `prisma-client-js` (no custom output), added `url = env("DATABASE_URL")` to datasource |
+| `src/lib/prisma.ts` | Removed driver adapter; plain `new PrismaClient()` |
+| `src/types/role.ts` | **New file** — `Role` as a plain string union, no Prisma dependency |
+| `src/auth.config.ts` | Changed `Role` import to `@/types/role` (zero Prisma imports now enforced) |
+| `src/types/next-auth.d.ts` | Changed `Role` import to `@/types/role` |
+| `src/server/jobs/freshness.job.ts` | Changed `PrismaClient` import to `@prisma/client` |
+| `src/server/jobs/redeem.ts` | Changed `PrismaClient` import to `@prisma/client` |
+| `src/server/jobs/token.ts` | Changed `PrismaClient, PingResponse` imports to `@prisma/client` |
+| `src/middleware.ts` | Added Edge runtime guard comment at top |
+| `src/generated/prisma/` | **Deleted** — old generated client directory, now dead code |
+| `CLAUDE.md` | Updated Prisma version, adapter rule, added split config hard rules section |
 
 ---
 
-## What's in progress
+## Commands you must run before continuing
 
-Nothing. Phase 6 is code-complete. **One migration must be run** (see commands below).
+```bash
+# 1. Install — pulls Prisma 6, removes old adapter-pg
+npm install
+
+# 2. Regenerate Prisma client (now generates into node_modules/@prisma/client)
+npx prisma generate
+
+# 3. Verify everything passes
+npm run check
+npm test
+```
+
+After these three commands, the project should typecheck clean and all tests should pass.
 
 ---
 
 ## What's next
 
-**Phase 7 — Notifications + Responsiveness**
+**Phase 7 Step 2 — 12-minute debounced message notification job**
 
-Per PROJECT_SPEC.md Phase 7:
+Requires building:
+1. A `message` tRPC router with a `send` procedure (the trigger for the notification)
+2. The BullMQ job queue/handler for message notifications
+3. The email template for message notifications
 
-1. `NotificationPreferences` model (already in schema) — tRPC CRUD for user preferences
-2. 12-minute debounced message notification job (BullMQ, delayed jobs)
-3. Daily digest aggregation job
-4. Responsiveness computation job (runs every 48h, updates `isResponsive` + `responseRate` + `medianResponseHours`)
-5. Responsiveness badge display on seeker/employer profile pages
+Design (unchanged from previous handoff):
+- Job key: `msg-notify:{conversationId}` — deterministic, allows cancel-and-reschedule
+- Respects `NotificationPreferences.messageNotifications`: `OFF`/`DAILY_DIGEST` → skip, `PER_MESSAGE` → send
+- Delay: 12 minutes from last message in conversation
 
 ---
 
 ## Open questions / blockers
 
-1. **Migration must be run before `npm run check` passes.** The typecheck fails on the new `action`/`pingId` fields until the Prisma client is regenerated.
-2. **Resend domain**: `noreply@shefa.jobs` must be verified in Resend before production emails work.
-3. **Worker process management in prod**: Vercel doesn't run long-lived processes. For the worker, use a Render background worker, Railway worker, or Fly.io — all support persistent Node processes cheaply. Plan this before Phase 8 ship.
-4. **Profile completion gate**: Users with a role can reach `/jobs` without completing a profile. Still intentional; enforce in Phase 8.
-5. **No nav link to `/seeker/applications`**: Still missing — add in Phase 8 polish.
-
----
-
-## Commands to run before resuming
-
-```bash
-# 1. Run the migration (regenerates the Prisma client with new FreshnessToken fields)
-npx prisma migrate dev --name add-freshness-token-action-ping
-
-# 2. Verify everything passes
-npm run check
-npm test
-```
-
-After the migration, `npm run check` and `npm test` should both be fully green.
+1. **Resend domain**: `noreply@shefa.jobs` must be verified before production emails work.
+2. **Worker process management in prod**: Vercel doesn't support long-lived processes. Use Render / Railway / Fly.io background worker for BullMQ. Plan before Phase 8.
+3. **Profile completion gate**: Users with a role can reach `/jobs` without completing a profile — intentional, enforce in Phase 8.
+4. **No nav link to `/seeker/applications`**: Still missing — add in Phase 8 polish.
+5. **Phase 5 messaging gap**: `Conversation` and `Message` models exist in the schema but no tRPC router handles them yet. Phase 7 Step 2 will add the minimal `message.send` procedure needed to trigger notifications; the full inbox/conversation UI is a separate gap to address.
