@@ -28,8 +28,8 @@ Phase 5 backend was completed as a prerequisite this session.
 |---|------|--------|
 | 1 | `NotificationPreferences` tRPC CRUD (get/update) | ✅ Done |
 | 2 | 12-minute debounced message notification job (BullMQ) | ✅ Done |
-| 3 | Application notification job (same debounce pattern, employer receives on seeker apply) | ⬜ **Next** |
-| 4 | Daily digest aggregation job | ⬜ Todo |
+| 3 | Application notification job (same debounce pattern, employer receives on seeker apply) | ✅ Done |
+| 4 | Daily digest aggregation job | ⬜ **Next** |
 | 5 | Responsiveness computation job (every 48h) | ⬜ Todo |
 | 6 | Responsiveness badge display on profile pages | ⬜ Todo |
 
@@ -65,21 +65,24 @@ Three new tRPC routers, 69 new tests, all green.
 
 ## What's next
 
-### Phase 7 Step 3 — Application notification job
+### Phase 7 Step 4 — Daily digest aggregation job
 
-Same debounce pattern as Step 2, but for employers receiving a notification when a seeker applies.
+A nightly BullMQ job (cron at midnight UTC) that sends a single "digest" email to users who have `messageNotifications = DAILY_DIGEST` or `applicationNotifications = DAILY_DIGEST`.
 
-Trigger point: `application.submit` in `src/server/api/routers/application.ts`.
+Design notes:
+- The job should query for all users with either digest preference
+- For `messageNotifications = DAILY_DIGEST`: find unread messages sent in the past 24h, grouped by conversation
+- For `applicationNotifications = DAILY_DIGEST`: find applications submitted in the past 24h, for jobs owned by the employer
+- If a user qualifies for both (message digest + application digest), send one combined email
+- Skip users with no relevant activity in the past 24h
 
 Files to create/modify:
-1. **`src/server/jobs/queue.ts`** — add `APPLICATION_NOTIFY_QUEUE` and `getApplicationNotifyQueue()`
-2. **`src/server/jobs/application-notify.job.ts`** — job handler: load employer's `NotificationPreferences` (check `applicationNotifications`), skip if `OFF` or `DAILY_DIGEST`, otherwise send email
-3. **`src/server/jobs/schedule-application-notify.ts`** — `scheduleApplicationNotify(jobId, employerId)`: debounce key `app-notify:{jobId}` (batches rapid applies to the same job), 12-min delay
-4. **`src/server/emails/application-notify.ts`** — email template
-5. **`src/server/api/routers/application.ts`** — call `scheduleApplicationNotify` after application created
-6. **`src/server/jobs/worker.ts`** — register the new BullMQ worker
+1. **`src/server/jobs/queue.ts`** — add `DAILY_DIGEST_QUEUE` and `getDailyDigestQueue()`
+2. **`src/server/jobs/daily-digest.job.ts`** — job handler
+3. **`src/server/emails/daily-digest.ts`** — email template (sections for new messages and new applications)
+4. **`src/server/jobs/worker.ts`** — register daily cron + worker
 
-Debounce key: `app-notify:{jobId}` — if multiple seekers apply to the same job within 12 minutes, only one email fires.
+Open question: should the digest cover messages that were already notified via PER_MESSAGE (if user changed preference mid-day)? Simplest answer: digest covers all unread messages in past 24h regardless of prior notification state.
 
 ---
 

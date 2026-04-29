@@ -4,6 +4,9 @@ import { applicationRouter } from "../application";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/server/jobs/schedule-application-notify", () => ({
+  scheduleApplicationNotify: vi.fn().mockResolvedValue(undefined),
+}));
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
 
@@ -42,7 +45,7 @@ const createCaller = createCallerFactory(applicationRouter);
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const SEEKER_PROFILE = { id: "seeker-profile-1" };
-const ACTIVE_JOB = { id: "job-1", status: "ACTIVE" };
+const ACTIVE_JOB = { id: "job-1", status: "ACTIVE", postedById: "employer-1" };
 const CREATED_APPLICATION = {
   id: "app-1",
   seekerId: "user-1",
@@ -176,6 +179,30 @@ describe("submit", () => {
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
     mockPrisma.application.create.mockRejectedValue({ code: "P2002" });
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+
+  it("scheduleApplicationNotify called with jobId and postedById after successful submit", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
+    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
+    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+
+    await caller.submit({ jobId: "job-1" });
+
+    const { scheduleApplicationNotify } = await import("@/server/jobs/schedule-application-notify");
+    expect(vi.mocked(scheduleApplicationNotify)).toHaveBeenCalledWith("job-1", "employer-1");
+  });
+
+  it("scheduleApplicationNotify failure does not propagate — application still returned", async () => {
+    const { scheduleApplicationNotify } = await import("@/server/jobs/schedule-application-notify");
+    vi.mocked(scheduleApplicationNotify).mockRejectedValueOnce(new Error("Redis down"));
+
+    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
+    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
+    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+
+    await expect(caller.submit({ jobId: "job-1" })).resolves.toEqual(CREATED_APPLICATION);
   });
 });
 

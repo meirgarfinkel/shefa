@@ -3,11 +3,14 @@ import { Worker, Queue } from "bullmq";
 import { createRedisConnection } from "./redis";
 import { runFreshnessCheck } from "./freshness.job";
 import { runMessageNotifyJob } from "./message-notify.job";
+import { runApplicationNotifyJob } from "./application-notify.job";
 import {
   FRESHNESS_QUEUE,
   FRESHNESS_JOB_NAME,
   MESSAGE_NOTIFY_QUEUE,
   MESSAGE_NOTIFY_JOB_NAME,
+  APPLICATION_NOTIFY_QUEUE,
+  APPLICATION_NOTIFY_JOB_NAME,
 } from "./queue";
 
 async function main() {
@@ -66,8 +69,30 @@ async function main() {
     console.error(`[worker] Message notify job ${job?.id} failed:`, err);
   });
 
+  const applicationNotifyWorkerConn = createRedisConnection();
+
+  const applicationNotifyWorker = new Worker(
+    APPLICATION_NOTIFY_QUEUE,
+    async (job) => {
+      if (job.name === APPLICATION_NOTIFY_JOB_NAME) {
+        console.log(`[worker] Running application notify for job ${job.id}`);
+        await runApplicationNotifyJob(job.data as { jobId: string; employerId: string });
+        console.log(`[worker] Application notify complete for job ${job.id}`);
+      }
+    },
+    { connection: applicationNotifyWorkerConn },
+  );
+
+  applicationNotifyWorker.on("completed", (job) => {
+    console.log(`[worker] Application notify job ${job.id} completed`);
+  });
+
+  applicationNotifyWorker.on("failed", (job, err) => {
+    console.error(`[worker] Application notify job ${job?.id} failed:`, err);
+  });
+
   console.log(
-    "[worker] Started — freshness check (daily midnight UTC) + message notify (on demand)",
+    "[worker] Started — freshness (daily) + message notify (on demand) + application notify (on demand)",
   );
 }
 

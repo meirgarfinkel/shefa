@@ -24,6 +24,9 @@ export function getFreshnessQueue(): Queue {
 export const MESSAGE_NOTIFY_QUEUE = "message-notify";
 export const MESSAGE_NOTIFY_JOB_NAME = "send-message-notify";
 
+export const APPLICATION_NOTIFY_QUEUE = "application-notify";
+export const APPLICATION_NOTIFY_JOB_NAME = "send-application-notify";
+
 let _messageNotifyQueue: Queue | undefined;
 
 export function getMessageNotifyQueue(): Queue {
@@ -39,4 +42,21 @@ export function getMessageNotifyQueue(): Queue {
     });
   }
   return _messageNotifyQueue;
+}
+
+let _applicationNotifyQueue: Queue | undefined;
+
+export function getApplicationNotifyQueue(): Queue {
+  if (!_applicationNotifyQueue) {
+    _applicationNotifyQueue = new Queue(APPLICATION_NOTIFY_QUEUE, {
+      connection: createRedisConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      },
+    });
+  }
+  return _applicationNotifyQueue;
 }

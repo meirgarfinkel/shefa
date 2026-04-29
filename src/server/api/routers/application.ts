@@ -7,6 +7,7 @@ import {
   ListForJobSchema,
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
+import { scheduleApplicationNotify } from "@/server/jobs/schedule-application-notify";
 
 export const applicationRouter = createTRPCRouter({
   submit: protectedProcedure.input(ApplySchema).mutation(async ({ ctx, input }) => {
@@ -24,7 +25,7 @@ export const applicationRouter = createTRPCRouter({
 
     const job = await ctx.prisma.jobPosting.findUnique({
       where: { id: input.jobId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, postedById: true },
     });
     if (!job) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
@@ -33,8 +34,9 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN", message: "Job is not accepting applications" });
     }
 
+    let application;
     try {
-      return await ctx.prisma.application.create({
+      application = await ctx.prisma.application.create({
         data: {
           seekerId: ctx.user.id,
           seekerProfileId: profile.id,
@@ -53,6 +55,13 @@ export const applicationRouter = createTRPCRouter({
       }
       throw e;
     }
+
+    // Fire-and-forget — notification failure must not fail the submit
+    scheduleApplicationNotify(input.jobId, job.postedById).catch((err: unknown) => {
+      console.error("[application.submit] Failed to schedule notification:", err);
+    });
+
+    return application;
   }),
 
   listForSeeker: protectedProcedure.query(async ({ ctx }) => {
