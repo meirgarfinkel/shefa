@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { scheduleMessageNotify } from "@/server/jobs/schedule-message-notify";
 
 const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 
@@ -36,6 +37,8 @@ export const messageRouter = createTRPCRouter({
       // Either side's block prevents all messaging
       if (conv.aBlockedB || conv.bBlockedA) throw new TRPCError({ code: "FORBIDDEN" });
 
+      const recipientId = isA ? conv.participantBId : conv.participantAId;
+
       const now = new Date();
       const message = await ctx.prisma.message.create({
         data: { conversationId, senderId: callerId, body },
@@ -47,6 +50,11 @@ export const messageRouter = createTRPCRouter({
           lastMessageAt: now,
           lastMessagePreview: body.slice(0, 100),
         },
+      });
+
+      // Fire-and-forget — notification failure must not fail the send
+      scheduleMessageNotify(conversationId, recipientId).catch((err: unknown) => {
+        console.error("[message.send] Failed to schedule notification:", err);
       });
 
       return message;

@@ -2,15 +2,22 @@ import "dotenv/config";
 import { Worker, Queue } from "bullmq";
 import { createRedisConnection } from "./redis";
 import { runFreshnessCheck } from "./freshness.job";
-import { FRESHNESS_QUEUE, FRESHNESS_JOB_NAME } from "./queue";
+import { runMessageNotifyJob } from "./message-notify.job";
+import {
+  FRESHNESS_QUEUE,
+  FRESHNESS_JOB_NAME,
+  MESSAGE_NOTIFY_QUEUE,
+  MESSAGE_NOTIFY_JOB_NAME,
+} from "./queue";
 
 async function main() {
-  const schedulerConn = createRedisConnection();
-  const workerConn = createRedisConnection();
+  const freshnessSchedulerConn = createRedisConnection();
+  const freshnessWorkerConn = createRedisConnection();
+  const messageNotifyWorkerConn = createRedisConnection();
 
-  const queue = new Queue(FRESHNESS_QUEUE, { connection: schedulerConn });
+  const freshnessQueue = new Queue(FRESHNESS_QUEUE, { connection: freshnessSchedulerConn });
 
-  await queue.add(
+  await freshnessQueue.add(
     FRESHNESS_JOB_NAME,
     {},
     {
@@ -19,7 +26,7 @@ async function main() {
     },
   );
 
-  const worker = new Worker(
+  const freshnessWorker = new Worker(
     FRESHNESS_QUEUE,
     async (job) => {
       if (job.name === FRESHNESS_JOB_NAME) {
@@ -28,18 +35,40 @@ async function main() {
         console.log("[worker] Freshness check complete");
       }
     },
-    { connection: workerConn },
+    { connection: freshnessWorkerConn },
   );
 
-  worker.on("completed", (job) => {
-    console.log(`[worker] Job ${job.id} completed`);
+  freshnessWorker.on("completed", (job) => {
+    console.log(`[worker] Freshness job ${job.id} completed`);
   });
 
-  worker.on("failed", (job, err) => {
-    console.error(`[worker] Job ${job?.id} failed:`, err);
+  freshnessWorker.on("failed", (job, err) => {
+    console.error(`[worker] Freshness job ${job?.id} failed:`, err);
   });
 
-  console.log("[worker] Started — freshness check runs daily at midnight UTC");
+  const messageNotifyWorker = new Worker(
+    MESSAGE_NOTIFY_QUEUE,
+    async (job) => {
+      if (job.name === MESSAGE_NOTIFY_JOB_NAME) {
+        console.log(`[worker] Running message notify for job ${job.id}`);
+        await runMessageNotifyJob(job.data as { conversationId: string; recipientId: string });
+        console.log(`[worker] Message notify complete for job ${job.id}`);
+      }
+    },
+    { connection: messageNotifyWorkerConn },
+  );
+
+  messageNotifyWorker.on("completed", (job) => {
+    console.log(`[worker] Message notify job ${job.id} completed`);
+  });
+
+  messageNotifyWorker.on("failed", (job, err) => {
+    console.error(`[worker] Message notify job ${job?.id} failed:`, err);
+  });
+
+  console.log(
+    "[worker] Started — freshness check (daily midnight UTC) + message notify (on demand)",
+  );
 }
 
 main().catch((err) => {

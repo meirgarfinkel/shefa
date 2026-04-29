@@ -9,7 +9,7 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **Frontend + Backend**: Next.js (App Router) with TypeScript
 - **API layer**: tRPC
 - **Database**: PostgreSQL
-- **ORM**: Prisma
+- **ORM**: Prisma 6 (`prisma-client-js`, standard output — no driver adapter, `DATABASE_URL` via datasource block)
 - **Auth**: Auth.js (NextAuth) with email magic links via Resend
 - **Background jobs**: BullMQ + Redis
 - **Email**: Resend
@@ -111,9 +111,16 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - participantAId, participantBId
 - jobId (nullable — present if conversation arose from an application or about a specific job)
 - initiatedBy
-- lastMessageAt, lastMessagePreview (denormalized for inbox)
+- lastMessageAt, lastMessagePreview (denormalized for inbox, preview truncated to 100 chars)
 - aBlockedB, bBlockedA (booleans)
 - createdAt
+
+**Creation rules** (enforced by `conversation.create`):
+
+- Employers can start a conversation with any seeker whose profile is `ACTIVE`, with or without a `jobId`.
+- Seekers must provide a `jobId` and must have an existing `Application` for that specific job. The conversation is linked to that job.
+- Calling `create` with the same participant pair and the same `jobId` returns the existing conversation (idempotent — no duplicate threads).
+- A conversation between the same two users for a _different_ job creates a new, separate conversation.
 
 ### Message
 
@@ -143,7 +150,8 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 ### Report / Flag (abuse handling)
 
-- reporterId, targetType (USER / JOB / MESSAGE), targetId, reason, status (OPEN / REVIEWED / ACTIONED / DISMISSED), createdAt
+- reporterId, targetType (USER / JOB / MESSAGE), targetId, reason (max 2000 chars), status (OPEN / REVIEWED / ACTIONED / DISMISSED), createdAt
+- Self-reporting is rejected at the API level (`BAD_REQUEST`)
 
 ---
 
@@ -162,11 +170,12 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 ### Messaging
 
 - Async only (no real-time chat for v1).
-- **Hybrid initiation**: employers can cold-DM any seeker; seekers can only initiate a conversation by applying to a job.
-- Read receipts: yes ("Read" indicator).
+- **Hybrid initiation**: employers can cold-DM any seeker with an active profile; seekers can only start a conversation by providing a `jobId` they have applied to, which links the conversation to that job. Both parties can send freely once a conversation exists.
+- Either participant's block flag (`aBlockedB` / `bBlockedA`) prevents all messaging in that thread — both directions.
+- Read receipts: yes (`readAt` timestamp on each message, set via `conversation.markRead`).
 - Plain text only, max 5000 chars/message. No attachments for v1.
-- Block + report buttons in every conversation.
-- Inbox sorted by lastMessageAt. No search for v1.
+- Block + report available on every conversation. Report targets: USER, JOB, MESSAGE.
+- Inbox sorted by `lastMessageAt` desc. No search for v1.
 
 ### Notifications (email)
 
@@ -213,13 +222,13 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 ## Build Plan (8 phases)
 
-1. **Foundation**: Next.js + TS + Prisma + Postgres + tRPC + Tailwind + shadcn/ui + Docker Compose. Empty app that runs.
-2. **Auth + base User**: Auth.js magic links via Resend, role selection, protected routes.
-3. **Profiles**: Seeker + Employer profile schemas, signup flows (lean), profile completion pages, skill/language seed + multi-select.
-4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page.
-5. **Applications + messaging**: apply flow, conversations + messages, inbox, read receipts, block/report, cold DM flow.
-6. **Freshness system**: BullMQ + Redis, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX.
-7. **Notifications + responsiveness**: NotificationPreferences, 12-min debounced jobs, daily digest, responsiveness computation job, badge display.
-8. **Polish + abuse + ship**: rate limiting, admin dashboard for flags, basic admin tools, error handling, deploy.
+1. **Foundation**: Next.js + TS + Prisma + Postgres + tRPC + Tailwind + shadcn/ui + Docker Compose. Empty app that runs. ✅
+2. **Auth + base User**: Auth.js magic links via Resend, role selection, protected routes. ✅
+3. **Profiles**: Seeker + Employer profile schemas, signup flows (lean), profile completion pages, skill/language seed + multi-select. ✅ backend + signup UI; ⚠️ missing: profile view/edit pages.
+4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page. ✅ backend + core UI; ⚠️ missing: job edit page, publish/pause/close/fill status controls.
+5. **Applications + messaging**: apply flow, conversations + messages, inbox, read receipts, block/report, cold DM flow. ✅ full backend (tRPC routers: application, conversation, message, report); ⚠️ missing: inbox UI, conversation UI, employer cold-DM UI, profile view pages needed to navigate to messaging.
+6. **Freshness system**: BullMQ + Redis, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX. ✅
+7. **Notifications + responsiveness**: NotificationPreferences, 12-min debounced jobs, daily digest, responsiveness computation job, badge display. 🔄 in progress — Step 1 (NotificationPreferences router) done.
+8. **Polish + abuse + ship**: rate limiting, admin dashboard for flags, basic admin tools, error handling, deploy. ⬜
 
 Ship target after Phase 8. Each phase is shippable on its own and committed to git separately.
