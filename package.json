@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check",
+    "worker": "tsx src/server/jobs/worker.ts",
     "prepare": "husky"
   },
   "dependencies": {
@@ -25,8 +26,10 @@
     "@trpc/client": "^11.13.0",
     "@trpc/react-query": "^11.13.0",
     "@trpc/server": "^11.13.0",
+    "bullmq": "^5.76.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ioredis": "^5.10.1",
     "lucide-react": "^1.11.0",
     "next": "15.5.15",
     "next-auth": "^5.0.0-beta.31",

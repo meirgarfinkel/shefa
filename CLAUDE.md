@@ -154,6 +154,24 @@ Instead: write the schema changes, generate the migration with `--create-only` i
 - `sendVerificationRequest` lives on the Resend provider in `auth.ts` (not in `auth.config.ts`). In development it logs the magic link to the console; in production it calls the Resend REST API directly.
 - After a mutation that changes session data (e.g. `setRole`), call `useSession().update({ ... })` client-side to refresh the JWT cookie immediately. Without this, middleware reads stale role data until the next sign-in.
 
+## BullMQ worker process
+
+The freshness background job runs as a **separate process**, not inside Next.js:
+
+```bash
+npm run worker   # alongside npm run dev
+```
+
+The worker entry point is `src/server/jobs/worker.ts`, executed via `tsx`. It:
+
+- Registers a BullMQ repeatable job (daily cron, midnight UTC)
+- Loads env vars via `dotenv/config` (standalone Node process, not Next.js)
+- Uses `@/` path aliases (tsx reads tsconfig paths automatically)
+
+In dev, emails log to console instead of calling Resend. In prod, a process manager (PM2, Render worker, etc.) keeps the worker alive.
+
+---
+
 ## What NOT to do
 
 - Don't add dependencies without explaining why and what the alternatives were.

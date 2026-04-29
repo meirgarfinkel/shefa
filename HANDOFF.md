@@ -2,88 +2,103 @@
 
 ## Current phase
 
-**Phase 5 — Seeker Applications (complete)**
+**Phase 6 — Freshness System (complete, pending migration)**
 
 ---
 
 ## What was completed this session
 
-### Application tRPC router (`src/server/api/routers/application.ts`)
+### Schema changes (`prisma/schema.prisma`)
 
-Five procedures + one auxiliary query, all covered by 38 new tests (124 total, all green):
+Added to `FreshnessToken`:
 
-| Procedure       | Who           | What                                                                                                                                                                                       |
-| --------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `submit`        | SEEKER only   | Applies to an ACTIVE job; optional message ≤500 chars. Throws FORBIDDEN for non-ACTIVE jobs, CONFLICT on duplicate. Note: named `submit` not `apply` — `apply` is a reserved word in tRPC. |
-| `listForSeeker` | SEEKER only   | Returns own applications with job + company info, sorted desc.                                                                                                                             |
-| `listForJob`    | EMPLOYER only | Returns applications for a job the caller posted, with seeker name/location/availability.                                                                                                  |
-| `withdraw`      | SEEKER only   | Sets own application to CLOSED. NOT_FOUND (not FORBIDDEN) if app not owned — avoids info disclosure.                                                                                       |
-| `updateStatus`  | EMPLOYER only | Sets status to VIEWED/RESPONDED/CLOSED. SUBMITTED blocked at Zod layer.                                                                                                                    |
-| `myStatus`      | SEEKER only   | Returns `{ id, status }` or null for caller's application to a given job. Used by the job detail page.                                                                                     |
+- `action PingResponse` — which action (CONFIRMED / PAUSED / NOT_LOOKING / FILLED) this token performs
+- `pingId String?` — FK back to `VerificationPing`
+- `ping VerificationPing?` relation
 
-Zod schemas in `src/lib/schemas/application.ts`.
+Added to `VerificationPing`:
 
-### UI
+- `freshnessTokens FreshnessToken[]` back-relation
 
-**Job detail page** (`src/app/jobs/[id]/page.tsx`)
+### New dependencies
 
-- Disabled CTA replaced with role-aware apply flow
-- Non-seekers: "Sign in as a job seeker to apply"
-- SEEKERs (not applied): "Apply for this job" button → Dialog
-- Apply dialog: optional message textarea with 500-char counter, submit/cancel
-- SEEKERs (applied): status badge + Withdraw button (SUBMITTED only) + "View my applications" link
-- SEEKERs (withdrawn): re-apply option
+- `bullmq` ^5.76 — background job queue
+- `ioredis` ^5.10 — Redis client required by BullMQ
 
-**Seeker applications page** (`src/app/seeker/applications/page.tsx`)
+### New files
 
-- Route: `/seeker/applications`
-- Protected: SEEKER only (redirects otherwise)
-- Lists all applications: job title (linked), company, location, status badge, date, withdraw button
-- Empty state with "Browse listings" CTA
+| File                                   | Purpose                                                                                             |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `src/server/jobs/redis.ts`             | `createRedisConnection()` factory — creates IORedis instances with BullMQ-required config           |
+| `src/server/jobs/queue.ts`             | `getFreshnessQueue()` singleton + constants                                                         |
+| `src/server/jobs/freshness.job.ts`     | `computeFreshnessAction()` (pure) + `runFreshnessCheck()` (queries DB, creates pings, sends emails) |
+| `src/server/jobs/token.ts`             | `generateTokenString()` + `createFreshnessTokensForPing()`                                          |
+| `src/server/jobs/redeem.ts`            | `redeemToken()` — validates + executes token action, used by the API route                          |
+| `src/server/jobs/worker.ts`            | Standalone worker entry point (`npm run worker`) — registers BullMQ repeatable cron job             |
+| `src/server/emails/index.ts`           | `sendEmail()` — console.log in dev, Resend API in prod                                              |
+| `src/server/emails/freshness-ping.ts`  | HTML email builders for all 4 email types (seeker initial/warning, job initial/warning)             |
+| `src/app/api/verify/[token]/route.ts`  | One-click verify endpoint — no login required, redirects based on result                            |
+| `src/app/verify/confirmed/page.tsx`    | Success confirmation page                                                                           |
+| `src/app/verify/expired/page.tsx`      | Expired token page (links to sign-in)                                                               |
+| `src/app/verify/already-used/page.tsx` | Already-used token page                                                                             |
+| `src/app/verify/invalid/page.tsx`      | Invalid token page                                                                                  |
 
-**Employer applications view** (`src/app/employer/jobs/[id]/applications/page.tsx`)
+### Tests
 
-- Route: `/employer/jobs/[id]/applications`
-- Protected: EMPLOYER only
-- Lists applicants: name, city/state, available days, work auth, message, status badge
-- Action buttons: "Mark viewed" / "Mark responded" / "Close" based on current status
-- Empty state
+32 new tests (156 total, all green):
 
-**Employer jobs dashboard** (`src/app/employer/jobs/page.tsx`)
+- `src/server/jobs/__tests__/freshness.test.ts` — 20 tests for `computeFreshnessAction` (happy paths, boundaries, adversarial)
+- `src/server/jobs/__tests__/redeem.test.ts` — 12 tests for `redeemToken` (happy paths, expired/used/invalid, type-crossing actions)
 
-- Added "Applications" link per job row → `/employer/jobs/[id]/applications`
+### `package.json`
 
-### shadcn Dialog component added
+Added `"worker": "tsx src/server/jobs/worker.ts"` script.
 
-`src/components/ui/dialog.tsx` installed via `npx shadcn@latest add dialog`.
+### `CLAUDE.md`
+
+Added "BullMQ worker process" section documenting `npm run worker`, the standalone worker pattern, and that tsx reads tsconfig paths automatically.
+
+---
+
+## What's in progress
+
+Nothing. Phase 6 is code-complete. **One migration must be run** (see commands below).
 
 ---
 
 ## What's next
 
-**Phase 6 — Freshness System**
+**Phase 7 — Notifications + Responsiveness**
 
-Per PROJECT_SPEC.md Phase 6:
+Per PROJECT_SPEC.md Phase 7:
 
-1. BullMQ + Redis worker setup (`src/server/jobs/`)
-2. Daily ping scheduler — queries listings/profiles due for verification (Day 14, 20, 28 logic)
-3. Email templates for verification pings (Resend)
-4. Signed verification tokens (`FreshnessToken` model already in schema)
-5. One-click response endpoints (no login required)
-6. Auto-pause logic on Day 28 non-response
+1. `NotificationPreferences` model (already in schema) — tRPC CRUD for user preferences
+2. 12-minute debounced message notification job (BullMQ, delayed jobs)
+3. Daily digest aggregation job
+4. Responsiveness computation job (runs every 48h, updates `isResponsive` + `responseRate` + `medianResponseHours`)
+5. Responsiveness badge display on seeker/employer profile pages
 
 ---
 
 ## Open questions / blockers
 
-1. **Resend domain**: `noreply@shefa.jobs` must be verified in Resend before production emails work.
-2. **Profile completion gate**: Users with a role can reach `/jobs` without completing a profile. Intentional for now; enforce in Phase 8.
-3. **No seeker profile nav link**: There's no nav link to `/seeker/applications` yet. Should be added to the main nav in Phase 8 polish, or earlier if desired.
+1. **Migration must be run before `npm run check` passes.** The typecheck fails on the new `action`/`pingId` fields until the Prisma client is regenerated.
+2. **Resend domain**: `noreply@shefa.jobs` must be verified in Resend before production emails work.
+3. **Worker process management in prod**: Vercel doesn't run long-lived processes. For the worker, use a Render background worker, Railway worker, or Fly.io — all support persistent Node processes cheaply. Plan this before Phase 8 ship.
+4. **Profile completion gate**: Users with a role can reach `/jobs` without completing a profile. Still intentional; enforce in Phase 8.
+5. **No nav link to `/seeker/applications`**: Still missing — add in Phase 8 polish.
 
 ---
 
-## Commands the user should run before resuming
+## Commands to run before resuming
 
-None needed — no schema changes, no new deps beyond the Dialog component (already installed).
+```bash
+# 1. Run the migration (regenerates the Prisma client with new FreshnessToken fields)
+npx prisma migrate dev --name add-freshness-token-action-ping
 
-All deps installed. `npm run check` passes. 124 tests green.
+# 2. Verify everything passes
+npm run check
+npm test
+```
+
+After the migration, `npm run check` and `npm test` should both be fully green.

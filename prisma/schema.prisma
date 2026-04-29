@@ -327,16 +327,21 @@ model VerificationPing {
   seekerProfile   SeekerProfile? @relation("SeekerPings", fields: [seekerProfileId], references: [id])
   jobId           String?
   job             JobPosting?    @relation("JobPings", fields: [jobId], references: [id])
+
+  freshnessTokens FreshnessToken[]
 }
 
 model FreshnessToken {
-  id         String    @id @default(cuid())
-  token      String    @unique
+  id         String       @id @default(cuid())
+  token      String       @unique
   targetType String
   targetId   String
+  action     PingResponse
+  pingId     String?
+  ping       VerificationPing? @relation(fields: [pingId], references: [id])
   expiresAt  DateTime
   usedAt     DateTime?
-  createdAt  DateTime  @default(now())
+  createdAt  DateTime     @default(now())
 }
 
 // ─── Auth.js ──────────────────────────────────────────────────────────────────
