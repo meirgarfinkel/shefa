@@ -76,7 +76,7 @@ export default function PostJobPage() {
   });
 
   const createPosting = trpc.jobPosting.create.useMutation({
-    onSuccess: () => router.push("/jobs"),
+    onSuccess: () => router.push("/employer/jobs"),
   });
 
   function onSubmit(data: FormValues) {
