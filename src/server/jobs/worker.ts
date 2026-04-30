@@ -5,6 +5,7 @@ import { runFreshnessCheck } from "./freshness.job";
 import { runMessageNotifyJob } from "./message-notify.job";
 import { runApplicationNotifyJob } from "./application-notify.job";
 import { runDailyDigestJob } from "./daily-digest.job";
+import { runResponsivenessJob } from "./responsiveness.job";
 import {
   FRESHNESS_QUEUE,
   FRESHNESS_JOB_NAME,
@@ -14,6 +15,8 @@ import {
   APPLICATION_NOTIFY_JOB_NAME,
   DAILY_DIGEST_QUEUE,
   DAILY_DIGEST_JOB_NAME,
+  RESPONSIVENESS_QUEUE,
+  RESPONSIVENESS_JOB_NAME,
 } from "./queue";
 
 async function main() {
@@ -22,9 +25,14 @@ async function main() {
   const dailyDigestSchedulerConn = createRedisConnection();
   const dailyDigestWorkerConn = createRedisConnection();
   const messageNotifyWorkerConn = createRedisConnection();
+  const responsivenessSchedulerConn = createRedisConnection();
+  const responsivenessWorkerConn = createRedisConnection();
 
   const freshnessQueue = new Queue(FRESHNESS_QUEUE, { connection: freshnessSchedulerConn });
   const dailyDigestQueue = new Queue(DAILY_DIGEST_QUEUE, { connection: dailyDigestSchedulerConn });
+  const responsivenessQueue = new Queue(RESPONSIVENESS_QUEUE, {
+    connection: responsivenessSchedulerConn,
+  });
 
   await freshnessQueue.add(
     FRESHNESS_JOB_NAME,
@@ -41,6 +49,15 @@ async function main() {
     {
       repeat: { pattern: "0 0 * * *" },
       jobId: "daily-digest-daily",
+    },
+  );
+
+  await responsivenessQueue.add(
+    RESPONSIVENESS_JOB_NAME,
+    {},
+    {
+      repeat: { pattern: "0 */48 * * *" },
+      jobId: "responsiveness-48h",
     },
   );
 
@@ -126,8 +143,28 @@ async function main() {
     console.error(`[worker] Daily digest job ${job?.id} failed:`, err);
   });
 
+  const responsivenessWorker = new Worker(
+    RESPONSIVENESS_QUEUE,
+    async (job) => {
+      if (job.name === RESPONSIVENESS_JOB_NAME) {
+        console.log(`[worker] Running responsiveness check at ${new Date().toISOString()}`);
+        await runResponsivenessJob();
+        console.log("[worker] Responsiveness check complete");
+      }
+    },
+    { connection: responsivenessWorkerConn },
+  );
+
+  responsivenessWorker.on("completed", (job) => {
+    console.log(`[worker] Responsiveness job ${job.id} completed`);
+  });
+
+  responsivenessWorker.on("failed", (job, err) => {
+    console.error(`[worker] Responsiveness job ${job?.id} failed:`, err);
+  });
+
   console.log(
-    "[worker] Started — freshness (daily) + message notify (on demand) + application notify (on demand) + daily digest (daily)",
+    "[worker] Started — freshness (daily) + message notify (on demand) + application notify (on demand) + daily digest (daily) + responsiveness (every 48h)",
   );
 }
 

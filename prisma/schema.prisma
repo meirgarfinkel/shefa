@@ -216,13 +216,15 @@ model EmployerProfile {
   missionText   String?   @db.VarChar(1000)
 
   // System
-  status              ProfileStatus @default(ACTIVE)
-  isResponsive        Boolean       @default(false)
-  responseRate        Float?
-  medianResponseHours Float?
-  lastVerifiedAt      DateTime      @default(now())
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  status                  ProfileStatus @default(ACTIVE)
+  isResponsive            Boolean       @default(false)
+  responsivenessScore     Float?
+  responseRate            Float?
+  medianResponseHours     Float?
+  responsivenessUpdatedAt DateTime?
+  lastVerifiedAt          DateTime      @default(now())
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
 
   jobPostings JobPosting[]
 }

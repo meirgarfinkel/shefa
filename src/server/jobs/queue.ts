@@ -64,6 +64,26 @@ export function getDailyDigestQueue(): Queue {
   return _dailyDigestQueue;
 }
 
+export const RESPONSIVENESS_QUEUE = "responsiveness-check";
+export const RESPONSIVENESS_JOB_NAME = "run-responsiveness-check";
+
+let _responsivenessQueue: Queue | undefined;
+
+export function getResponsivenessQueue(): Queue {
+  if (!_responsivenessQueue) {
+    _responsivenessQueue = new Queue(RESPONSIVENESS_QUEUE, {
+      connection: createRedisConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      },
+    });
+  }
+  return _responsivenessQueue;
+}
+
 let _applicationNotifyQueue: Queue | undefined;
 
 export function getApplicationNotifyQueue(): Queue {
