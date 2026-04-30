@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 7 — Notifications + Responsiveness (in progress)**
+**Phase 7 — Notifications + Responsiveness ✅ COMPLETE**
 Phase 5 backend was completed as a prerequisite this session.
 
 ---
@@ -17,7 +17,7 @@ Phase 5 backend was completed as a prerequisite this session.
 | 4 | Job postings | ✅ Backend + core UI — ⚠️ no job edit page, no status controls |
 | 5 | Applications + messaging | ✅ **Full backend done this session** — ⚠️ no inbox/conversation UI |
 | 6 | Freshness system | ✅ Done |
-| 7 | Notifications + responsiveness | 🔄 In progress (Steps 1–4 of 6 done) |
+| 7 | Notifications + responsiveness | ✅ Done |
 | 8 | Polish + ship | ⬜ Not started |
 
 ---
@@ -30,69 +30,44 @@ Phase 5 backend was completed as a prerequisite this session.
 | 2 | 12-minute debounced message notification job (BullMQ) | ✅ Done |
 | 3 | Application notification job (same debounce pattern, employer receives on seeker apply) | ✅ Done |
 | 4 | Daily digest aggregation job | ✅ Done |
-| 5 | Responsiveness computation job (every 48h) | ⬜ **Next** |
-| 6 | Responsiveness badge display on profile pages | ⬜ Todo |
+| 5 | Responsiveness computation job (every 48h) | ✅ Done |
+| 6 | Responsiveness badge display on profile pages | ✅ Done |
 
 ---
 
 ## What was completed this session
 
-### Phase 7 Step 4 — Daily digest aggregation job
+### Phase 7 Step 6 — Responsiveness badge display
 
-A nightly BullMQ job (cron at midnight UTC) that sends one combined email per user who has `messageNotifications = DAILY_DIGEST` or `applicationNotifications = DAILY_DIGEST`.
+**`employer.getPublicProfile` tRPC procedure** (public, no auth required):
+- Returns: `id`, `companyName`, `city`, `state`, `industry`, `website`, `aboutCompany`, `missionText`, `isResponsive`, `isNew` (computed from `responsivenessUpdatedAt === null`), `status`, `_count.jobPostings`
+- Does NOT expose: `responseRate`, `medianResponseHours`, `responsivenessScore`, `responsivenessUpdatedAt` (private per spec)
+- 25 tests, all green
 
-- **`src/server/emails/daily-digest.ts`** — email template with message-group and application-group sections; HTML-escapes all user content
-- **`src/server/jobs/daily-digest.job.ts`** — job handler: queries unread messages (past 24h, conversations the user participates in) and new applications (past 24h, for jobs the user posted); groups by conversation / job; skips users with no activity; catches per-user errors so one failure doesn't stop the batch
-- **`src/server/jobs/queue.ts`** — added `DAILY_DIGEST_QUEUE` / `DAILY_DIGEST_JOB_NAME` / `getDailyDigestQueue()`
-- **`src/server/jobs/worker.ts`** — registered the daily cron (`0 0 * * *`) and worker
+**`src/components/responsiveness-badge.tsx`** — reusable badge component:
+- Shows green "Responsive Employer" pill when `isResponsive: true`
+- Shows blue "New" pill when `isNew: true`
+- Returns `null` when neither (no negative state shown)
 
-15 tests, all green.
+**`src/app/employer/[id]/page.tsx`** — employer public profile view page:
+- Shows company name, location, industry, website link, responsiveness badge
+- About company and mission text sections
+- "Browse all open jobs" link
 
----
+**`src/app/jobs/[id]/page.tsx`** updated:
+- Company name is now a clickable link to `/employer/[id]`
+- Responsiveness badge appears next to company name (green if responsive)
 
-### Prisma migration: Prisma 7 → Prisma 6
-
-Switched from `prisma-client` (Prisma 7, custom output) to `prisma-client-js` (Prisma 6, standard output). Removed `@prisma/adapter-pg`. Enforced the split config pattern: `auth.config.ts` now imports `Role` from `src/types/role.ts` (a plain string union), not from any Prisma package. The `src/generated/prisma/` directory was deleted. `prisma.config.ts` (a Prisma 7-only file) was also deleted; seed config moved to `package.json`.
-
-**Key files changed:** `package.json`, `prisma/schema.prisma`, `prisma/seed.ts`, `src/lib/prisma.ts`, `src/auth.config.ts`, `src/types/next-auth.d.ts`, `src/types/role.ts` (new), `src/middleware.ts`, `src/server/jobs/*.ts`.
-
-### Phase 5 backend: conversations, messages, reports
-
-Three new tRPC routers, 69 new tests, all green.
-
-| Router | Procedures |
-|--------|-----------|
-| `conversation` | `create`, `list`, `get`, `markRead`, `block`, `unblock` |
-| `message` | `send`, `list` |
-| `report` | `submit` |
-
-**Key design decisions:**
-- Seekers must supply a `jobId` (must have applied) to start a conversation; employers can cold-DM freely.
-- `conversation.create` is idempotent — same pair + jobId returns the existing thread.
-- Either block flag (`aBlockedB` or `bBlockedA`) prevents messaging in both directions.
-- `message.send` denormalizes `lastMessageAt` and `lastMessagePreview` (truncated to 100 chars) onto the conversation.
-- `conversation.get` scopes its Prisma query to the caller's participation, so non-participants get `NOT_FOUND`, not `FORBIDDEN` — no existence leakage.
-- `report.submit` guards against self-reporting (`BAD_REQUEST`).
+**`src/server/api/routers/jobPosting.ts`** updated:
+- `getById` now returns `id` and `isResponsive` on `employerProfile` (needed for the badge on job detail page)
 
 ---
 
 ## What's next
 
-### Phase 7 Step 5 — Responsiveness computation job
+### Phase 8 — Polish + abuse + ship
 
-A BullMQ job running every 48h that computes a `responsivenessScore` for each employer and updates their profile. The score reflects how quickly and consistently they respond to applicant messages.
-
-Design notes (to be confirmed before building):
-- For each employer with an `EmployerProfile`, compute: among conversations they participate in where a seeker sent the first (or any) message, what fraction did the employer respond to within 48h?
-- Store the score on `EmployerProfile` — requires a new `responsivenessScore` field (nullable Float, 0–1) and a `responsivenessUpdatedAt` timestamp. **Schema migration required.**
-- A badge ("Responsive Employer") is shown on their profile page if score ≥ 0.8 and they have ≥ 3 scored conversations (avoids showing a badge based on one lucky reply)
-- The job runs every 48h (not daily) because responsiveness windows are measured in hours, not minutes
-
-Files to create/modify:
-1. `prisma/schema.prisma` — add `responsivenessScore Float?` and `responsivenessUpdatedAt DateTime?` to `EmployerProfile`
-2. `src/server/jobs/queue.ts` — add `RESPONSIVENESS_QUEUE`
-3. `src/server/jobs/responsiveness.job.ts` — job handler
-4. `src/server/jobs/worker.ts` — register 48h cron
+Phase 7 is complete. Next up: Phase 8.
 5. Phase 7 Step 6: display the badge on profile pages (UI work)
 
 ---

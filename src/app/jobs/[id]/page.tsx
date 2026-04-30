@@ -8,6 +8,7 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { ResponsivenessBadge } from "@/components/responsiveness-badge";
 import {
   Dialog,
   DialogContent,
@@ -186,9 +187,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
       {/* Header */}
       <div className="mt-4 mb-6">
-        <p className="text-muted-foreground text-sm font-medium">
-          {job.employerProfile.companyName}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href={`/employer/${job.employerProfile.id}`}
+            className="text-muted-foreground hover:text-foreground text-sm font-medium"
+          >
+            {job.employerProfile.companyName}
+          </Link>
+          <ResponsivenessBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+        </div>
         <h1 className="mt-1 text-3xl font-semibold">{job.title}</h1>
 
         <div className="mt-3 flex flex-wrap gap-2">

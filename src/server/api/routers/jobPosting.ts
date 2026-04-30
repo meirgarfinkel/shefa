@@ -87,7 +87,14 @@ export const jobPostingRouter = createTRPCRouter({
         preferredSkills: { include: { skill: true } },
         requiredLanguages: { include: { language: true } },
         employerProfile: {
-          select: { companyName: true, city: true, state: true, industry: true },
+          select: {
+            id: true,
+            companyName: true,
+            city: true,
+            state: true,
+            industry: true,
+            isResponsive: true,
+          },
         },
       },
     });
