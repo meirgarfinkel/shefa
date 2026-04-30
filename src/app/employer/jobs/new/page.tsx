@@ -1,8 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -44,12 +42,6 @@ const DAYS = [
 
 export default function PostJobPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
-
-  useEffect(() => {
-    if (status === "unauthenticated") router.replace("/sign-in");
-    else if (status === "authenticated" && session?.user?.role !== "EMPLOYER") router.replace("/");
-  }, [status, session, router]);
 
   const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
@@ -82,9 +74,6 @@ export default function PostJobPage() {
   function onSubmit(data: FormValues) {
     createPosting.mutate(data as CreateJobPostingInput);
   }
-
-  if (status === "loading" || status === "unauthenticated") return null;
-  if (session?.user?.role !== "EMPLOYER") return null;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">

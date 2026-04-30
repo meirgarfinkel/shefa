@@ -6,36 +6,49 @@ import { NextResponse } from "next/server";
 const { auth } = NextAuth(authConfig);
 
 const PUBLIC_PATHS = ["/sign-in", "/verify-request", "/api/auth"];
+
 const ROLE_SELECT_PATH = "/role-select";
-const SEEKER_PROFILE_PATH = "/seeker/profile/new";
-const EMPLOYER_PROFILE_PATH = "/employer/profile/new";
+
+const EMPLOYER_ONLY_PREFIXES = ["/employer/dashboard", "/employer/jobs", "/employer/profile"];
+
+const SEEKER_ONLY_PREFIXES = ["/seeker/applications", "/seeker/profile"];
+
+function roleDashboard(role: string | null | undefined): string {
+  if (role === "EMPLOYER") return "/employer/dashboard";
+  return "/jobs";
+}
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/api/")) return NextResponse.next();
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
 
-  if (!req.auth && !isPublic && !pathname.startsWith("/api/")) {
+  if (!req.auth) {
+    if (isPublic) return NextResponse.next();
     const signIn = new URL("/sign-in", req.url);
-    signIn.searchParams.set("callbackUrl", pathname);
+    if (pathname !== "/") signIn.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(signIn);
   }
 
-  if (
-    req.auth &&
-    !req.auth.user.role &&
-    pathname !== ROLE_SELECT_PATH &&
-    !pathname.startsWith("/api/")
-  ) {
+  const role = req.auth.user.role;
+
+  if (!role && pathname !== ROLE_SELECT_PATH) {
     return NextResponse.redirect(new URL(ROLE_SELECT_PATH, req.url));
   }
 
-  const role = req.auth?.user.role;
-  if (!pathname.startsWith("/api/")) {
-    if (pathname === SEEKER_PROFILE_PATH && role !== "SEEKER") {
-      return NextResponse.redirect(new URL("/", req.url));
+  if (role) {
+    if (pathname === "/sign-in" || pathname === "/") {
+      return NextResponse.redirect(new URL(roleDashboard(role), req.url));
     }
-    if (pathname === EMPLOYER_PROFILE_PATH && role !== "EMPLOYER") {
-      return NextResponse.redirect(new URL("/", req.url));
+
+    if (role !== "EMPLOYER" && EMPLOYER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/jobs", req.url));
+    }
+
+    if (role !== "SEEKER" && SEEKER_ONLY_PREFIXES.some((p) => pathname.startsWith(p))) {
+      return NextResponse.redirect(new URL("/jobs", req.url));
     }
   }
 

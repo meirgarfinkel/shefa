@@ -46,10 +46,26 @@ export const employerRouter = createTRPCRouter({
     if (ctx.user.role !== "EMPLOYER") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
-    return ctx.prisma.employerProfile.findUnique({
+    const profile = await ctx.prisma.employerProfile.findUnique({
       where: { userId: ctx.user.id },
-      select: { id: true, companyName: true, city: true, state: true },
+      select: {
+        id: true,
+        companyName: true,
+        city: true,
+        state: true,
+        _count: {
+          select: { jobPostings: { where: { status: "ACTIVE" } } },
+        },
+      },
     });
+    if (!profile) return null;
+    return {
+      id: profile.id,
+      companyName: profile.companyName,
+      city: profile.city,
+      state: profile.state,
+      activeJobsCount: profile._count.jobPostings,
+    };
   }),
 
   createProfile: protectedProcedure

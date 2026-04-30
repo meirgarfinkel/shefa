@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 
@@ -40,25 +38,13 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function EmployerJobsPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
 
-  useEffect(() => {
-    if (status === "unauthenticated") router.replace("/sign-in");
-    else if (status === "authenticated" && session?.user?.role !== "EMPLOYER") router.replace("/");
-  }, [status, session, router]);
-
-  const { data: profile, isLoading: profileLoading } = trpc.employer.getProfile.useQuery(
-    undefined,
-    { enabled: status === "authenticated" && session?.user?.role === "EMPLOYER" },
-  );
+  const { data: profile, isLoading: profileLoading } = trpc.employer.getProfile.useQuery();
 
   const { data: jobs, isLoading: jobsLoading } = trpc.jobPosting.list.useQuery(
     { employerProfileId: profile?.id },
     { enabled: !!profile?.id },
   );
-
-  if (status === "loading" || status === "unauthenticated") return null;
-  if (session?.user?.role !== "EMPLOYER") return null;
 
   if (!profileLoading && !profile) {
     router.replace("/employer/profile/new");

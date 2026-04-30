@@ -2,9 +2,6 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -52,29 +49,13 @@ export default function EmployerJobApplicationsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: jobId } = use(params);
-  const { data: session, status: authStatus } = useSession();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (authStatus === "loading") return;
-    if (!session || session.user.role !== "EMPLOYER") {
-      router.replace("/");
-    }
-  }, [session, authStatus, router]);
-
-  const { data: applications, isLoading } = trpc.application.listForJob.useQuery(
-    { jobId },
-    { enabled: session?.user?.role === "EMPLOYER" },
-  );
+  const { data: applications, isLoading } = trpc.application.listForJob.useQuery({ jobId });
 
   const utils = trpc.useUtils();
   const updateStatus = trpc.application.updateStatus.useMutation({
     onSuccess: () => void utils.application.listForJob.invalidate({ jobId }),
   });
-
-  if (authStatus === "loading" || !session || session.user.role !== "EMPLOYER") {
-    return null;
-  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">

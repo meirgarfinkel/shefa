@@ -2,8 +2,8 @@
 
 ## Current phase
 
-**Phase 7 — Notifications + Responsiveness ✅ COMPLETE**
-Phase 5 backend was completed as a prerequisite this session.
+**Phase 8 — Polish + ship (in progress)**
+Auth/routing refactor completed this session as Phase 8 groundwork.
 
 ---
 
@@ -36,6 +36,28 @@ Phase 5 backend was completed as a prerequisite this session.
 ---
 
 ## What was completed this session
+
+### Auth/routing refactor (Phase 8 groundwork)
+
+Eliminated all client-side `useEffect` auth redirects. Auth is now fully centralized in middleware.
+
+**`src/middleware.ts`** — rewrote to:
+- Redirect authenticated users with a role away from `/sign-in` and `/` → their dashboard (employers to `/employer/dashboard`, seekers to `/jobs`)
+- Protect `/employer/dashboard`, `/employer/jobs/*`, `/employer/profile/*` → EMPLOYER only (non-employers redirected to `/jobs`)
+- Protect `/seeker/applications`, `/seeker/profile/*` → SEEKER only
+- Removed the debug `console.log`
+
+**Pages simplified (removed `useEffect` + `useSession` auth guards):**
+- `src/app/sign-in/page.tsx` — removed session redirect; middleware handles it
+- `src/app/employer/dashboard/page.tsx` — removed auth guard + auth loading spinner
+- `src/app/employer/jobs/new/page.tsx` — removed auth guard + null return
+- `src/app/employer/jobs/page.tsx` — removed auth guard (kept profile-missing business redirect)
+- `src/app/employer/jobs/[id]/applications/page.tsx` — removed auth guard + null return
+- `src/app/seeker/applications/page.tsx` — removed auth guard + null return
+
+**`src/server/api/routers/employer.ts`** — fixed `getProfile` to actually return `activeJobsCount` (was previously broken, returning fields that didn't exist). Now returns `{ id, companyName, city, state, activeJobsCount }`.
+
+---
 
 ### Phase 7 Step 6 — Responsiveness badge display
 

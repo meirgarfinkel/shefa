@@ -1,9 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -36,28 +33,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function SeekerApplicationsPage() {
-  const { data: session, status: authStatus } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (authStatus === "loading") return;
-    if (!session || session.user.role !== "SEEKER") {
-      router.replace("/");
-    }
-  }, [session, authStatus, router]);
-
-  const { data: applications, isLoading } = trpc.application.listForSeeker.useQuery(undefined, {
-    enabled: session?.user?.role === "SEEKER",
-  });
+  const { data: applications, isLoading } = trpc.application.listForSeeker.useQuery();
 
   const utils = trpc.useUtils();
   const withdraw = trpc.application.withdraw.useMutation({
     onSuccess: () => void utils.application.listForSeeker.invalidate(),
   });
-
-  if (authStatus === "loading" || !session || session.user.role !== "SEEKER") {
-    return null;
-  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
