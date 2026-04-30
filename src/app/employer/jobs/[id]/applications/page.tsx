@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -49,12 +50,17 @@ export default function EmployerJobApplicationsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id: jobId } = use(params);
+  const router = useRouter();
 
   const { data: applications, isLoading } = trpc.application.listForJob.useQuery({ jobId });
 
   const utils = trpc.useUtils();
   const updateStatus = trpc.application.updateStatus.useMutation({
     onSuccess: () => void utils.application.listForJob.invalidate({ jobId }),
+  });
+
+  const createConversation = trpc.conversation.create.useMutation({
+    onSuccess: (conv) => router.push(`/messages/${conv.id}`),
   });
 
   return (
@@ -115,39 +121,54 @@ export default function EmployerJobApplicationsPage({
                 <p className="text-muted-foreground text-xs">
                   Applied {new Date(app.createdAt).toLocaleDateString()}
                 </p>
-                {app.status !== "CLOSED" && (
-                  <div className="flex gap-2">
-                    {app.status === "SUBMITTED" && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={createConversation.isPending}
+                    onClick={() =>
+                      createConversation.mutate({
+                        targetProfileId: app.seekerProfile.id,
+                        jobId,
+                      })
+                    }
+                  >
+                    Message
+                  </Button>
+                  {app.status !== "CLOSED" && (
+                    <>
+                      {app.status === "SUBMITTED" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updateStatus.isPending}
+                          onClick={() => updateStatus.mutate({ id: app.id, status: "VIEWED" })}
+                        >
+                          Mark viewed
+                        </Button>
+                      )}
+                      {(app.status === "SUBMITTED" || app.status === "VIEWED") && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updateStatus.isPending}
+                          onClick={() => updateStatus.mutate({ id: app.id, status: "RESPONDED" })}
+                        >
+                          Mark responded
+                        </Button>
+                      )}
                       <Button
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
+                        className="text-muted-foreground text-xs"
                         disabled={updateStatus.isPending}
-                        onClick={() => updateStatus.mutate({ id: app.id, status: "VIEWED" })}
+                        onClick={() => updateStatus.mutate({ id: app.id, status: "CLOSED" })}
                       >
-                        Mark viewed
+                        Close
                       </Button>
-                    )}
-                    {(app.status === "SUBMITTED" || app.status === "VIEWED") && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={updateStatus.isPending}
-                        onClick={() => updateStatus.mutate({ id: app.id, status: "RESPONDED" })}
-                      >
-                        Mark responded
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground text-xs"
-                      disabled={updateStatus.isPending}
-                      onClick={() => updateStatus.mutate({ id: app.id, status: "CLOSED" })}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
               </div>
             </li>
           ))}

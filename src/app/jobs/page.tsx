@@ -122,7 +122,7 @@ export default function JobsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 rounded-lg border p-4">
+      <div className="mb-6 rounded-4xl border p-4">
         <div className="space-y-4">
           {/* Location row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

@@ -1,8 +1,38 @@
+import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { CreateSeekerProfileSchema } from "@/lib/schemas/seeker";
 
 export const seekerRouter = createTRPCRouter({
+  getPublicProfile: publicProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const profile = await ctx.prisma.seekerProfile.findUnique({
+        where: { id: input.id },
+        include: {
+          skills: { include: { skill: { select: { name: true } } } },
+          languages: { include: { language: { select: { name: true } } } },
+        },
+      });
+      if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const {
+        responseRate,
+        medianResponseHours,
+        userId: _userId,
+        skills,
+        languages,
+        ...publicFields
+      } = profile;
+
+      return {
+        ...publicFields,
+        skills: skills.map((s) => s.skill.name),
+        languages: languages.map((l) => l.language.name),
+        isNew: responseRate === null,
+      };
+    }),
+
   createProfile: protectedProcedure
     .input(CreateSeekerProfileSchema)
     .mutation(async ({ ctx, input }) => {

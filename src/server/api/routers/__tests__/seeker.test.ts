@@ -20,6 +20,35 @@ function makeMockPrisma() {
   };
 }
 
+function makePublicSeekerProfile(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "sp-1",
+    firstName: "Jane",
+    lastName: "Doe",
+    city: "Brooklyn",
+    state: "NY",
+    zip: "11201",
+    workAuthorization: true,
+    availableDays: ["MON", "TUE"],
+    jobSeekText: "I want to learn to cook.",
+    educationLevel: null,
+    otherSkills: null,
+    otherLanguages: null,
+    about: null,
+    isResponsive: false,
+    responseRate: null,
+    medianResponseHours: null,
+    userId: "user-secret",
+    status: "ACTIVE",
+    createdAt: new Date("2026-01-01"),
+    updatedAt: new Date("2026-01-01"),
+    lastVerifiedAt: new Date("2026-01-01"),
+    skills: [{ skill: { name: "Cooking" } }, { skill: { name: "Customer Service" } }],
+    languages: [{ language: { name: "Spanish" } }],
+    ...overrides,
+  };
+}
+
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
 function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
@@ -167,6 +196,132 @@ describe("seeker.createProfile", () => {
     const caller = createCaller(makeCtx("SEEKER", db));
     await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
       code: "CONFLICT",
+    });
+  });
+});
+
+// ── seeker.getPublicProfile ───────────────────────────────────────────────────
+
+describe("seeker.getPublicProfile", () => {
+  let db: ReturnType<typeof makeMockPrisma>;
+
+  beforeEach(() => {
+    db = makeMockPrisma();
+  });
+
+  // ── Happy path ──
+
+  it("returns public profile for an active seeker", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result).toMatchObject({
+      id: "sp-1",
+      firstName: "Jane",
+      lastName: "Doe",
+      city: "Brooklyn",
+      state: "NY",
+      status: "ACTIVE",
+    });
+  });
+
+  it("returns skills as a flat array of names", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.skills).toEqual(["Cooking", "Customer Service"]);
+  });
+
+  it("returns languages as a flat array of names", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.languages).toEqual(["Spanish"]);
+  });
+
+  it("returns empty skills array when seeker has no skills", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ skills: [] }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.skills).toEqual([]);
+  });
+
+  it("returns empty languages array when seeker has no languages", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ languages: [] }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.languages).toEqual([]);
+  });
+
+  // ── isNew computation ──
+
+  it("isNew is true when responseRate is null (never computed)", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ responseRate: null }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.isNew).toBe(true);
+  });
+
+  it("isNew is false when responseRate has been computed", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ responseRate: 0.8 }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.isNew).toBe(false);
+  });
+
+  // ── Privacy ──
+
+  it("does not expose responseRate", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ responseRate: 0.9 }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result).not.toHaveProperty("responseRate");
+  });
+
+  it("does not expose medianResponseHours", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(
+      makePublicSeekerProfile({ medianResponseHours: 24 }),
+    );
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result).not.toHaveProperty("medianResponseHours");
+  });
+
+  it("does not expose userId", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result).not.toHaveProperty("userId");
+  });
+
+  // ── Access / status ──
+
+  it("works without authentication (public procedure)", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.getPublicProfile({ id: "sp-1" })).resolves.toBeDefined();
+  });
+
+  it("also works when called by an authenticated employer", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await expect(caller.getPublicProfile({ id: "sp-1" })).resolves.toBeDefined();
+  });
+
+  it("returns PAUSED profile (UI is responsible for showing inactive state)", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ status: "PAUSED" }));
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.getPublicProfile({ id: "sp-1" });
+    expect(result.status).toBe("PAUSED");
+  });
+
+  // ── Not found ──
+
+  it("throws NOT_FOUND for a non-existent profile id", async () => {
+    db.seekerProfile.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.getPublicProfile({ id: "nonexistent" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
     });
   });
 });

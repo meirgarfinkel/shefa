@@ -310,6 +310,35 @@ describe("list", () => {
     const caller = createCaller(makeCtx(null, mockPrisma));
     await expect(caller.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
+
+  it("includes participant profiles, job info, and unread message count", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
+    mockPrisma.conversation.findMany.mockResolvedValue([]);
+
+    await caller.list();
+
+    const callArg = mockPrisma.conversation.findMany.mock.calls[0][0] as {
+      include: Record<string, unknown>;
+    };
+    expect(callArg.include).toBeDefined();
+
+    const inc = callArg.include as {
+      participantA: { select: Record<string, unknown> };
+      participantB: { select: Record<string, unknown> };
+      job: unknown;
+      _count: unknown;
+    };
+    expect(inc.participantA.select).toMatchObject({
+      seekerProfile: expect.anything(),
+      employerProfile: expect.anything(),
+    });
+    expect(inc.participantB.select).toMatchObject({
+      seekerProfile: expect.anything(),
+      employerProfile: expect.anything(),
+    });
+    expect(inc.job).toBeDefined();
+    expect(inc._count).toBeDefined();
+  });
 });
 
 // ── conversation.get ───────────────────────────────────────────────────────────
@@ -362,6 +391,35 @@ describe("get", () => {
     await expect(caller.get({ conversationId: "conv-1" })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
+  });
+
+  it("includes participant profiles and job info in the query", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
+    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, messages: [] });
+
+    await caller.get({ conversationId: "conv-1" });
+
+    const callArg = mockPrisma.conversation.findUnique.mock.calls[0][0] as {
+      include: Record<string, unknown>;
+    };
+    expect(callArg.include).toBeDefined();
+
+    const inc = callArg.include as {
+      messages: unknown;
+      participantA: { select: Record<string, unknown> };
+      participantB: { select: Record<string, unknown> };
+      job: unknown;
+    };
+    expect(inc.messages).toBeDefined();
+    expect(inc.participantA.select).toMatchObject({
+      seekerProfile: expect.anything(),
+      employerProfile: expect.anything(),
+    });
+    expect(inc.participantB.select).toMatchObject({
+      seekerProfile: expect.anything(),
+      employerProfile: expect.anything(),
+    });
+    expect(inc.job).toBeDefined();
   });
 });
 

@@ -105,13 +105,32 @@ export const conversationRouter = createTRPCRouter({
     }),
 
   list: protectedProcedure.query(async ({ ctx }) => {
+    const callerId = ctx.user.id;
     return ctx.prisma.conversation.findMany({
       where: {
-        OR: [{ participantAId: ctx.user.id }, { participantBId: ctx.user.id }],
+        OR: [{ participantAId: callerId }, { participantBId: callerId }],
       },
       include: {
-        participantA: { select: { id: true, email: true } },
-        participantB: { select: { id: true, email: true } },
+        participantA: {
+          select: {
+            id: true,
+            seekerProfile: { select: { id: true, firstName: true, lastName: true } },
+            employerProfile: { select: { id: true, companyName: true } },
+          },
+        },
+        participantB: {
+          select: {
+            id: true,
+            seekerProfile: { select: { id: true, firstName: true, lastName: true } },
+            employerProfile: { select: { id: true, companyName: true } },
+          },
+        },
+        job: { select: { id: true, title: true } },
+        _count: {
+          select: {
+            messages: { where: { senderId: { not: callerId }, readAt: null } },
+          },
+        },
       },
       orderBy: [{ lastMessageAt: "desc" }],
     });
@@ -125,6 +144,21 @@ export const conversationRouter = createTRPCRouter({
       },
       include: {
         messages: { orderBy: { createdAt: "asc" } },
+        participantA: {
+          select: {
+            id: true,
+            seekerProfile: { select: { id: true, firstName: true, lastName: true } },
+            employerProfile: { select: { id: true, companyName: true } },
+          },
+        },
+        participantB: {
+          select: {
+            id: true,
+            seekerProfile: { select: { id: true, firstName: true, lastName: true } },
+            employerProfile: { select: { id: true, companyName: true } },
+          },
+        },
+        job: { select: { id: true, title: true } },
       },
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });

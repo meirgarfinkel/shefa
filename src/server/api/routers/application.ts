@@ -80,7 +80,7 @@ export const applicationRouter = createTRPCRouter({
             state: true,
             jobType: true,
             status: true,
-            employerProfile: { select: { companyName: true } },
+            employerProfile: { select: { id: true, companyName: true } },
           },
         },
       },
@@ -109,6 +109,7 @@ export const applicationRouter = createTRPCRouter({
       include: {
         seekerProfile: {
           select: {
+            id: true,
             firstName: true,
             lastName: true,
             city: true,

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,11 +34,16 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function SeekerApplicationsPage() {
+  const router = useRouter();
   const { data: applications, isLoading } = trpc.application.listForSeeker.useQuery();
 
   const utils = trpc.useUtils();
   const withdraw = trpc.application.withdraw.useMutation({
     onSuccess: () => void utils.application.listForSeeker.invalidate(),
+  });
+
+  const createConversation = trpc.conversation.create.useMutation({
+    onSuccess: (conv) => router.push(`/messages/${conv.id}`),
   });
 
   return (
@@ -80,17 +86,34 @@ export default function SeekerApplicationsPage() {
                 <p className="text-muted-foreground text-xs">
                   Applied {new Date(app.createdAt).toLocaleDateString()}
                 </p>
-                {app.status === "SUBMITTED" && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground h-auto py-1 text-xs"
-                    disabled={withdraw.isPending}
-                    onClick={() => withdraw.mutate({ id: app.id })}
-                  >
-                    Withdraw
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {app.job.status === "ACTIVE" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={createConversation.isPending}
+                      onClick={() =>
+                        createConversation.mutate({
+                          targetProfileId: app.job.employerProfile.id,
+                          jobId: app.job.id,
+                        })
+                      }
+                    >
+                      Message
+                    </Button>
+                  )}
+                  {app.status === "SUBMITTED" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground h-auto py-1 text-xs"
+                      disabled={withdraw.isPending}
+                      onClick={() => withdraw.mutate({ id: app.id })}
+                    >
+                      Withdraw
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {app.message && (
