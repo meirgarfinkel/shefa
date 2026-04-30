@@ -8,18 +8,15 @@ export const conversationRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        targetUserId: z.string().min(1),
+        targetProfileId: z.string().min(1),
         jobId: z.string().min(1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { targetUserId, jobId } = input;
+      const { targetProfileId, jobId } = input;
       const callerId = ctx.user.id;
       const role = ctx.user.role;
-
-      if (callerId === targetUserId) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot message yourself" });
-      }
+      let targetUserId: string;
 
       if (role === "SEEKER") {
         if (!jobId) {
@@ -28,6 +25,14 @@ export const conversationRouter = createTRPCRouter({
             message: "Seekers must provide a jobId to start a conversation",
           });
         }
+
+        const employerProfile = await ctx.prisma.employerProfile.findUnique({
+          where: { id: targetProfileId },
+          select: { userId: true },
+        });
+        if (!employerProfile)
+          throw new TRPCError({ code: "NOT_FOUND", message: "Employer not found" });
+        targetUserId = employerProfile.userId;
 
         const job = await ctx.prisma.jobPosting.findUnique({
           where: { id: jobId },
@@ -53,17 +58,15 @@ export const conversationRouter = createTRPCRouter({
         }
       } else {
         // EMPLOYER
-        const target = await ctx.prisma.user.findUnique({
-          where: { id: targetUserId },
-          select: { id: true, role: true, seekerProfile: { select: { id: true, status: true } } },
+        const seekerProfile = await ctx.prisma.seekerProfile.findUnique({
+          where: { id: targetProfileId },
+          select: { userId: true, status: true },
         });
-        if (!target) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
-        if (target.role !== "SEEKER" || !target.seekerProfile) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Target must be an active seeker" });
-        }
-        if (target.seekerProfile.status !== "ACTIVE") {
+        if (!seekerProfile) throw new TRPCError({ code: "NOT_FOUND", message: "Seeker not found" });
+        if (seekerProfile.status !== "ACTIVE") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Seeker profile is not active" });
         }
+        targetUserId = seekerProfile.userId;
 
         if (jobId) {
           const job = await ctx.prisma.jobPosting.findUnique({
@@ -74,6 +77,10 @@ export const conversationRouter = createTRPCRouter({
             throw new TRPCError({ code: "FORBIDDEN", message: "Job does not belong to you" });
           }
         }
+      }
+
+      if (callerId === targetUserId) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot message yourself" });
       }
 
       const existing = await ctx.prisma.conversation.findFirst({

@@ -28,11 +28,19 @@ const INDUSTRY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default function EmployerProfilePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function EmployerProfilePage({
+  params,
+}: {
+  params: Promise<{ profileId: string }>;
+}) {
+  const { profileId } = use(params);
   const router = useRouter();
 
-  const { data: profile, isLoading, error } = trpc.employer.getPublicProfile.useQuery({ id });
+  const {
+    data: profile,
+    isLoading,
+    error,
+  } = trpc.employer.getPublicProfile.useQuery({ id: profileId });
 
   if (isLoading) {
     return (

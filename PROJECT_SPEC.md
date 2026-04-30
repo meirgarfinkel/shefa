@@ -203,6 +203,34 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Email magic links via Resend (Auth.js).
 - Email verification baked into magic link flow.
 - Phone numbers collected at signup but not verified (deferred for SMS cost reasons).
+- JWT session strategy (not database) so middleware can verify auth in the Edge runtime without a DB call.
+- All route-level auth redirects live exclusively in `src/middleware.ts`. Page components never redirect based on auth state. See CLAUDE.md "Routing and auth guards" for the full rules.
+
+### Routing conventions
+
+**Public routes** (no auth required) use the entity's `profileId` as the URL segment:
+
+| Route | Segment | ID type |
+|-------|---------|---------|
+| `/employer/[profileId]` | `profileId` | `EmployerProfile.id` |
+| `/seeker/[profileId]` | `profileId` | `SeekerProfile.id` |
+| `/jobs/[id]` | `id` | `JobPosting.id` |
+
+**Private routes** (auth required) use stable, non-parameterized paths. Ownership is established via `userId` from the JWT session — never from the URL:
+
+| Route | Who |
+|-------|-----|
+| `/employer/profile` | Authenticated employer (own profile) |
+| `/employer/dashboard` | Authenticated employer |
+| `/employer/jobs/[id]` | Authenticated employer (job by posting ID) |
+| `/seeker/profile` | Authenticated seeker (own profile) |
+| `/seeker/applications` | Authenticated seeker |
+
+**Hard rules:**
+
+- `userId` is **never** exposed in a URL — not as a route segment, not as a query parameter.
+- tRPC procedures never accept `userId` as input. The caller's identity comes exclusively from `ctx.user.id` (session). For targeting another user, procedures accept a `profileId` and resolve the `userId` internally.
+- All auth-based redirects live in `src/middleware.ts`. Adding a new protected route means updating `EMPLOYER_ONLY_PREFIXES` or `SEEKER_ONLY_PREFIXES` there — never adding a client-side guard.
 
 ---
 
@@ -228,7 +256,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page. ✅ backend + core UI; ⚠️ missing: job edit page, publish/pause/close/fill status controls.
 5. **Applications + messaging**: apply flow, conversations + messages, inbox, read receipts, block/report, cold DM flow. ✅ full backend (tRPC routers: application, conversation, message, report); ⚠️ missing: inbox UI, conversation UI, employer cold-DM UI, profile view pages needed to navigate to messaging.
 6. **Freshness system**: BullMQ + Redis, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX. ✅
-7. **Notifications + responsiveness**: NotificationPreferences, 12-min debounced jobs, daily digest, responsiveness computation job, badge display. 🔄 in progress — Step 1 (NotificationPreferences router) done.
+7. **Notifications + responsiveness**: NotificationPreferences, 12-min debounced jobs, daily digest, responsiveness computation job, badge display. ✅
 8. **Polish + abuse + ship**: rate limiting, admin dashboard for flags, basic admin tools, error handling, deploy. ⬜
 
 Ship target after Phase 8. Each phase is shippable on its own and committed to git separately.

@@ -8,3 +8,5 @@ src/generated
 *.lock
 .claude/settings.local.json
 HANDOFF.md
+ClAUDE.md
+PROJECT_SPEC.md

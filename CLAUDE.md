@@ -160,6 +160,80 @@ Instead: write the schema changes, generate the migration with `--create-only` i
 - **`auth.config.ts`** must have zero Prisma imports — not even `import type`. The `Role` type lives in `src/types/role.ts` (a plain string union) so auth.config stays Prisma-free.
 - Violating either of these will silently work in dev (Node runtime) but break at build/deploy time on Vercel (Edge runtime).
 
+---
+
+## Routing and auth guards — middleware is the only place
+
+All auth-based redirects live exclusively in `src/middleware.ts`. **Never add auth redirects inside page components.**
+
+### What middleware handles
+
+| Condition                                                                        | Redirect                          |
+| -------------------------------------------------------------------------------- | --------------------------------- |
+| Unauthenticated, non-public path                                                 | → `/sign-in` (with `callbackUrl`) |
+| Authenticated, no role, not on `/role-select`                                    | → `/role-select`                  |
+| Authenticated, has role, on `/` or `/sign-in`                                    | → role dashboard (see below)      |
+| Non-EMPLOYER on `/employer/dashboard`, `/employer/jobs/*`, `/employer/profile/*` | → `/jobs`                         |
+| Non-SEEKER on `/seeker/applications`, `/seeker/profile/*`                        | → `/jobs`                         |
+
+**Role dashboards**: EMPLOYER → `/employer/dashboard`; SEEKER → `/jobs` (no seeker dashboard yet).
+
+### What pages must NOT do
+
+These patterns are forbidden in page components:
+
+```tsx
+// FORBIDDEN — auth redirect in useEffect
+useEffect(() => {
+  if (!session || session.user.role !== "EMPLOYER") router.push("/");
+}, [session]);
+
+// FORBIDDEN — auth-based null return while session loads
+if (status === "loading" || status === "unauthenticated") return null;
+if (session?.user?.role !== "EMPLOYER") return null;
+```
+
+Middleware fires before React renders. If a page is reachable, the user is already authenticated and has the right role — these checks are redundant and cause flicker.
+
+### What IS still allowed in pages
+
+```tsx
+// Fine — conditional UI based on role (not a redirect)
+const { data: session } = useSession();
+if (session?.user?.role === "EMPLOYER") {
+  /* show employer button */
+}
+
+// Fine — JWT refresh after a role mutation
+const { update } = useSession();
+await update({ role: "SEEKER" });
+
+// Fine — post-mutation navigation (business logic, not auth)
+const createProfile = trpc.employer.createProfile.useMutation({
+  onSuccess: () => router.push("/jobs"),
+});
+
+// Fine — business-logic redirect (profile doesn't exist yet)
+if (!profileLoading && !profile) {
+  router.replace("/employer/profile/new");
+}
+```
+
+### Adding new protected routes
+
+To protect a new route, add its path prefix to the correct array in `src/middleware.ts`:
+
+```ts
+const EMPLOYER_ONLY_PREFIXES = [
+  "/employer/dashboard",
+  "/employer/jobs",
+  "/employer/profile" /* add here */,
+];
+const SEEKER_ONLY_PREFIXES = ["/seeker/applications", "/seeker/profile" /* add here */];
+```
+
+Do not add client-side guards as a fallback — one place only.
+
 ## BullMQ worker process
 
 The freshness background job runs as a **separate process**, not inside Next.js:
