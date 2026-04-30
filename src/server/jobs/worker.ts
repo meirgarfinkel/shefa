@@ -4,6 +4,7 @@ import { createRedisConnection } from "./redis";
 import { runFreshnessCheck } from "./freshness.job";
 import { runMessageNotifyJob } from "./message-notify.job";
 import { runApplicationNotifyJob } from "./application-notify.job";
+import { runDailyDigestJob } from "./daily-digest.job";
 import {
   FRESHNESS_QUEUE,
   FRESHNESS_JOB_NAME,
@@ -11,14 +12,19 @@ import {
   MESSAGE_NOTIFY_JOB_NAME,
   APPLICATION_NOTIFY_QUEUE,
   APPLICATION_NOTIFY_JOB_NAME,
+  DAILY_DIGEST_QUEUE,
+  DAILY_DIGEST_JOB_NAME,
 } from "./queue";
 
 async function main() {
   const freshnessSchedulerConn = createRedisConnection();
   const freshnessWorkerConn = createRedisConnection();
+  const dailyDigestSchedulerConn = createRedisConnection();
+  const dailyDigestWorkerConn = createRedisConnection();
   const messageNotifyWorkerConn = createRedisConnection();
 
   const freshnessQueue = new Queue(FRESHNESS_QUEUE, { connection: freshnessSchedulerConn });
+  const dailyDigestQueue = new Queue(DAILY_DIGEST_QUEUE, { connection: dailyDigestSchedulerConn });
 
   await freshnessQueue.add(
     FRESHNESS_JOB_NAME,
@@ -26,6 +32,15 @@ async function main() {
     {
       repeat: { pattern: "0 0 * * *" },
       jobId: "freshness-daily",
+    },
+  );
+
+  await dailyDigestQueue.add(
+    DAILY_DIGEST_JOB_NAME,
+    {},
+    {
+      repeat: { pattern: "0 0 * * *" },
+      jobId: "daily-digest-daily",
     },
   );
 
@@ -91,8 +106,28 @@ async function main() {
     console.error(`[worker] Application notify job ${job?.id} failed:`, err);
   });
 
+  const dailyDigestWorker = new Worker(
+    DAILY_DIGEST_QUEUE,
+    async (job) => {
+      if (job.name === DAILY_DIGEST_JOB_NAME) {
+        console.log(`[worker] Running daily digest at ${new Date().toISOString()}`);
+        await runDailyDigestJob();
+        console.log("[worker] Daily digest complete");
+      }
+    },
+    { connection: dailyDigestWorkerConn },
+  );
+
+  dailyDigestWorker.on("completed", (job) => {
+    console.log(`[worker] Daily digest job ${job.id} completed`);
+  });
+
+  dailyDigestWorker.on("failed", (job, err) => {
+    console.error(`[worker] Daily digest job ${job?.id} failed:`, err);
+  });
+
   console.log(
-    "[worker] Started — freshness (daily) + message notify (on demand) + application notify (on demand)",
+    "[worker] Started — freshness (daily) + message notify (on demand) + application notify (on demand) + daily digest (daily)",
   );
 }
 

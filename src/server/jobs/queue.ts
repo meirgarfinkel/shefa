@@ -44,6 +44,26 @@ export function getMessageNotifyQueue(): Queue {
   return _messageNotifyQueue;
 }
 
+export const DAILY_DIGEST_QUEUE = "daily-digest";
+export const DAILY_DIGEST_JOB_NAME = "run-daily-digest";
+
+let _dailyDigestQueue: Queue | undefined;
+
+export function getDailyDigestQueue(): Queue {
+  if (!_dailyDigestQueue) {
+    _dailyDigestQueue = new Queue(DAILY_DIGEST_QUEUE, {
+      connection: createRedisConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: "exponential", delay: 5000 },
+        removeOnComplete: 100,
+        removeOnFail: 200,
+      },
+    });
+  }
+  return _dailyDigestQueue;
+}
+
 let _applicationNotifyQueue: Queue | undefined;
 
 export function getApplicationNotifyQueue(): Queue {
