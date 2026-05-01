@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function SignInPage() {
@@ -41,13 +42,13 @@ export default function SignInPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <input
+            <Input
               type="email"
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
+              className="h-9"
             />
             <Button type="submit" disabled={loading}>
               {loading ? "Sending…" : "Send magic link"}

@@ -3,52 +3,36 @@
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function EmployerDashboardPage() {
   const router = useRouter();
-
   const { data: profile } = trpc.employer.getProfile.useQuery();
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-semibold">Employer Dashboard</h1>
-        <p className="text-muted-foreground mt-1 text-sm">Manage your jobs and company profile</p>
+    <div className="mx-auto max-w-5xl px-4 py-8 md:px-8">
+      <PageHeader
+        title="Dashboard"
+        description="Manage your jobs and company profile."
+        actions={
+          <Button
+            className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
+            onClick={() => router.push("/employer/jobs/new")}
+          >
+            Post a job
+          </Button>
+        }
+      />
+
+      <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <StatCard label="Active jobs" value={profile?.activeJobsCount ?? 0} />
+        <StatCard label="Company" value={profile?.companyName ?? "—"} />
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
-        <Button onClick={() => router.push("/employer/jobs/new")}>+ Post a job</Button>
-        <Button variant="outline" onClick={() => router.push("/employer/jobs")}>
-          View my jobs
-        </Button>
-        <Button variant="outline" onClick={() => router.push("/employer/profile/new")}>
-          Edit company profile
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Active Jobs</CardTitle>
-          </CardHeader>
-          <CardContent className="text-2xl font-semibold">
-            {profile?.activeJobsCount ?? 0}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Company</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm">{profile?.companyName ?? "—"}</CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-10">
-        <h2 className="mb-3 text-lg font-semibold">Recent activity</h2>
-
-        <div className="text-muted-foreground rounded-lg border p-6 text-sm">
+      <div>
+        <h2 className="mb-3 text-base font-medium">Recent activity</h2>
+        <div className="border-border bg-card text-muted-foreground rounded-lg border p-6 text-sm">
           No recent activity yet.
         </div>
       </div>

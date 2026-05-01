@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ResponsivenessBadge } from "@/components/responsiveness-badge";
+import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 
 const DAY_LABELS: Record<string, string> = {
   SUN: "Sun",
@@ -69,7 +69,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
       <div className="mb-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-semibold">
+            <h1 className="text-xl font-medium">
               {profile.firstName} {profile.lastName}
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
@@ -77,9 +77,9 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <ResponsivenessBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
+            <ResponsiveBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
             {profile.status === "PAUSED" && (
-              <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs text-yellow-800">
+              <span className="border-warning/25 bg-warning/15 text-warning rounded-full border px-3 py-1 text-xs">
                 Not currently active
               </span>
             )}
@@ -102,7 +102,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
 
       {/* What they're looking for */}
       <div className="my-6">
-        <h2 className="mb-2 text-lg font-semibold">What they&apos;re looking for</h2>
+        <h2 className="mb-2 text-base font-medium">What they&apos;re looking for</h2>
         <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.jobSeekText}</p>
       </div>
 
@@ -111,7 +111,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="mb-2 text-lg font-semibold">About</h2>
+            <h2 className="mb-2 text-base font-medium">About</h2>
             <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.about}</p>
           </div>
         </>
@@ -152,7 +152,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="mb-3 text-lg font-semibold">Skills</h2>
+            <h2 className="mb-3 text-base font-medium">Skills</h2>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((skill) => (
                 <span key={skill} className="bg-muted rounded-full px-3 py-1 text-sm">
@@ -172,7 +172,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="mb-3 text-lg font-semibold">Languages</h2>
+            <h2 className="mb-3 text-base font-medium">Languages</h2>
             <div className="flex flex-wrap gap-2">
               {profile.languages.map((lang) => (
                 <span key={lang} className="bg-muted rounded-full px-3 py-1 text-sm">

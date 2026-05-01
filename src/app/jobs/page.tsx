@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
+import { JobCard } from "@/components/ui/job-card";
+import { PageHeader } from "@/components/ui/page-header";
 
 type JobTypeValue = "FULL_TIME" | "PART_TIME" | "EITHER";
 type ArrangementValue = "ON_SITE" | "REMOTE" | "HYBRID";
@@ -36,18 +37,6 @@ const DAY_OPTIONS: { value: DayValue; label: string }[] = [
   { value: "SAT", label: "Sat" },
 ];
 
-const JOB_TYPE_LABELS: Record<string, string> = {
-  FULL_TIME: "Full-time",
-  PART_TIME: "Part-time",
-  EITHER: "Full or Part-time",
-};
-
-const ARRANGEMENT_LABELS: Record<string, string> = {
-  ON_SITE: "On-site",
-  REMOTE: "Remote",
-  HYBRID: "Hybrid",
-};
-
 function useDebounce<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value);
   useEffect(() => {
@@ -64,7 +53,6 @@ function toggleItem<T>(arr: T[], item: T): T[] {
 export default function JobsPage() {
   const { data: session } = useSession();
 
-  // Filter state
   const [cityInput, setCityInput] = useState("");
   const [stateInput, setStateInput] = useState("");
   const [jobTypes, setJobTypes] = useState<JobTypeValue[]>([]);
@@ -105,24 +93,24 @@ export default function JobsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Job listings</h1>
-          <p className="text-muted-foreground mt-1">
-            Entry-level roles at employers who invest in their people.
-          </p>
-        </div>
-        {session?.user?.role === "EMPLOYER" && (
-          <Button asChild>
-            <Link href="/employer/jobs/new">Post a job</Link>
-          </Button>
-        )}
-      </div>
+    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
+      <PageHeader
+        title="Job listings"
+        description="Entry-level roles at employers who invest in their people."
+        actions={
+          session?.user?.role === "EMPLOYER" ? (
+            <Button
+              asChild
+              className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
+            >
+              <Link href="/employer/jobs/new">Post a job</Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Filters */}
-      <div className="mb-6 rounded-4xl border p-4">
+      <div className="border-border bg-card mb-8 rounded-lg border p-4">
         <div className="space-y-4">
           {/* Location row */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -167,7 +155,6 @@ export default function JobsPage() {
 
           {/* Checkbox filters */}
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Job type */}
             <div>
               <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                 Job type
@@ -185,7 +172,6 @@ export default function JobsPage() {
               </div>
             </div>
 
-            {/* Work arrangement */}
             <div>
               <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                 Arrangement
@@ -213,10 +199,10 @@ export default function JobsPage() {
               {DAY_OPTIONS.map((day) => (
                 <label
                   key={day.value}
-                  className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-1 text-xs transition-colors ${
+                  className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-1 text-xs transition-colors duration-150 ${
                     workDays.includes(day.value)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      ? "border-primary/40 bg-primary/15 text-primary"
+                      : "border-border hover:bg-muted"
                   }`}
                 >
                   <input
@@ -241,7 +227,7 @@ export default function JobsPage() {
               >
                 <span>Skills</span>
                 {skillIds.length > 0 && (
-                  <span className="bg-primary text-primary-foreground ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold">
+                  <span className="border-primary/25 bg-primary/15 text-primary ml-1 rounded-full border px-1.5 py-0.5 text-xs font-semibold">
                     {skillIds.length}
                   </span>
                 )}
@@ -252,7 +238,7 @@ export default function JobsPage() {
                 <div className="mt-3 max-h-48 space-y-3 overflow-y-auto pr-1">
                   {Object.entries(skillGroups).map(([category, skills]) => (
                     <div key={category}>
-                      <p className="text-muted-foreground mb-1.5 text-[10px] font-semibold tracking-wider uppercase">
+                      <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wider uppercase">
                         {category}
                       </p>
                       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
@@ -297,49 +283,21 @@ export default function JobsPage() {
 
       {/* Job cards */}
       {!isLoading && jobs && jobs.length > 0 && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {jobs.map((job) => (
-            <Card key={job.id} className="flex flex-col">
-              <CardHeader className="pb-2">
-                <p className="text-muted-foreground text-sm font-medium">
-                  {job.employerProfile.companyName}
-                </p>
-                <CardTitle className="text-lg leading-snug">{job.title}</CardTitle>
-              </CardHeader>
-
-              <CardContent className="flex-1 space-y-3">
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="bg-muted rounded-full px-2.5 py-0.5 text-xs">
-                    {job.city}, {job.state}
-                  </span>
-                  <span className="bg-muted rounded-full px-2.5 py-0.5 text-xs">
-                    {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-                  </span>
-                  <span className="bg-muted rounded-full px-2.5 py-0.5 text-xs">
-                    {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}
-                  </span>
-                </div>
-
-                <p className="text-sm font-medium">
-                  From ${Number(job.minHourlyRate).toFixed(2)}/hr
-                </p>
-
-                <p className="text-muted-foreground line-clamp-3 text-sm">{job.description}</p>
-
-                {job.whatWeTeach && (
-                  <p className="text-sm">
-                    <span className="font-medium">We&apos;ll teach you: </span>
-                    <span className="text-muted-foreground line-clamp-2">{job.whatWeTeach}</span>
-                  </p>
-                )}
-              </CardContent>
-
-              <CardFooter className="pt-2">
-                <Button asChild variant="outline" size="sm" className="w-full">
-                  <Link href={`/jobs/${job.id}`}>View job</Link>
-                </Button>
-              </CardFooter>
-            </Card>
+            <JobCard
+              key={job.id}
+              id={job.id}
+              title={job.title}
+              city={job.city}
+              state={job.state}
+              jobType={job.jobType}
+              workArrangement={job.workArrangement}
+              minHourlyRate={Number(job.minHourlyRate)}
+              status={job.status}
+              companyName={job.employerProfile.companyName}
+              href={`/jobs/${job.id}`}
+            />
           ))}
         </div>
       )}

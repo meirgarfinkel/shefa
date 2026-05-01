@@ -277,3 +277,47 @@ In dev, emails log to console instead of calling Resend. In prod, a process mana
 - When in doubt, default to the simpler / more boring solution.
 - If something in PROJECT_SPEC.md seems wrong or incomplete, flag it — don't silently work around it.
 - If you're about to install a major version of a library, check that it's compatible with the rest of the stack first. (Bitten by Base UI and Prisma 7 already.)
+
+## DESIGN SYSTEM
+
+Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo root.
+
+### Non-negotiable rules
+
+- No `tailwind.config.js` — all theme config is in `globals.css` via `@theme inline`
+- No raw hex colors in className or style props — semantic tokens only
+- No `style={{ ... }}` for colors — always Tailwind classes
+- One accent: `text-primary` / `bg-primary` / `border-primary` only
+- No second accent color ever
+- Transitions: `transition-colors duration-150` only — no movement on hover
+- Surface layers: `bg-background` → `bg-card` → `bg-muted` (max 3, never deeper)
+- Borders on all cards: `border border-border`, hover: `hover:border-border/60`
+- Font weights: `font-normal` and `font-medium` only (badges may use `font-semibold`)
+- Radius: `rounded-full` (pills) · `rounded-md` (buttons/inputs) · `rounded-lg` (cards)
+- Min font size: `text-xs` — never `text-[10px]` or smaller
+
+### Status colors
+
+| Status | Classes |
+|---|---|
+| ACTIVE | `bg-success/15 text-success border-success/25` |
+| DRAFT | `bg-muted text-muted-foreground border-border` |
+| PAUSED | `bg-warning/15 text-warning border-warning/25` |
+| FILLED | `bg-primary/15 text-primary border-primary/25` |
+| EXPIRED / CLOSED | `bg-destructive/15 text-destructive border-destructive/25` |
+
+### Custom components to use (do not re-implement)
+
+- `StatusBadge` — for any job status display
+- `ResponsiveBadge` — for user responsiveness
+- `JobCard` — for job listings
+- `StatCard` — for dashboard metrics
+- `PageHeader` — for page titles with optional actions
+- `EmptyState` — for empty lists
+- `InboxRow` — for message threads
+- `Divider` — for horizontal rules
+
+### shadcn components to use for primitives
+
+Button, Input, Textarea, Label, Select, Card, Badge, Dialog, Sheet, Tooltip, Separator, Skeleton, Sonner (not Toast).
+Always customize with Tailwind classes — never override with inline styles.

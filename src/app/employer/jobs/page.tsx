@@ -4,37 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-
-type JobStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "FILLED" | "EXPIRED" | "CLOSED";
-
-const STATUS_STYLES: Record<JobStatus, string> = {
-  DRAFT: "bg-muted text-muted-foreground",
-  ACTIVE: "bg-green-100 text-green-800",
-  PAUSED: "bg-yellow-100 text-yellow-800",
-  FILLED: "bg-blue-100 text-blue-800",
-  EXPIRED: "bg-orange-100 text-orange-800",
-  CLOSED: "bg-muted text-muted-foreground line-through",
-};
-
-const STATUS_LABELS: Record<JobStatus, string> = {
-  DRAFT: "Draft",
-  ACTIVE: "Active",
-  PAUSED: "Paused",
-  FILLED: "Filled",
-  EXPIRED: "Expired",
-  CLOSED: "Closed",
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const s = status as JobStatus;
-  return (
-    <span
-      className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[s] ?? "bg-muted text-muted-foreground"}`}
-    >
-      {STATUS_LABELS[s] ?? status}
-    </span>
-  );
-}
+import { StatusBadge } from "@/components/ui/status-badge";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function EmployerJobsPage() {
   const router = useRouter();
@@ -54,21 +25,24 @@ export default function EmployerJobsPage() {
   const isLoading = profileLoading || jobsLoading;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Your job postings</h1>
-          {profile && <p className="text-muted-foreground mt-1 text-sm">{profile.companyName}</p>}
-        </div>
-        <Button asChild>
-          <Link href="/employer/jobs/new">Post a job</Link>
-        </Button>
-      </div>
+    <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
+      <PageHeader
+        title="Your job postings"
+        description={profile?.companyName}
+        actions={
+          <Button
+            asChild
+            className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
+          >
+            <Link href="/employer/jobs/new">Post a job</Link>
+          </Button>
+        }
+      />
 
       {isLoading && <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>}
 
       {!isLoading && jobs?.length === 0 && (
-        <div className="text-muted-foreground rounded-lg border py-16 text-center text-sm">
+        <div className="border-border bg-card text-muted-foreground rounded-lg border py-16 text-center text-sm">
           No job postings yet.{" "}
           <Link href="/employer/jobs/new" className="text-foreground underline underline-offset-2">
             Post your first job.
@@ -77,9 +51,14 @@ export default function EmployerJobsPage() {
       )}
 
       {!isLoading && jobs && jobs.length > 0 && (
-        <div className="divide-y rounded-lg border">
-          {jobs.map((job) => (
-            <div key={job.id} className="flex items-center gap-4 px-4 py-3">
+        <div className="border-border bg-card overflow-hidden rounded-lg border">
+          {jobs.map((job, i) => (
+            <div
+              key={job.id}
+              className={`flex items-center gap-4 px-4 py-3 ${
+                i < jobs.length - 1 ? "border-border border-b" : ""
+              }`}
+            >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="truncate font-medium">{job.title}</p>

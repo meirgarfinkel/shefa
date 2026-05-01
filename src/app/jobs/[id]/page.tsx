@@ -8,7 +8,7 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { ResponsivenessBadge } from "@/components/responsiveness-badge";
+import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import {
   Dialog,
   DialogContent,
@@ -50,10 +50,10 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-blue-100 text-blue-800",
-  VIEWED: "bg-yellow-100 text-yellow-800",
-  RESPONDED: "bg-green-100 text-green-800",
-  CLOSED: "bg-muted text-muted-foreground",
+  SUBMITTED: "bg-muted text-muted-foreground border border-border",
+  VIEWED: "bg-warning/15 text-warning border border-warning/25",
+  RESPONDED: "bg-success/15 text-success border border-success/25",
+  CLOSED: "bg-destructive/15 text-destructive border border-destructive/25",
 };
 
 function ApplyDialog({
@@ -106,7 +106,7 @@ function ApplyDialog({
         </div>
 
         {submit.error && (
-          <p className="text-sm text-red-600">
+          <p className="text-destructive text-sm">
             {submit.error.data?.code === "CONFLICT"
               ? "You already applied to this job."
               : "Something went wrong. Please try again."}
@@ -194,9 +194,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           >
             {job.employerProfile.companyName}
           </Link>
-          <ResponsivenessBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+          <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
         </div>
-        <h1 className="mt-1 text-3xl font-semibold">{job.title}</h1>
+        <h1 className="mt-1 text-xl font-medium">{job.title}</h1>
 
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="bg-muted rounded-full px-3 py-1 text-sm">
@@ -220,7 +220,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <div>
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Pay</p>
-          <p className="mt-1 text-sm font-semibold">
+          <p className="mt-1 text-sm font-medium">
             From ${Number(job.minHourlyRate).toFixed(2)}/hr
           </p>
           {job.payNotes && <p className="text-muted-foreground mt-0.5 text-xs">{job.payNotes}</p>}
@@ -257,14 +257,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <>
           <div className="my-6 space-y-4">
             {job.whatWeTeach && (
-              <div className="rounded-lg border p-4">
-                <h2 className="mb-1 text-sm font-semibold">We&apos;ll teach you</h2>
+              <div className="border-border bg-card rounded-lg border p-4">
+                <h2 className="mb-1 text-sm font-medium">We&apos;ll teach you</h2>
                 <p className="text-muted-foreground text-sm">{job.whatWeTeach}</p>
               </div>
             )}
             {job.whatWereLookingFor && (
-              <div className="rounded-lg border p-4">
-                <h2 className="mb-1 text-sm font-semibold">What we&apos;re looking for</h2>
+              <div className="border-border bg-card rounded-lg border p-4">
+                <h2 className="mb-1 text-sm font-medium">What we&apos;re looking for</h2>
                 <p className="text-muted-foreground text-sm">{job.whatWereLookingFor}</p>
               </div>
             )}
@@ -275,7 +275,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
       {/* Description */}
       <div className="my-6">
-        <h2 className="mb-3 text-lg font-semibold">About the role</h2>
+        <h2 className="mb-3 text-base font-medium">About the role</h2>
         <p className="text-muted-foreground text-sm whitespace-pre-wrap">{job.description}</p>
       </div>
 
@@ -284,7 +284,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="mb-3 text-sm font-semibold">Preferred skills</h2>
+            <h2 className="mb-3 text-sm font-medium">Preferred skills</h2>
             <div className="flex flex-wrap gap-2">
               {job.preferredSkills.map((ps) => (
                 <span key={ps.skill.id} className="bg-muted rounded-full px-3 py-1 text-sm">
@@ -337,7 +337,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         {isSeeker && (myStatus?.status === "CLOSED" || (!myStatus && submitted)) && (
           <div className="space-y-2">
             {submitted && (
-              <p className="text-sm text-green-700">
+              <p className="text-success text-sm">
                 Application submitted! The employer will be in touch.
               </p>
             )}

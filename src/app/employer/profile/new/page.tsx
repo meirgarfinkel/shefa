@@ -83,7 +83,7 @@ export default function EmployerProfileNewPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Set up your employer profile</h1>
+        <h1 className="text-xl font-medium">Set up your employer profile</h1>
         <p className="text-muted-foreground mt-1">
           Tell candidates who you are. Required fields are marked with *.
         </p>

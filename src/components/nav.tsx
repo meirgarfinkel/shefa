@@ -27,22 +27,30 @@ function linksForRole(role: string): NavLink[] {
 
 export async function Nav() {
   const session = await auth();
-  if (!session?.user?.role) return null;
 
-  const links = linksForRole(session.user.role);
-  const email = session.user.email ?? "";
+  const links = session?.user?.role ? linksForRole(session.user.role) : [];
+  const email = session?.user?.email ?? null;
 
   return (
     <>
       <header className="bg-background fixed top-0 right-0 left-0 z-50 h-16 border-b">
         <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-4">
-          <Link href="/" className="text-xl font-bold tracking-tight">
+          <Link href="/" className="text-xl font-medium tracking-tight">
             Shefa
           </Link>
 
           <div className="flex items-center gap-4">
-            <NavLinks links={links} />
-            <UserMenu email={email} />
+            {links.length > 0 && <NavLinks links={links} />}
+            {email ? (
+              <UserMenu email={email} />
+            ) : (
+              <Link
+                href="/sign-in"
+                className="text-muted-foreground hover:text-foreground text-sm transition-colors duration-150"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       </header>

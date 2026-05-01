@@ -28,15 +28,15 @@ export default function RoleSelectPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-semibold">Welcome to Shefa</h1>
+          <h1 className="text-xl font-medium">Welcome to Shefa</h1>
           <p className="text-muted-foreground mt-1">Are you looking for work or looking to hire?</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <button type="button" onClick={() => setSelected("SEEKER")} className="text-left">
             <Card
-              className={`cursor-pointer transition-all ${
-                selected === "SEEKER" ? "ring-primary ring-2" : ""
+              className={`cursor-pointer transition-colors duration-150 ${
+                selected === "SEEKER" ? "border-primary/60" : ""
               }`}
             >
               <CardHeader>
@@ -48,8 +48,8 @@ export default function RoleSelectPage() {
 
           <button type="button" onClick={() => setSelected("EMPLOYER")} className="text-left">
             <Card
-              className={`cursor-pointer transition-all ${
-                selected === "EMPLOYER" ? "ring-primary ring-2" : ""
+              className={`cursor-pointer transition-colors duration-150 ${
+                selected === "EMPLOYER" ? "border-primary/60" : ""
               }`}
             >
               <CardHeader>

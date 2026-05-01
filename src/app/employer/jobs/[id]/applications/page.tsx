@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/ui/page-header";
 
 type ApplicationStatus = "SUBMITTED" | "VIEWED" | "RESPONDED" | "CLOSED";
 
@@ -17,10 +17,10 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-blue-100 text-blue-800",
-  VIEWED: "bg-yellow-100 text-yellow-800",
-  RESPONDED: "bg-green-100 text-green-800",
-  CLOSED: "bg-muted text-muted-foreground",
+  SUBMITTED: "bg-muted text-muted-foreground border border-border",
+  VIEWED: "bg-warning/15 text-warning border border-warning/25",
+  RESPONDED: "bg-success/15 text-success border border-success/25",
+  CLOSED: "bg-destructive/15 text-destructive border border-destructive/25",
 };
 
 const DAY_LABELS: Record<string, string> = {
@@ -33,11 +33,11 @@ const DAY_LABELS: Record<string, string> = {
   SAT: "Sat",
 };
 
-function StatusBadge({ status }: { status: string }) {
+function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[s] ?? "bg-muted text-muted-foreground"}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-muted text-muted-foreground border-border border"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -64,19 +64,14 @@ export default function EmployerJobApplicationsPage({
   });
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <div className="mb-6 flex items-center gap-3">
+    <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
+      <div className="mb-4">
         <Link href="/employer/jobs" className="text-muted-foreground hover:text-foreground text-sm">
           ← My jobs
         </Link>
       </div>
 
-      <h1 className="mb-1 text-2xl font-semibold">Applications</h1>
-      <p className="text-muted-foreground mb-6 text-sm">
-        Candidates who applied to this job posting.
-      </p>
-
-      <Separator className="mb-6" />
+      <PageHeader title="Applications" description="Candidates who applied to this job posting." />
 
       {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
@@ -89,7 +84,7 @@ export default function EmployerJobApplicationsPage({
       {!isLoading && applications && applications.length > 0 && (
         <ul className="space-y-4">
           {applications.map((app) => (
-            <li key={app.id} className="rounded-lg border p-4">
+            <li key={app.id} className="border-border bg-card rounded-lg border p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">
@@ -108,22 +103,22 @@ export default function EmployerJobApplicationsPage({
                     <p className="text-muted-foreground text-xs">Work authorized</p>
                   )}
                 </div>
-                <StatusBadge status={app.status} />
+                <AppStatusBadge status={app.status} />
               </div>
 
               {app.message && (
-                <p className="text-muted-foreground mt-3 border-t pt-3 text-sm italic">
+                <p className="border-border text-muted-foreground mt-3 border-t pt-3 text-sm italic">
                   &ldquo;{app.message}&rdquo;
                 </p>
               )}
 
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+              <div className="border-border mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
                 <p className="text-muted-foreground text-xs">
                   Applied {new Date(app.createdAt).toLocaleDateString()}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     disabled={createConversation.isPending}
                     onClick={() =>
@@ -139,7 +134,7 @@ export default function EmployerJobApplicationsPage({
                     <>
                       {app.status === "SUBMITTED" && (
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           disabled={updateStatus.isPending}
                           onClick={() => updateStatus.mutate({ id: app.id, status: "VIEWED" })}
@@ -149,7 +144,7 @@ export default function EmployerJobApplicationsPage({
                       )}
                       {(app.status === "SUBMITTED" || app.status === "VIEWED") && (
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           size="sm"
                           disabled={updateStatus.isPending}
                           onClick={() => updateStatus.mutate({ id: app.id, status: "RESPONDED" })}

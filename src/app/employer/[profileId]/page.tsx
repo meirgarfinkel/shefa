@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ResponsivenessBadge } from "@/components/responsiveness-badge";
+import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 
 const INDUSTRY_LABELS: Record<string, string> = {
   FOOD_SERVICE: "Food Service",
@@ -73,13 +73,13 @@ export default function EmployerProfilePage({
       <div className="mt-4 mb-6">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
-            <h1 className="text-3xl font-semibold">{profile.companyName}</h1>
+            <h1 className="text-xl font-medium">{profile.companyName}</h1>
             <p className="text-muted-foreground mt-1 text-sm">
               {profile.city}, {profile.state}
               {profile.industry && ` · ${INDUSTRY_LABELS[profile.industry] ?? profile.industry}`}
             </p>
           </div>
-          <ResponsivenessBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
+          <ResponsiveBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
@@ -106,7 +106,7 @@ export default function EmployerProfilePage({
       {/* About */}
       {profile.aboutCompany && (
         <div className="my-6">
-          <h2 className="mb-3 text-lg font-semibold">About {profile.companyName}</h2>
+          <h2 className="mb-3 text-base font-medium">About {profile.companyName}</h2>
           <p className="text-muted-foreground text-sm whitespace-pre-wrap">
             {profile.aboutCompany}
           </p>
@@ -118,7 +118,7 @@ export default function EmployerProfilePage({
         <>
           {profile.aboutCompany && <Separator />}
           <div className="my-6">
-            <h2 className="mb-3 text-lg font-semibold">Why we give people a chance</h2>
+            <h2 className="mb-3 text-base font-medium">Why we give people a chance</h2>
             <p className="text-muted-foreground text-sm whitespace-pre-wrap">
               {profile.missionText}
             </p>

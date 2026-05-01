@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
-import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/ui/page-header";
+import { InboxRow } from "@/components/ui/inbox-row";
 
 function displayName(
   participant: {
@@ -17,6 +17,16 @@ function displayName(
   if (participant.seekerProfile)
     return `${participant.seekerProfile.firstName} ${participant.seekerProfile.lastName}`;
   return "Unknown";
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 }
 
 function formatTime(date: Date | string | null): string {
@@ -37,11 +47,8 @@ export default function MessagesPage() {
   const { data: conversations, isLoading } = trpc.conversation.list.useQuery();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-1 text-2xl font-semibold">Messages</h1>
-      <p className="text-muted-foreground mb-6 text-sm">Your conversations.</p>
-
-      <Separator className="mb-6" />
+    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
+      <PageHeader title="Messages" description="Your conversations." />
 
       {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
@@ -52,60 +59,29 @@ export default function MessagesPage() {
       )}
 
       {!isLoading && conversations && conversations.length > 0 && (
-        <ul className="divide-y">
+        <div className="border-border bg-card overflow-hidden rounded-lg border">
           {conversations.map((conv) => {
             const other = conv.participantA.id === callerId ? conv.participantB : conv.participantA;
-            const unread = conv._count.messages;
-            const hasUnread = unread > 0;
+            const isUnread = conv._count.messages > 0;
+            const name = displayName(other);
+            const preview =
+              [conv.job ? `Re: ${conv.job.title}` : null, conv.lastMessagePreview]
+                .filter(Boolean)
+                .join(" · ") || "";
 
             return (
-              <li key={conv.id}>
-                <Link
-                  href={`/messages/${conv.id}`}
-                  className="hover:bg-muted/50 flex items-start gap-3 px-2 py-4 transition-colors"
-                >
-                  {/* Unread indicator */}
-                  <div className="mt-1.5 flex-shrink-0">
-                    {hasUnread ? (
-                      <span className="block h-2.5 w-2.5 rounded-full bg-blue-500" />
-                    ) : (
-                      <span className="block h-2.5 w-2.5" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span
-                        className={`truncate text-sm ${hasUnread ? "font-semibold" : "font-medium"}`}
-                      >
-                        {displayName(other)}
-                      </span>
-                      <span className="text-muted-foreground flex-shrink-0 text-xs">
-                        {formatTime(conv.lastMessageAt)}
-                      </span>
-                    </div>
-
-                    {conv.job && (
-                      <p className="text-muted-foreground truncate text-xs">Re: {conv.job.title}</p>
-                    )}
-
-                    {conv.lastMessagePreview && (
-                      <p className="text-muted-foreground mt-0.5 truncate text-sm">
-                        {conv.lastMessagePreview}
-                      </p>
-                    )}
-                  </div>
-
-                  {hasUnread && (
-                    <span className="mt-1 flex-shrink-0 rounded-full bg-blue-500 px-1.5 py-0.5 text-xs font-medium text-white">
-                      {unread}
-                    </span>
-                  )}
-                </Link>
-              </li>
+              <InboxRow
+                key={conv.id}
+                conversationId={conv.id}
+                name={name}
+                preview={preview}
+                timeAgo={formatTime(conv.lastMessageAt)}
+                isUnread={isUnread}
+                initials={getInitials(name)}
+              />
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -79,7 +79,7 @@ export default function SeekerProfileNewPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Create your profile</h1>
+        <h1 className="text-xl font-medium">Create your profile</h1>
         <p className="text-muted-foreground mt-1">
           This is how employers will find you. Required fields are marked with *.
         </p>

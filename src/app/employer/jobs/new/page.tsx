@@ -78,7 +78,7 @@ export default function PostJobPage() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-2xl font-semibold">Post a job</h1>
+        <h1 className="text-xl font-medium">Post a job</h1>
         <p className="text-muted-foreground mt-1">
           Create a listing for your open position. Required fields are marked with *.
         </p>
