@@ -33,6 +33,17 @@ export const seekerRouter = createTRPCRouter({
       };
     }),
 
+  getMyProfile: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "SEEKER") {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const profile = await ctx.prisma.seekerProfile.findUnique({
+      where: { userId: ctx.user.id },
+      select: { id: true, city: true, state: true },
+    });
+    return profile;
+  }),
+
   createProfile: protectedProcedure
     .input(CreateSeekerProfileSchema)
     .mutation(async ({ ctx, input }) => {

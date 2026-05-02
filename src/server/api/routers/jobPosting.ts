@@ -6,6 +6,7 @@ import {
   UpdateJobPostingSchema,
   ListJobPostingsSchema,
 } from "@/lib/schemas/jobPosting";
+import { geocodeCityState } from "@/lib/geocode";
 
 export const jobPostingRouter = createTRPCRouter({
   create: protectedProcedure.input(CreateJobPostingSchema).mutation(async ({ ctx, input }) => {
@@ -22,12 +23,14 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     const { preferredSkillIds, requiredLanguageIds, ...fields } = input;
+    const coords = await geocodeCityState(fields.city, fields.state);
 
     return ctx.prisma.jobPosting.create({
       data: {
         ...fields,
         employerProfileId: profile.id,
         postedById: ctx.user.id,
+        ...(coords && { lat: coords.lat, lon: coords.lon }),
         ...(preferredSkillIds.length && {
           preferredSkills: { create: preferredSkillIds.map((skillId) => ({ skillId })) },
         }),
@@ -56,12 +59,41 @@ export const jobPostingRouter = createTRPCRouter({
         : undefined
       : { in: ["ACTIVE" as const] };
 
-    return ctx.prisma.jobPosting.findMany({
+    // PostGIS radius search: geocode the reference city/state and find jobs within radius.
+    // Always ORDER BY distance so geoIds are distance-sorted for "closest" sort.
+    let geoIds: string[] | undefined;
+    if (input.radiusMiles && input.city && input.state) {
+      const coords = await geocodeCityState(input.city, input.state);
+      if (coords) {
+        const radiusMeters = input.radiusMiles * 1609.344;
+        const rows = await ctx.prisma.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "JobPosting"
+          WHERE lat IS NOT NULL AND lon IS NOT NULL
+          AND ST_DWithin(
+            ST_MakePoint(lon, lat)::geography,
+            ST_MakePoint(${coords.lon}, ${coords.lat})::geography,
+            ${radiusMeters}
+          )
+          ORDER BY ST_Distance(
+            ST_MakePoint(lon, lat)::geography,
+            ST_MakePoint(${coords.lon}, ${coords.lat})::geography
+          )
+        `;
+        geoIds = rows.map((r) => r.id);
+      }
+    }
+
+    const results = await ctx.prisma.jobPosting.findMany({
       where: {
         ...(input.employerProfileId && { employerProfileId: input.employerProfileId }),
         ...(statusFilter !== undefined && { status: statusFilter }),
-        ...(input.city && { city: { contains: input.city, mode: "insensitive" } }),
-        ...(input.state && { state: { contains: input.state, mode: "insensitive" } }),
+        // When radius search succeeded, filter by geo IDs; otherwise fall back to text match
+        ...(geoIds !== undefined
+          ? { id: { in: geoIds } }
+          : {
+              ...(input.city && { city: { contains: input.city, mode: "insensitive" } }),
+              ...(input.state && { state: { contains: input.state, mode: "insensitive" } }),
+            }),
         ...(input.jobType?.length && { jobType: { in: input.jobType } }),
         ...(input.workArrangement?.length && { workArrangement: { in: input.workArrangement } }),
         ...(input.workDays?.length && { workDays: { hasSome: input.workDays } }),
@@ -75,9 +107,19 @@ export const jobPostingRouter = createTRPCRouter({
         employerProfile: {
           select: { companyName: true, city: true, state: true },
         },
+        _count: { select: { applications: true } },
       },
       orderBy: { createdAt: "desc" },
     });
+
+    // When sorting by closest and we have distance-sorted geoIds, re-order in JS
+    // (Prisma's `id IN (...)` doesn't preserve array order)
+    if (input.sortBy === "closest" && geoIds) {
+      const byId = new Map(results.map((r) => [r.id, r]));
+      return geoIds.map((id) => byId.get(id)).filter((r) => r !== undefined);
+    }
+
+    return results;
   }),
 
   getById: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
@@ -133,7 +175,7 @@ export const jobPostingRouter = createTRPCRouter({
 
     const posting = await ctx.prisma.jobPosting.findUnique({
       where: { id },
-      select: { id: true, postedById: true, status: true },
+      select: { id: true, postedById: true, status: true, city: true, state: true },
     });
 
     if (!posting) {
@@ -148,10 +190,19 @@ export const jobPostingRouter = createTRPCRouter({
       throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update a closed posting" });
     }
 
+    // Re-geocode if city or state is being updated
+    let coords: { lat: number; lon: number } | null = null;
+    if (fields.city !== undefined || fields.state !== undefined) {
+      const city = fields.city ?? posting.city;
+      const state = fields.state ?? posting.state;
+      coords = await geocodeCityState(city, state);
+    }
+
     return ctx.prisma.jobPosting.update({
       where: { id },
       data: {
         ...fields,
+        ...(coords && { lat: coords.lat, lon: coords.lon }),
         ...(preferredSkillIds !== undefined && {
           preferredSkills: {
             deleteMany: {},

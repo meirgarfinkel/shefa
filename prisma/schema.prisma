@@ -243,6 +243,8 @@ model JobPosting {
   city               String
   state              String
   zip                String
+  lat                Float?
+  lon                Float?
   minHourlyRate      Decimal         @db.Decimal(8, 2)
   payNotes           String?
   workDays           DayOfWeek[]

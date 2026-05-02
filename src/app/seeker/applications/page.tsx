@@ -6,20 +6,18 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 
-type ApplicationStatus = "SUBMITTED" | "VIEWED" | "RESPONDED" | "CLOSED";
+type ApplicationStatus = "SUBMITTED" | "VIEWED" | "RESPONDED";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "Applied",
   VIEWED: "Viewed by employer",
   RESPONDED: "Responded",
-  CLOSED: "Withdrawn",
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
   SUBMITTED: "bg-muted text-muted-foreground border border-border",
   VIEWED: "bg-warning/15 text-warning border border-warning/25",
   RESPONDED: "bg-success/15 text-success border border-success/25",
-  CLOSED: "bg-destructive/15 text-destructive border border-destructive/25",
 };
 
 function AppStatusBadge({ status }: { status: string }) {
@@ -36,11 +34,6 @@ function AppStatusBadge({ status }: { status: string }) {
 export default function SeekerApplicationsPage() {
   const router = useRouter();
   const { data: applications, isLoading } = trpc.application.listForSeeker.useQuery();
-
-  const utils = trpc.useUtils();
-  const withdraw = trpc.application.withdraw.useMutation({
-    onSuccess: () => void utils.application.listForSeeker.invalidate(),
-  });
 
   const createConversation = trpc.conversation.create.useMutation({
     onSuccess: (conv) => router.push(`/messages/${conv.id}`),
@@ -97,17 +90,6 @@ export default function SeekerApplicationsPage() {
                       }
                     >
                       Message
-                    </Button>
-                  )}
-                  {app.status === "SUBMITTED" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground h-auto py-1 text-xs"
-                      disabled={withdraw.isPending}
-                      onClick={() => withdraw.mutate({ id: app.id })}
-                    >
-                      Withdraw
                     </Button>
                   )}
                 </div>

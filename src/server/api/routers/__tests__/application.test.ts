@@ -308,65 +308,6 @@ describe("listForJob", () => {
   });
 });
 
-// ── withdraw ──────────────────────────────────────────────────────────────────
-
-describe("withdraw", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
-
-  beforeEach(() => {
-    mockPrisma = makeMockPrisma();
-  });
-
-  it("happy path: seeker withdraws own application", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({ id: "app-1", seekerId: "user-1" });
-    const updated = { id: "app-1", status: "CLOSED" };
-    mockPrisma.application.update.mockResolvedValue(updated);
-
-    const result = await caller.withdraw({ id: "app-1" });
-    expect(result).toEqual(updated);
-    expect(mockPrisma.application.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "CLOSED" } }),
-    );
-  });
-
-  it("already-closed application → idempotent success", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({
-      id: "app-1",
-      seekerId: "user-1",
-      status: "CLOSED",
-    });
-    mockPrisma.application.update.mockResolvedValue({ id: "app-1", status: "CLOSED" });
-
-    await expect(caller.withdraw({ id: "app-1" })).resolves.toBeDefined();
-  });
-
-  it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
-    await expect(caller.withdraw({ id: "app-1" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
-  });
-
-  it("EMPLOYER → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
-    await expect(caller.withdraw({ id: "app-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
-
-  it("application not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.application.findUnique.mockResolvedValue(null);
-    await expect(caller.withdraw({ id: "nonexistent" })).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  });
-
-  it("application owned by different seeker → NOT_FOUND (not FORBIDDEN)", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({ id: "app-1", seekerId: "user-2" });
-    await expect(caller.withdraw({ id: "app-1" })).rejects.toMatchObject({ code: "NOT_FOUND" });
-  });
-});
-
 // ── updateStatus ──────────────────────────────────────────────────────────────
 
 describe("updateStatus", () => {

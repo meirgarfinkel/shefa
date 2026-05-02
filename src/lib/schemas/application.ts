@@ -9,10 +9,6 @@ export const ApplySchema = z.object({
     .transform((v) => (v === "" ? undefined : v)),
 });
 
-export const WithdrawApplicationSchema = z.object({
-  id: z.string().min(1),
-});
-
 export const ListForJobSchema = z.object({
   jobId: z.string().min(1),
 });

@@ -92,7 +92,7 @@ export default function SeekerProfileNewPage() {
             control={form.control}
             name="isAdult"
             render={({ field }) => (
-              <FormItem className="flex flex-row items-start space-y-0 space-x-3 rounded-md border p-4">
+              <FormItem className="bg-card flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
                 <FormControl>
                   <Checkbox
                     checked={field.value === true}
@@ -100,7 +100,7 @@ export default function SeekerProfileNewPage() {
                   />
                 </FormControl>
                 <div className="space-y-1 leading-none">
-                  <FormLabel>I confirm I am 18 years of age or older *</FormLabel>
+                  <FormLabel>I confirm I am 18+ years old *</FormLabel>
                   <FormMessage />
                 </div>
               </FormItem>
@@ -111,7 +111,7 @@ export default function SeekerProfileNewPage() {
 
           {/* Name */}
           <div className="space-y-4">
-            <h2 className="font-medium">About you</h2>
+            <h2 className="text-lg font-medium">About you</h2>
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -194,13 +194,13 @@ export default function SeekerProfileNewPage() {
 
           {/* Work preferences */}
           <div className="space-y-4">
-            <h2 className="font-medium">Work preferences</h2>
+            <h2 className="text-lg font-medium">Work preferences</h2>
 
             <FormField
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                <FormItem className="bg-card flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -214,20 +214,22 @@ export default function SeekerProfileNewPage() {
               )}
             />
 
+            <Separator />
+
             <FormField
               control={form.control}
               name="availableDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Available days *</FormLabel>
+                  <FormLabel className="text-lg font-medium">Available days *</FormLabel>
                   <FormDescription>Select all days you can work.</FormDescription>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {DAYS.map((day) => (
                       <label
                         key={day.value}
-                        className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                        className={`bg-primary-foreground/10 flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "bg-primary text-primary-foreground border-primary"
+                            ? "bg-success text-primary-foreground"
                             : "hover:bg-muted"
                         }`}
                       >
@@ -263,7 +265,7 @@ export default function SeekerProfileNewPage() {
               name="skillIds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Skills</FormLabel>
+                  <FormLabel className="text-lg font-medium">Skills</FormLabel>
                   <FormDescription>Select the skills you have or are developing.</FormDescription>
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
@@ -309,7 +311,9 @@ export default function SeekerProfileNewPage() {
             name="jobSeekText"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>What kind of job are you seeking? *</FormLabel>
+                <FormLabel className="text-lg font-medium">
+                  What kind of job are you seeking? *
+                </FormLabel>
                 <FormDescription>
                   Describe the type of work you&apos;re looking for and what you want to learn on
                   the job. (max 1000 characters)
@@ -332,7 +336,7 @@ export default function SeekerProfileNewPage() {
           {/* Optional section */}
           <div className="space-y-6">
             <div>
-              <h2 className="font-medium">Optional — add later if you like</h2>
+              <h2 className="text-lg font-medium">Optional — add later if you like</h2>
               <p className="text-muted-foreground text-sm">
                 These fields help employers find you but aren&apos;t required to get started.
               </p>
@@ -343,7 +347,7 @@ export default function SeekerProfileNewPage() {
               name="educationLevel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Highest education level</FormLabel>
+                  <FormLabel className="text-lg font-medium">Highest education level</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -369,7 +373,7 @@ export default function SeekerProfileNewPage() {
                 name="languageIds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Languages spoken</FormLabel>
+                    <FormLabel className="text-lg font-medium">Languages spoken</FormLabel>
                     <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {languages.map((lang) => (
                         <label key={lang.id} className="flex cursor-pointer items-center space-x-2">
@@ -399,7 +403,7 @@ export default function SeekerProfileNewPage() {
               name="otherLanguages"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Other languages</FormLabel>
+                  <FormLabel className="text-lg font-medium">Other languages</FormLabel>
                   <FormDescription>Languages not listed above.</FormDescription>
                   <FormControl>
                     <Input
@@ -418,7 +422,7 @@ export default function SeekerProfileNewPage() {
               name="otherSkills"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Other skills</FormLabel>
+                  <FormLabel className="text-lg font-medium">Other skills</FormLabel>
                   <FormDescription>Skills not listed above, comma-separated.</FormDescription>
                   <FormControl>
                     <Input
@@ -437,7 +441,7 @@ export default function SeekerProfileNewPage() {
               name="about"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>About yourself</FormLabel>
+                  <FormLabel className="text-lg font-medium">About yourself</FormLabel>
                   <FormDescription>
                     Anything else you&apos;d like employers to know. (max 1000 characters)
                   </FormDescription>

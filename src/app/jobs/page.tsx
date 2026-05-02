@@ -1,25 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
+import { ChevronDownIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
 import { JobCard } from "@/components/ui/job-card";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-type JobTypeValue = "FULL_TIME" | "PART_TIME" | "EITHER";
 type ArrangementValue = "ON_SITE" | "REMOTE" | "HYBRID";
 type DayValue = "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT";
-
-const JOB_TYPE_OPTIONS: { value: JobTypeValue; label: string }[] = [
-  { value: "FULL_TIME", label: "Full-time" },
-  { value: "PART_TIME", label: "Part-time" },
-  { value: "EITHER", label: "Either" },
-];
 
 const ARRANGEMENT_OPTIONS: { value: ArrangementValue; label: string }[] = [
   { value: "ON_SITE", label: "On-site" },
@@ -28,13 +35,21 @@ const ARRANGEMENT_OPTIONS: { value: ArrangementValue; label: string }[] = [
 ];
 
 const DAY_OPTIONS: { value: DayValue; label: string }[] = [
-  { value: "SUN", label: "Sun" },
-  { value: "MON", label: "Mon" },
-  { value: "TUE", label: "Tue" },
-  { value: "WED", label: "Wed" },
-  { value: "THU", label: "Thu" },
-  { value: "FRI", label: "Fri" },
-  { value: "SAT", label: "Sat" },
+  { value: "SUN", label: "Sunday" },
+  { value: "MON", label: "Monday" },
+  { value: "TUE", label: "Tuesday" },
+  { value: "WED", label: "Wednesday" },
+  { value: "THU", label: "Thursday" },
+  { value: "FRI", label: "Friday" },
+  { value: "SAT", label: "Saturday" },
+];
+
+const RADIUS_OPTIONS = [
+  { value: "5", label: "Within 5 miles" },
+  { value: "10", label: "Within 10 miles" },
+  { value: "25", label: "Within 25 miles" },
+  { value: "50", label: "Within 50 miles" },
+  { value: "100", label: "Within 100 miles" },
 ];
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -55,30 +70,56 @@ export default function JobsPage() {
 
   const [cityInput, setCityInput] = useState("");
   const [stateInput, setStateInput] = useState("");
-  const [jobTypes, setJobTypes] = useState<JobTypeValue[]>([]);
+  const [radius, setRadius] = useState("any");
+  const [jobType, setJobType] = useState("any");
   const [arrangements, setArrangements] = useState<ArrangementValue[]>([]);
   const [workDays, setWorkDays] = useState<DayValue[]>([]);
   const [skillIds, setSkillIds] = useState<string[]>([]);
-  const [showSkillFilter, setShowSkillFilter] = useState(false);
+  const [sortBy, setSortBy] = useState<"newest" | "closest">("newest");
 
-  const city = useDebounce(cityInput, 300);
-  const state = useDebounce(stateInput, 300);
+  const locationInitialized = useRef(false);
+
+  const city = useDebounce(cityInput, 400);
+  const state = useDebounce(stateInput, 400);
 
   const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
+
+  // Fetch the logged-in user's location to auto-fill the filter
+  const { data: seekerProfile } = trpc.seeker.getMyProfile.useQuery(undefined, {
+    enabled: session?.user?.role === "SEEKER",
+  });
+  const { data: employerProfile } = trpc.employer.getProfile.useQuery(undefined, {
+    enabled: session?.user?.role === "EMPLOYER",
+  });
+
+  // Auto-fill location from profile on first load
+  useEffect(() => {
+    if (locationInitialized.current) return;
+    const profileCity = seekerProfile?.city ?? employerProfile?.city;
+    const profileState = seekerProfile?.state ?? employerProfile?.state;
+    if (!profileCity || !profileState) return;
+    setCityInput(profileCity);
+    setStateInput(profileState);
+    setRadius("25");
+    locationInitialized.current = true;
+  }, [seekerProfile, employerProfile]);
 
   const { data: jobs, isLoading } = trpc.jobPosting.list.useQuery({
     city: city || undefined,
     state: state || undefined,
-    jobType: jobTypes.length ? jobTypes : undefined,
+    radiusMiles: radius !== "any" ? Number(radius) : undefined,
+    jobType: jobType !== "any" ? [jobType as "FULL_TIME" | "PART_TIME" | "EITHER"] : undefined,
     workArrangement: arrangements.length ? arrangements : undefined,
     workDays: workDays.length ? workDays : undefined,
     skillIds: skillIds.length ? skillIds : undefined,
+    sortBy,
   });
 
   const hasFilters =
     !!city ||
     !!state ||
-    jobTypes.length > 0 ||
+    radius !== "any" ||
+    jobType !== "any" ||
     arrangements.length > 0 ||
     workDays.length > 0 ||
     skillIds.length > 0;
@@ -86,189 +127,173 @@ export default function JobsPage() {
   function clearFilters() {
     setCityInput("");
     setStateInput("");
-    setJobTypes([]);
+    setRadius("any");
+    setJobType("any");
     setArrangements([]);
     setWorkDays([]);
     setSkillIds([]);
+    setSortBy("newest");
+    locationInitialized.current = false;
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
+    <div className="mx-auto max-w-4xl px-3 py-8 md:px-8">
       <PageHeader
         title="Job listings"
         description="Entry-level roles at employers who invest in their people."
         actions={
           session?.user?.role === "EMPLOYER" ? (
-            <Button
-              asChild
-              className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
-            >
+            <Button asChild>
               <Link href="/employer/jobs/new">Post a job</Link>
             </Button>
           ) : undefined
         }
       />
 
-      {/* Filters */}
-      <div className="border-border bg-card mb-8 rounded-lg border p-4">
-        <div className="space-y-4">
-          {/* Location row */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="sm:col-span-2">
-              <label className="text-muted-foreground mb-1 block text-xs font-medium tracking-wide uppercase">
-                City
-              </label>
-              <Input
-                value={cityInput}
-                onChange={(e) => setCityInput(e.target.value)}
-                placeholder="e.g. Brooklyn"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-muted-foreground mb-1 block text-xs font-medium tracking-wide uppercase">
-                State
-              </label>
-              <Input
-                value={stateInput}
-                onChange={(e) => setStateInput(e.target.value)}
-                placeholder="NY"
-                maxLength={2}
-                className="h-8 text-sm"
-              />
-            </div>
-            <div className="flex items-end">
-              {hasFilters && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-full text-xs"
-                  onClick={clearFilters}
+      {/* Compact filter bar */}
+      <div className="border-border bg-card mb-6 rounded-lg border p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Location */}
+          <Input
+            value={cityInput}
+            onChange={(e) => setCityInput(e.target.value)}
+            placeholder="City"
+            className="h-8 w-28 text-sm"
+          />
+          <Input
+            value={stateInput}
+            onChange={(e) => setStateInput(e.target.value)}
+            placeholder="ST"
+            maxLength={2}
+            className="h-8 w-10 text-sm"
+          />
+          <Select value={radius} onValueChange={setRadius}>
+            <SelectTrigger className="h-8 w-40 text-sm">
+              <SelectValue placeholder="Any distance" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="any">Any distance</SelectItem>
+              {RADIUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="bg-border h-5 w-px" />
+
+          {/* Job type */}
+          <Select value={jobType} onValueChange={setJobType}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="Job type" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="any">Any type</SelectItem>
+              <SelectItem value="FULL_TIME">Full-time</SelectItem>
+              <SelectItem value="PART_TIME">Part-time</SelectItem>
+              <SelectItem value="EITHER">Full or part-time</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Arrangement */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="border-border bg-muted h-8 gap-1.5 font-normal">
+                {arrangements.length > 0 ? `Arrangement (${arrangements.length})` : "Arrangement"}
+                <ChevronDownIcon className="text-muted-foreground size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {ARRANGEMENT_OPTIONS.map((opt) => (
+                <DropdownMenuCheckboxItem
+                  key={opt.value}
+                  checked={arrangements.includes(opt.value)}
+                  onCheckedChange={() => setArrangements((prev) => toggleItem(prev, opt.value))}
                 >
-                  Clear filters
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* Checkbox filters */}
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                Job type
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {JOB_TYPE_OPTIONS.map((opt) => (
-                  <label key={opt.value} className="flex cursor-pointer items-center gap-2">
-                    <Checkbox
-                      checked={jobTypes.includes(opt.value)}
-                      onCheckedChange={() => setJobTypes((prev) => toggleItem(prev, opt.value))}
-                    />
-                    <span className="text-sm">{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                Arrangement
-              </p>
-              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                {ARRANGEMENT_OPTIONS.map((opt) => (
-                  <label key={opt.value} className="flex cursor-pointer items-center gap-2">
-                    <Checkbox
-                      checked={arrangements.includes(opt.value)}
-                      onCheckedChange={() => setArrangements((prev) => toggleItem(prev, opt.value))}
-                    />
-                    <span className="text-sm">{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Work days */}
-          <div>
-            <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-              Work days
-            </p>
-            <div className="flex flex-wrap gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="border-border bg-muted h-8 gap-1.5 font-normal">
+                {workDays.length > 0 ? `Days (${workDays.length})` : "Days"}
+                <ChevronDownIcon className="text-muted-foreground size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
               {DAY_OPTIONS.map((day) => (
-                <label
+                <DropdownMenuCheckboxItem
                   key={day.value}
-                  className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-1 text-xs transition-colors duration-150 ${
-                    workDays.includes(day.value)
-                      ? "border-primary/40 bg-primary/15 text-primary"
-                      : "border-border hover:bg-muted"
-                  }`}
+                  checked={workDays.includes(day.value)}
+                  onCheckedChange={() => setWorkDays((prev) => toggleItem(prev, day.value))}
                 >
-                  <input
-                    type="checkbox"
-                    className="sr-only"
-                    checked={workDays.includes(day.value)}
-                    onChange={() => setWorkDays((prev) => toggleItem(prev, day.value))}
-                  />
                   {day.label}
-                </label>
+                </DropdownMenuCheckboxItem>
               ))}
-            </div>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          {/* Skills (collapsible) */}
+          {/* Skills */}
           {skillGroups && Object.keys(skillGroups).length > 0 && (
-            <div>
-              <button
-                type="button"
-                className="text-muted-foreground flex items-center gap-1 text-xs font-medium tracking-wide uppercase"
-                onClick={() => setShowSkillFilter((v) => !v)}
-              >
-                <span>Skills</span>
-                {skillIds.length > 0 && (
-                  <span className="border-primary/25 bg-primary/15 text-primary ml-1 rounded-full border px-1.5 py-0.5 text-xs font-semibold">
-                    {skillIds.length}
-                  </span>
-                )}
-                <span className="ml-1">{showSkillFilter ? "▲" : "▼"}</span>
-              </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-border bg-muted h-8 gap-1.5 font-normal"
+                >
+                  {skillIds.length > 0 ? `Skills (${skillIds.length})` : "Skills"}
+                  <ChevronDownIcon className="text-muted-foreground size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
+                {Object.entries(skillGroups).map(([category, skills], i) => (
+                  <div key={category}>
+                    {i > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                    {skills.map((skill) => (
+                      <DropdownMenuCheckboxItem
+                        key={skill.id}
+                        checked={skillIds.includes(skill.id)}
+                        onCheckedChange={() => setSkillIds((prev) => toggleItem(prev, skill.id))}
+                      >
+                        {skill.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
-              {showSkillFilter && (
-                <div className="mt-3 max-h-48 space-y-3 overflow-y-auto pr-1">
-                  {Object.entries(skillGroups).map(([category, skills]) => (
-                    <div key={category}>
-                      <p className="text-muted-foreground mb-1.5 text-xs font-semibold tracking-wider uppercase">
-                        {category}
-                      </p>
-                      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-                        {skills.map((skill) => (
-                          <label
-                            key={skill.id}
-                            className="flex cursor-pointer items-center gap-1.5"
-                          >
-                            <Checkbox
-                              checked={skillIds.includes(skill.id)}
-                              onCheckedChange={() =>
-                                setSkillIds((prev) => toggleItem(prev, skill.id))
-                              }
-                            />
-                            <span className="text-xs">{skill.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          <div className="bg-border h-5 w-px" />
+
+          {/* Sort */}
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "closest")}>
+            <SelectTrigger className="h-8 w-32 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="closest">Closest</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {hasFilters && (
+            <Button variant="ghost" className="h-8 text-sm" onClick={clearFilters}>
+              Clear
+            </Button>
           )}
         </div>
       </div>
 
       {/* Results count */}
       {!isLoading && jobs !== undefined && (
-        <p className="text-muted-foreground mb-4 text-sm">
+        <p className="text-muted-foreground mt-2 mb-4 text-sm">
           {jobs.length === 0
             ? hasFilters
               ? "No jobs match your filters."
@@ -281,7 +306,6 @@ export default function JobsPage() {
         <div className="text-muted-foreground py-16 text-center">Loading listings…</div>
       )}
 
-      {/* Job cards */}
       {!isLoading && jobs && jobs.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           {jobs.map((job) => (
@@ -295,8 +319,10 @@ export default function JobsPage() {
               workArrangement={job.workArrangement}
               minHourlyRate={Number(job.minHourlyRate)}
               status={job.status}
+              showStatus={Boolean(employerProfile)}
               companyName={job.employerProfile.companyName}
               href={`/jobs/${job.id}`}
+              applicationCount={job._count.applications}
             />
           ))}
         </div>

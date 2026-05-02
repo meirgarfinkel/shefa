@@ -1,22 +1,20 @@
 @import "tailwindcss";
 
-/* ─── Shefa Design System — single dark theme ─── */
-
 :root {
   /* Surfaces */
-  --background: rgb(22, 27, 34); /* #161b22 — page base */
-  --card: rgb(31, 39, 51); /* #1f2733 — cards */
-  --popover: rgb(40, 48, 61); /* #28303d — overlays */
-  --muted: rgb(40, 48, 61); /* #28303d — subtle sections */
+  --background: rgb(80, 109, 108);
+  --card: rgb(45, 80, 90);
+  --popover: rgb(25, 55, 75);
+  --muted: rgb(40, 48, 61);
 
   /* Text */
-  --foreground: rgb(240, 242, 245); /* #f0f2f5 — primary text */
-  --muted-foreground: rgb(155, 170, 184); /* #9baab8 — secondary text */
+  --foreground: rgb(240, 242, 245);
+  --muted-foreground: rgb(188, 228, 235);
   --card-foreground: rgb(240, 242, 245);
   --popover-foreground: rgb(240, 242, 245);
 
   /* Accent — misty teal */
-  --primary: rgb(110, 181, 192); /* #6eb5c0 */
+  --primary: rgb(110, 181, 192);
   --primary-foreground: rgb(22, 27, 34);
 
   /* Semantic */
@@ -24,12 +22,12 @@
   --secondary-foreground: rgb(240, 242, 245);
   --accent: rgb(40, 48, 61);
   --accent-foreground: rgb(240, 242, 245);
-  --destructive: rgb(196, 106, 106); /* #c46a6a */
+  --destructive: rgb(196, 106, 106);
   --destructive-foreground: rgb(240, 242, 245);
 
   /* Status */
-  --success: rgb(93, 171, 122); /* #5dab7a */
-  --warning: rgb(196, 160, 74); /* #c4a04a */
+  --success: rgb(85, 218, 134);
+  --warning: rgb(196, 160, 74);
 
   /* Structure */
   --border: rgb(240 242 245 / 12%);

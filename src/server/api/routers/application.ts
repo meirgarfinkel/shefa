@@ -3,7 +3,6 @@ import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
   ApplySchema,
-  WithdrawApplicationSchema,
   ListForJobSchema,
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
@@ -120,25 +119,6 @@ export const applicationRouter = createTRPCRouter({
         },
       },
       orderBy: { createdAt: "desc" },
-    });
-  }),
-
-  withdraw: protectedProcedure.input(WithdrawApplicationSchema).mutation(async ({ ctx, input }) => {
-    if (ctx.user.role !== "SEEKER") {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
-
-    const application = await ctx.prisma.application.findUnique({
-      where: { id: input.id },
-      select: { id: true, seekerId: true },
-    });
-    if (!application || application.seekerId !== ctx.user.id) {
-      throw new TRPCError({ code: "NOT_FOUND" });
-    }
-
-    return ctx.prisma.application.update({
-      where: { id: input.id },
-      data: { status: "CLOSED" },
     });
   }),
 

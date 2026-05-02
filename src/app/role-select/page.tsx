@@ -5,70 +5,83 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
+type Role = "SEEKER" | "EMPLOYER";
 
 export default function RoleSelectPage() {
   const router = useRouter();
   const { update } = useSession();
-  const [selected, setSelected] = useState<"SEEKER" | "EMPLOYER" | null>(null);
+  const [loadingRole, setLoadingRole] = useState<Role | null>(null);
 
   const setRole = trpc.user.setRole.useMutation({
     onSuccess: async (_data, variables) => {
       await update({ role: variables.role });
       router.push(variables.role === "SEEKER" ? "/seeker/profile/new" : "/employer/profile/new");
     },
+    onSettled: () => setLoadingRole(null),
   });
 
-  function handleSubmit() {
-    if (!selected) return;
-    setRole.mutate({ role: selected });
+  async function handleSelect(role: Role) {
+    setLoadingRole(role);
+    setRole.mutate({ role });
+  }
+
+  function RoleCard({
+    role,
+    title,
+    description,
+  }: {
+    role: Role;
+    title: string;
+    description: string;
+  }) {
+    const isLoading = loadingRole === role;
+
+    return (
+      <button
+        type="button"
+        onClick={() => handleSelect(role)}
+        disabled={!!loadingRole}
+        className="w-full text-left"
+      >
+        <Card
+          className={[
+            "cursor-pointer transition-colors duration-50",
+            "hover:bg-card/70",
+            loadingRole && !isLoading ? "opacity-50" : "",
+            isLoading ? "border-primary/60" : "",
+          ].join(" ")}
+        >
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl">{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
+          </CardHeader>
+        </Card>
+      </button>
+    );
   }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
-          <h1 className="text-xl font-medium">Welcome to Shefa</h1>
+          <h1 className="text-3xl font-medium">Welcome to Shefa!</h1>
           <p className="text-muted-foreground mt-1">Are you looking for work or looking to hire?</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <button type="button" onClick={() => setSelected("SEEKER")} className="text-left">
-            <Card
-              className={`cursor-pointer transition-colors duration-150 ${
-                selected === "SEEKER" ? "border-primary/60" : ""
-              }`}
-            >
-              <CardHeader>
-                <CardTitle>I&apos;m looking for work</CardTitle>
-                <CardDescription>Find employers willing to teach you on the job.</CardDescription>
-              </CardHeader>
-            </Card>
-          </button>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <RoleCard
+            role="SEEKER"
+            title="I'm looking for work"
+            description="Find jobs that you can excel at and grow."
+          />
 
-          <button type="button" onClick={() => setSelected("EMPLOYER")} className="text-left">
-            <Card
-              className={`cursor-pointer transition-colors duration-150 ${
-                selected === "EMPLOYER" ? "border-primary/60" : ""
-              }`}
-            >
-              <CardHeader>
-                <CardTitle>I&apos;m hiring</CardTitle>
-                <CardDescription>Post jobs and give candidates a chance to grow.</CardDescription>
-              </CardHeader>
-            </Card>
-          </button>
+          <RoleCard
+            role="EMPLOYER"
+            title="I'm hiring"
+            description="Give someone a chance to prove themselves."
+          />
         </div>
-
-        <Button className="w-full" disabled={!selected || setRole.isPending} onClick={handleSubmit}>
-          {setRole.isPending ? "Saving…" : "Continue"}
-        </Button>
-
-        {setRole.isError && (
-          <p className="text-destructive text-center text-sm">
-            Something went wrong. Please try again.
-          </p>
-        )}
       </div>
     </div>
   );
