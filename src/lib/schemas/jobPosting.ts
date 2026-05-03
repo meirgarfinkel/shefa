@@ -14,7 +14,6 @@ export const CreateJobPostingSchema = z.object({
   workArrangement: WorkArrangement,
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
-  zip: z.string().min(1).max(10),
   minHourlyRate: z.number().positive(),
   payNotes: z.string().max(500).optional(),
   workDays: z
@@ -37,7 +36,6 @@ export const UpdateJobPostingSchema = z.object({
   workArrangement: WorkArrangement.optional(),
   city: z.string().min(1).max(100).optional(),
   state: z.string().min(1).max(100).optional(),
-  zip: z.string().min(1).max(10).optional(),
   minHourlyRate: z.number().positive().optional(),
   payNotes: z.string().max(500).optional(),
   workDays: z

@@ -27,7 +27,6 @@ function makePublicSeekerProfile(overrides: Record<string, unknown> = {}) {
     lastName: "Doe",
     city: "Brooklyn",
     state: "NY",
-    zip: "11201",
     workAuthorization: true,
     availableDays: ["MON", "TUE"],
     jobSeekText: "I want to learn to cook.",
@@ -73,7 +72,6 @@ const VALID_INPUT = {
   lastName: "Doe",
   city: "Brooklyn",
   state: "NY",
-  zip: "11201",
   workAuthorization: true,
   isAdult: true as const,
   availableDays: ["MON", "TUE", "WED"] as Array<
@@ -157,13 +155,6 @@ describe("seeker.createProfile", () => {
     });
     const data = db.seekerProfile.create.mock.calls[0][0].data;
     expect(data.availableDays).toEqual(["MON", "TUE"]);
-  });
-
-  it("preserves zip codes with leading zeros", async () => {
-    const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.createProfile({ ...VALID_INPUT, zip: "01234" });
-    const data = db.seekerProfile.create.mock.calls[0][0].data;
-    expect(data.zip).toBe("01234");
   });
 
   // ── Adversarial ──

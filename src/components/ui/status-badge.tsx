@@ -12,11 +12,11 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   ACTIVE: "bg-success/15 text-success",
-  DRAFT: "bg-muted text-muted-foreground",
+  DRAFT: "bg-surface-3 text-text-muted",
   PAUSED: "bg-warning/15 text-warning",
   FILLED: "bg-primary/15 text-primary",
-  EXPIRED: "bg-destructive/15 text-destructive",
-  CLOSED: "bg-destructive/15 text-destructive",
+  EXPIRED: "bg-danger/15 text-danger",
+  CLOSED: "bg-danger/15 text-danger",
 };
 
 interface StatusBadgeProps {

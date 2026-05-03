@@ -13,6 +13,9 @@ function makeMockPrisma() {
     employerProfile: {
       findUnique: vi.fn(),
     },
+    city: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
     jobPosting: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -61,7 +64,6 @@ const MOCK_JOB_DRAFT = {
   workArrangement: "ON_SITE",
   city: "Brooklyn",
   state: "NY",
-  zip: "11201",
   minHourlyRate: "15.00",
   payNotes: null,
   workDays: ["MON", "TUE"],
@@ -89,7 +91,6 @@ const VALID_CREATE_INPUT = {
   workArrangement: "ON_SITE" as const,
   city: "Brooklyn",
   state: "NY",
-  zip: "11201",
   minHourlyRate: 15,
   workAuthRequired: false,
 };

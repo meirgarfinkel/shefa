@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { Pill } from "@/components/ui/pill";
 import type { JobStatus, JobType, WorkArrangement } from "@prisma/client";
 
 const JOB_TYPE_LABELS: Record<JobType, string> = {
@@ -47,23 +48,34 @@ export function JobCard({
 }: JobCardProps) {
   return (
     <Link href={href} className={cn("block", className)}>
-      <div className="border-border bg-card hover:border-border/60 hover:bg-card/80 rounded-lg border p-5 transition-colors duration-50">
+      <div className="bg-surface-1 hover:bg-surface-1/70 relative rounded-lg p-6 transition-colors duration-150">
+        <div className="pointer-events-none absolute inset-0 rounded-lg bg-linear-to-b from-white/7 via-transparent to-transparent" />
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-foreground truncate text-sm font-medium">{title}</h3>
-            <p className="text-muted-foreground mt-0.5 text-xs">{companyName}</p>
+            <h3 className="text-text hover:text-primary truncate text-sm font-medium">{title}</h3>
+            <p className="text-text-muted mt-0.5 text-xs">{companyName}</p>
           </div>
           {showStatus && <StatusBadge status={status} />}
         </div>
-        <div className="text-muted-foreground flex flex-wrap gap-3 text-xs">
-          <span>
-            {city}, {state}
-          </span>
-          <span>{JOB_TYPE_LABELS[jobType]}</span>
-          <span>{ARRANGEMENT_LABELS[workArrangement]}</span>
-          <span>From ${minHourlyRate}/hr</span>
+        <div className="text-text-muted flex flex-wrap gap-3 text-xs">
+          <Pill>
+            <span>
+              {city}, {state}
+            </span>
+          </Pill>
+          <Pill>
+            <span>{JOB_TYPE_LABELS[jobType]}</span>
+          </Pill>
+          <Pill>
+            <span>{ARRANGEMENT_LABELS[workArrangement]}</span>
+          </Pill>
+          <Pill>
+            <span>From ${minHourlyRate}/hr</span>
+          </Pill>
           {applicationCount !== undefined && applicationCount > 0 && (
-            <span>{applicationCount} applied</span>
+            <Pill variant="success">
+              <span>{applicationCount} applied</span>
+            </Pill>
           )}
         </div>
       </div>

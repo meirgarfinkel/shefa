@@ -97,15 +97,13 @@ export default function ConversationPage({
   }, [conv?.messages?.length]);
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground mx-auto max-w-2xl px-4 py-16 text-center">Loading…</div>
-    );
+    return <div className="text-text-muted mx-auto max-w-2xl px-4 py-16 text-center">Loading…</div>;
   }
 
   if (error || !conv) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">Conversation not found.</p>
+        <p className="text-text-muted">Conversation not found.</p>
         <Button variant="outline" className="mt-4" asChild>
           <Link href="/messages">Back to messages</Link>
         </Button>
@@ -139,7 +137,7 @@ export default function ConversationPage({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/messages" className="text-muted-foreground hover:text-foreground text-sm">
+          <Link href="/messages" className="text-text-muted hover:text-text text-sm">
             ← Messages
           </Link>
           <Separator orientation="vertical" className="h-4" />
@@ -152,7 +150,7 @@ export default function ConversationPage({
               <span className="font-medium">{otherName}</span>
             )}
             {conv.job && (
-              <p className="text-muted-foreground text-xs">
+              <p className="text-text-muted text-xs">
                 Re:{" "}
                 <Link href={`/jobs/${conv.job.id}`} className="hover:underline">
                   {conv.job.title}
@@ -165,7 +163,7 @@ export default function ConversationPage({
         {/* Actions menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
+            <Button variant="ghost" size="sm" className="text-text-muted">
               ⋯
             </Button>
           </DropdownMenuTrigger>
@@ -181,7 +179,7 @@ export default function ConversationPage({
               <DropdownMenuItem
                 onClick={() => blockConv.mutate({ conversationId })}
                 disabled={blockConv.isPending}
-                className="text-destructive focus:text-destructive"
+                className="text-danger focus:text-danger"
               >
                 Block
               </DropdownMenuItem>
@@ -195,7 +193,7 @@ export default function ConversationPage({
                 })
               }
               disabled={report.isPending}
-              className="text-destructive focus:text-destructive"
+              className="text-danger focus:text-danger"
             >
               Report user
             </DropdownMenuItem>
@@ -208,9 +206,7 @@ export default function ConversationPage({
       {/* Messages */}
       <div className="mb-4 min-h-[300px] space-y-3">
         {conv.messages.length === 0 && (
-          <p className="text-muted-foreground py-8 text-center text-sm">
-            No messages yet. Say hello!
-          </p>
+          <p className="text-text-muted py-8 text-center text-sm">No messages yet. Say hello!</p>
         )}
         {conv.messages.map((msg) => {
           const isMine = msg.senderId === callerId;
@@ -218,13 +214,13 @@ export default function ConversationPage({
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-                  isMine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
+                  isMine ? "bg-primary text-text" : "bg-surface-3 text-text"
                 }`}
               >
                 <p className="break-words whitespace-pre-wrap">{msg.body}</p>
                 <p
                   className={`mt-1 text-right text-xs ${
-                    isMine ? "text-primary-foreground/70" : "text-muted-foreground"
+                    isMine ? "text-text/70" : "text-text-muted"
                   }`}
                 >
                   {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -242,7 +238,7 @@ export default function ConversationPage({
 
       {/* Blocked state */}
       {isBlocked && (
-        <div className="bg-muted text-muted-foreground rounded-lg px-4 py-3 text-center text-sm">
+        <div className="bg-surface-3 text-text-muted rounded-lg px-4 py-3 text-center text-sm">
           {callerBlocked ? "You have blocked this conversation." : "This conversation is blocked."}
         </div>
       )}
@@ -260,16 +256,14 @@ export default function ConversationPage({
             className="resize-none"
           />
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground text-xs">
+            <span className="text-text-muted text-xs">
               {body.length}/{MAX_BODY}
             </span>
             <Button onClick={handleSend} disabled={!body.trim() || sendMessage.isPending} size="sm">
               {sendMessage.isPending ? "Sending…" : "Send"}
             </Button>
           </div>
-          {sendMessage.error && (
-            <p className="text-destructive text-xs">{sendMessage.error.message}</p>
-          )}
+          {sendMessage.error && <p className="text-danger text-xs">{sendMessage.error.message}</p>}
         </div>
       )}
     </div>

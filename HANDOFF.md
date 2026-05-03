@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 5 (messaging UI) + Phase 8 (polish) — in progress**
+**Phase 8 (polish) — in progress**
 
 ---
 
@@ -12,9 +12,9 @@
 |-------|------|--------|
 | 1 | Foundation | ✅ Done |
 | 2 | Auth + base User | ✅ Done |
-| 3 | Profiles | ✅ Backend + signup UI + **edit pages done** |
-| 4 | Job postings | ✅ Backend + core UI + **job edit page done** |
-| 5 | Applications + messaging | ✅ **Full backend + full messaging UI done** |
+| 3 | Profiles | ✅ Backend + signup UI + edit pages done |
+| 4 | Job postings | ✅ Backend + core UI + job edit page done |
+| 5 | Applications + messaging | ✅ Full backend + full messaging UI done |
 | 6 | Freshness system | ✅ Done |
 | 7 | Notifications + responsiveness | ✅ Done |
 | 8 | Polish + ship | 🔄 In progress |
@@ -23,97 +23,73 @@
 
 ## What was completed this session
 
-### Edit pages + email change flow (Phase 8 polish)
+### Geography / location system (Phase 8 polish)
 
-**`DESIGN_SYSTEM.md`** — color table updated to match actual `globals.css` values. Palette renamed from "misty mountain" to "teal ocean". Background is now `#506d6c` (warm teal-green), cards are `#2d505a`, muted-foreground is `#bce4eb`, success is `#55da86`.
+**New DB models** (`prisma/schema.prisma`):
+- `State` — 50 US states with `abbr` (2-letter), `name`, `lat`, `lon` (center point)
+- `City` — major cities per state with `lat`, `lon`; indexed on `stateId`
 
-**New tRPC procedures:**
-- `seeker.getMyFullProfile` — returns all profile fields + skillIds + languageIds arrays
-- `seeker.updateProfile` — replaces skills/languages in a single transaction
-- `employer.getFullProfile` — returns all employer profile fields
-- `employer.updateProfile` — full profile update
-- `user.requestEmailChange` — sends magic link to new email (uses existing `VerificationToken` table with `identifier = "email_change:{userId}:{newEmail}"`)
+**Removed `zip` field everywhere:**
+- `SeekerProfile`, `EmployerProfile`, `JobPosting` — `zip` column dropped
+- Zod schemas: `CreateSeekerProfileSchema`, `UpdateSeekerProfileSchema`, `CreateEmployerProfileSchema`, `UpdateEmployerProfileSchema`, `CreateJobPostingSchema`, `UpdateJobPostingSchema`
+- All 6 form pages (new + edit for seeker profile, employer profile, job posting)
+- Tests updated to remove zip fixtures
 
-**New API route:** `src/app/api/change-email/route.ts` — GET handler, validates token, updates `user.email`, deletes token, redirects to `/?emailChanged=1`.
+**New tRPC router** (`src/server/api/routers/location.ts`):
+- `location.states` — returns all 50 states ordered by name
+- `location.citiesByState({ stateAbbr })` — returns cities for a state, ordered by name
 
-**New pages:**
-- `src/app/seeker/profile/edit/page.tsx` — pre-filled with all profile fields; email-change card at top
-- `src/app/employer/profile/edit/page.tsx` — same for employer; email-change card at top
-- `src/app/employer/jobs/[id]/edit/page.tsx` — pre-filled job form; status dropdown; disabled when CLOSED/EXPIRED
+**New reusable component** (`src/components/ui/location-picker.tsx`):
+- Uses `useFormContext()` — works inside any react-hook-form `<Form>` wrapper
+- State Select (50 states); City Select (filtered by selected state, loaded via tRPC)
+- When state changes, city is cleared automatically
+- City dropdown disabled until state is chosen
 
-**Nav updated:** Profile link added for both SEEKER (`/seeker/profile/edit`) and EMPLOYER (`/employer/profile/edit`).
+**Geocoding removed:**
+- `src/lib/geocode.ts` deleted
+- `jobPosting.create` and `jobPosting.update` now look up city lat/lon from the `City` DB table instead of calling Nominatim API
+- `jobPosting.list` radius search also uses DB lookup
+- `lat`/`lon` fields remain on `JobPosting` for fast PostGIS queries
 
-**Employer jobs list:** Edit button added per job row linking to `/employer/jobs/{id}/edit`.
+**Jobs search page** (`src/app/jobs/page.tsx`):
+- City/state text inputs replaced with State Select + City Select dropdowns
+- Debounce for location removed (no longer needed — dropdowns are immediate)
+- Auto-fill from user profile still works
+
+**Seed data** (`prisma/seed.ts`):
+- All 50 states with approximate center lat/lon
+- ~10–30 major cities per state with lat/lon (~600 cities total)
 
 ---
 
-### Messaging UI (Phase 5 completion)
+## ⚠️ Commands to run before resuming
 
-All messaging UI is now built and wired up. Backend was already complete; this session added frontend.
+The Prisma schema was changed. You MUST run these commands in order:
 
-#### Backend changes
+```bash
+npx prisma migrate dev --name add-state-city-tables-remove-zip
+```
 
-**`seeker.getPublicProfile`** (new public tRPC procedure, `src/server/api/routers/seeker.ts`):
-- Returns: id, firstName, lastName, city, state, zip, workAuthorization, availableDays, jobSeekText, educationLevel, otherSkills, otherLanguages, about, isResponsive, isNew, status, skills (name array), languages (name array)
-- Does NOT expose: responseRate, medianResponseHours, userId
-- isNew computed from `responseRate === null`
-- 13 tests, all green
+This drops `zip` from 3 tables and adds `State` + `City` tables. Any existing zip data will be lost (dev environment only — expected).
 
-**`conversation.list` enhanced** (`src/server/api/routers/conversation.ts`):
-- Now includes: participantA/B with seeker+employer profiles (for display names), job (id + title), `_count.messages` filtered to unread from other party
+```bash
+npx prisma db seed
+```
 
-**`conversation.get` enhanced**:
-- Now includes: messages, participantA/B profiles, job info (same shape as list)
+Seeds all 50 states + ~600 cities.
 
-**`application.listForJob` updated** (`src/server/api/routers/application.ts`):
-- Added `seekerProfile.id` to the select (needed for employer → seeker Message button)
-
-**`application.listForSeeker` updated**:
-- Added `employerProfile.id` to the select (needed for seeker → employer Message button)
-
-#### New pages
-
-| Route | File | Notes |
-|-------|------|-------|
-| `/seeker/[profileId]` | `src/app/seeker/[profileId]/page.tsx` | Public seeker profile. Shows name, location, skills, languages, responsiveness badge, available days, work auth, education, about. Employer sees "Message" button (cold DM). |
-| `/messages` | `src/app/messages/page.tsx` | Inbox. Sorted by lastMessageAt desc. Unread dot + count. Displays other party's display name (company name for employers, first+last for seekers). Job context if linked. |
-| `/messages/[conversationId]` | `src/app/messages/[conversationId]/page.tsx` | Conversation thread. Bubble UI. Marks read on open. ⌘↵ to send. Block/unblock + Report user in dropdown. Blocked state shown when applicable. |
-
-#### Entry points wired
-
-- **Employer applications page** (`/employer/jobs/[id]/applications`): "Message" button per applicant → `conversation.create({ targetProfileId: seekerProfile.id, jobId })` → navigate to conversation
-- **Seeker applications page** (`/seeker/applications`): "Message" button (visible on ACTIVE jobs) → `conversation.create({ targetProfileId: employerProfile.id, jobId })` → navigate to conversation
-- **Seeker public profile page** (`/seeker/[profileId]`): "Message" button visible to authenticated employers with ACTIVE seeker profiles
-
-#### Nav updated
-
-`src/components/nav.tsx`: "Messages" link added for both SEEKER and EMPLOYER roles.
-
-#### Middleware fix
-
-`src/middleware.ts`: Public routes now correctly allow unauthenticated access to `/jobs/*`, `/employer/[profileId]`, and `/seeker/[profileId]`. The `isPublicProfilePage` helper distinguishes public one-segment profile URLs from private sub-paths (dashboard, profile edit, applications, etc.).
+After both commands complete, `npm run check` should pass with zero errors.
 
 ---
 
 ## Known UI gaps (still open)
 
-### Edit flows — backend exists, no edit UI
-
 | Gap | Notes |
 |-----|-------|
 | Application status controls (employer side) | Only basic buttons — no seeker profile link |
 | Notification preferences UI | Procedures exist; no settings page |
 | Admin profile / admin tools | No admin-facing pages at all |
-| Application status controls (employer side) | Only basic buttons — no seeker profile link |
-| Notification preferences UI | Procedures exist; no settings page |
-| Admin profile / admin tools | No admin-facing pages at all |
-
-### Other gaps
-
-| Gap | Notes |
-|-----|-------|
-| Seeker profile view link from employer applications page | Application cards don't link to the seeker's public profile yet |
-| Input normalization | Free-text fields store raw input — needs `normalizeText`, `normalizeName` utilities |
+| Seeker profile view link from employer applications page | Application cards don't link to seeker's public profile |
 | Rate limiting | 25 applications/day / 50 cold DMs/day — deferred to Phase 8 |
 | Profile completion gate | Users with a role can reach `/jobs` without completing a profile |
 
@@ -121,8 +97,7 @@ All messaging UI is now built and wired up. Backend was already complete; this s
 
 ## Open questions / blockers
 
-1. **`npm install` + `npx prisma generate` required** if not run since last migration. Run both before `npm run check`.
-2. **Resend domain**: `noreply@shefa.jobs` must be verified before production emails work.
-3. **Worker process management in prod**: Vercel doesn't support long-lived processes. Use Render / Railway / Fly.io background worker for BullMQ. Decide before Phase 8 ship.
-4. **Rate limiting not implemented**: 25 applications/day for seekers, 50 cold DMs/day for employers — should be added to `conversation.create` and `application.submit` in Phase 8.
-5. **Profile completion gate**: Users with a role can reach `/jobs` without a complete profile — enforce in Phase 8.
+1. **Resend domain**: `noreply@shefa.jobs` must be verified before production emails work.
+2. **Worker process management in prod**: Vercel doesn't support long-lived processes. Use Render / Railway / Fly.io background worker for BullMQ. Decide before Phase 8 ship.
+3. **Rate limiting not implemented**: 25 applications/day for seekers, 50 cold DMs/day for employers — should be added in Phase 8.
+4. **Profile completion gate**: Users with a role can reach `/jobs` without a complete profile — enforce in Phase 8.

@@ -18,6 +18,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Pill } from "@/components/ui/pill";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   FULL_TIME: "Full-time",
@@ -50,10 +51,10 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-muted text-muted-foreground border border-border",
+  SUBMITTED: "bg-surface-3 text-text-muted border border-transprent",
   VIEWED: "bg-warning/15 text-warning border border-warning/25",
   RESPONDED: "bg-success/15 text-success border border-success/25",
-  CLOSED: "bg-destructive/15 text-destructive border border-destructive/25",
+  CLOSED: "bg-danger/15 text-danger border border-danger/25",
 };
 
 function ApplyDialog({
@@ -102,11 +103,11 @@ function ApplyDialog({
             rows={4}
             className="resize-none"
           />
-          <p className="text-muted-foreground text-right text-xs">{message.length}/500</p>
+          <p className="text-text-muted text-right text-xs">{message.length}/500</p>
         </div>
 
         {submit.error && (
-          <p className="text-destructive text-sm">
+          <p className="text-danger text-sm">
             {submit.error.data?.code === "CONFLICT"
               ? "You already applied to this job."
               : "Something went wrong. Please try again."}
@@ -144,15 +145,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     });
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>
-    );
+    return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
   }
 
   if (error || !job) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">This job posting was not found.</p>
+        <p className="text-text-muted">This job posting was not found.</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/jobs")}>
           Back to listings
         </Button>
@@ -173,7 +172,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       {/* Back link */}
       <Link
         href="/jobs"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
+        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm"
       >
         ← Back to listings
       </Link>
@@ -189,27 +188,29 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <span>🏢 </span>
               <Link
                 href={`/employer/${job.employerProfile.id}`}
-                className="text-muted-foreground hover:text-foreground text-sm font-medium"
+                className="hover:text-text font-medium"
               >
                 {job.employerProfile.companyName}
               </Link>
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <span className="bg-muted rounded-full px-3 py-1 text-sm">
-                📍 {job.city}, {job.state}
-              </span>
-              <span className="bg-muted rounded-full px-3 py-1 text-sm">
-                🕒 {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
-              </span>
-              <span className="bg-muted rounded-full px-3 py-1 text-sm">
-                🚗 {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}
-              </span>
-              {job.workAuthRequired && (
-                <span className="bg-muted rounded-full px-3 py-1 text-sm">
-                  ✅ Work auth required
+            <div className="flex flex-wrap gap-2">
+              <Pill>
+                <span>
+                  📍 {job.city}, {job.state}
                 </span>
+              </Pill>
+              <Pill>
+                <span>🕒 {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}</span>
+              </Pill>
+              <Pill>
+                <span>🚗 {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}</span>
+              </Pill>
+              {job.workAuthRequired && (
+                <Pill>
+                  <span>✅ Work auth required</span>
+                </Pill>
               )}
             </div>
 
@@ -218,37 +219,33 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             {/* Quick facts */}
             <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div>
-                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                  Pay
-                </p>
-                <p className="mt-1 text-sm font-medium">
+                <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Pay</p>
+                <p className="text-text mt-1 text-sm font-medium">
                   From ${Number(job.minHourlyRate).toFixed(2)}/hr
                 </p>
-                {job.payNotes && (
-                  <p className="text-muted-foreground mt-0.5 text-xs">{job.payNotes}</p>
-                )}
+                {job.payNotes && <p className="text-text-muted mt-0.5 text-xs">{job.payNotes}</p>}
               </div>
 
               {sortedDays.length > 0 && (
                 <div>
-                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
                     Work days
                   </p>
-                  <p className="mt-1 text-sm">
+                  <p className="text-text mt-1 text-sm">
                     {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                   </p>
                   {job.scheduleNotes && (
-                    <p className="text-muted-foreground mt-0.5 text-xs">{job.scheduleNotes}</p>
+                    <p className="text-text-muted mt-0.5 text-xs">{job.scheduleNotes}</p>
                   )}
                 </div>
               )}
 
               {job.requiredLanguages.length > 0 && (
                 <div>
-                  <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                  <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
                     Languages
                   </p>
-                  <p className="mt-1 text-sm">
+                  <p className="text-text mt-1 text-sm">
                     {job.requiredLanguages.map((l) => l.language.name).join(", ")}
                   </p>
                 </div>
@@ -259,9 +256,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
             {/* Description */}
             <div>
-              <h2 className="mb-1 text-sm font-medium">📄 About the role</h2>
-              <div className="border-border bg-background rounded-lg border p-4">
-                <p className="text-muted-foreground text-sm">{job.description}</p>
+              <h2 className="text-text mb-1 text-sm font-medium">📄 About the role</h2>
+              <div className="bg-primary/20 rounded-lg p-4">
+                <p className="text-text-muted text-sm">{job.description}</p>
               </div>
             </div>
 
@@ -271,17 +268,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <div className="my-5 space-y-4">
                   {job.whatWeTeach && (
                     <div>
-                      <h2 className="mb-1 text-sm font-medium">🎓 We&apos;ll teach you</h2>
-                      <div className="border-border bg-background rounded-lg border p-4">
-                        <p className="text-muted-foreground text-sm">{job.whatWeTeach}</p>
+                      <h2 className="text-text mb-1 text-sm font-medium">
+                        🎓 We&apos;ll teach you
+                      </h2>
+                      <div className="bg-primary/20 rounded-lg p-4">
+                        <p className="text-text-muted text-sm">{job.whatWeTeach}</p>
                       </div>
                     </div>
                   )}
                   {job.whatWereLookingFor && (
                     <div>
-                      <h2 className="mb-1 text-sm font-medium">🔍 What we&apos;re looking for</h2>
-                      <div className="border-border bg-background rounded-lg border p-4">
-                        <p className="text-muted-foreground text-sm">{job.whatWereLookingFor}</p>
+                      <h2 className="text-text mb-1 text-sm font-medium">
+                        🔍 What we&apos;re looking for
+                      </h2>
+                      <div className="bg-primary/20 rounded-lg p-4">
+                        <p className="text-text-muted text-sm">{job.whatWereLookingFor}</p>
                       </div>
                     </div>
                   )}
@@ -295,10 +296,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <>
                 <Separator />
                 <div className="my-6">
-                  <h2 className="mb-3 text-sm font-medium">🛠️ Preferred skills</h2>
+                  <h2 className="text-text mb-3 text-sm font-medium">🛠️ Preferred skills</h2>
                   <div className="flex flex-wrap gap-2">
                     {job.preferredSkills.map((ps) => (
-                      <span key={ps.skill.id} className="bg-muted rounded-full px-3 py-1 text-sm">
+                      <span
+                        key={ps.skill.id}
+                        className="bg-secondary/15 text-text rounded-lg px-2.5 py-0.5 text-xs"
+                      >
                         {ps.skill.name}
                       </span>
                     ))}
@@ -311,11 +315,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <Separator />
             <div className="mt-8">
               {!isSeeker && (
-                <p className="text-muted-foreground text-sm">Sign in as a job seeker to apply.</p>
+                <p className="text-text-muted text-sm">Sign in as a job seeker to apply.</p>
               )}
 
               {noProfile && (
-                <p className="text-muted-foreground text-sm">
+                <p className="text-text-muted text-sm">
                   <Link href="/seeker/profile/new" className="text-primary underline">
                     Complete your seeker profile
                   </Link>{" "}
@@ -338,10 +342,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   >
                     {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
                   </span>
-                  <Link
-                    href="/seeker/applications"
-                    className="text-muted-foreground text-sm underline"
-                  >
+                  <Link href="/seeker/applications" className="text-text-muted text-sm underline">
                     View my applications
                   </Link>
                 </div>

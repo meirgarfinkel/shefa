@@ -50,16 +50,16 @@ export default function MessagesPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
       <PageHeader title="Messages" description="Your conversations." />
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-text-muted text-sm">Loading…</p>}
 
       {!isLoading && conversations?.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-muted-foreground text-sm">No messages yet.</p>
+          <p className="text-text-muted text-sm">No messages yet.</p>
         </div>
       )}
 
       {!isLoading && conversations && conversations.length > 0 && (
-        <div className="border-border bg-card overflow-hidden rounded-lg border">
+        <div className="border-transprent bg-surface-1 overflow-hidden rounded-lg border">
           {conversations.map((conv) => {
             const other = conv.participantA.id === callerId ? conv.participantB : conv.participantA;
             const isUnread = conv._count.messages > 0;

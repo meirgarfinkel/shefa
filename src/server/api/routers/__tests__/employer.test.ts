@@ -65,7 +65,6 @@ const VALID_INPUT = {
   companySize: "SIZE_1_10" as const,
   city: "New York",
   state: "NY",
-  zip: "10001",
 };
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

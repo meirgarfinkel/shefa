@@ -1,38 +1,22 @@
 @import "tailwindcss";
 
 :root {
-  /* Surfaces */
-  --background: rgb(80, 109, 108);
-  --card: rgb(45, 80, 90);
-  --popover: rgb(25, 55, 75);
-  --muted: rgb(40, 48, 61);
+  --background: rgb(75, 110, 110);
 
-  /* Text */
-  --foreground: rgb(240, 242, 245);
-  --muted-foreground: rgb(188, 228, 235);
-  --card-foreground: rgb(240, 242, 245);
-  --popover-foreground: rgb(240, 242, 245);
+  --surface-1: rgb(26, 34, 46);
+  --surface-2: rgb(32, 42, 56);
+  --surface-3: rgb(40, 52, 68);
 
-  /* Accent — misty teal */
-  --primary: rgb(110, 181, 192);
-  --primary-foreground: rgb(22, 27, 34);
+  --text: rgb(235, 242, 248);
+  --text-muted: rgb(187, 211, 235);
+  --text-inverse: rgb(18, 24, 34);
 
-  /* Semantic */
-  --secondary: rgb(40, 48, 61);
-  --secondary-foreground: rgb(240, 242, 245);
-  --accent: rgb(40, 48, 61);
-  --accent-foreground: rgb(240, 242, 245);
-  --destructive: rgb(196, 106, 106);
-  --destructive-foreground: rgb(240, 242, 245);
+  --primary: rgb(120, 190, 230);
+  --secondary: rgb(110, 140, 160);
 
-  /* Status */
-  --success: rgb(85, 218, 134);
-  --warning: rgb(196, 160, 74);
-
-  /* Structure */
-  --border: rgb(240 242 245 / 12%);
-  --input: rgb(240 242 245 / 12%);
-  --ring: rgb(110, 181, 192);
+  --success: rgb(90, 210, 140);
+  --warning: rgb(210, 175, 90);
+  --danger: rgb(210, 110, 110);
 
   /* Radius */
   --radius: 0.5rem;
@@ -41,26 +25,21 @@
 /* ─── Wire shadcn tokens into Tailwind v4 utilities ─── */
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
+
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
+
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
+
   --color-success: var(--success);
   --color-warning: var(--warning);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
+  --color-danger: var(--danger);
 
   /* Radius scale */
   --radius-sm: calc(var(--radius) - 2px);
@@ -72,12 +51,12 @@
 
 /* ─── Base resets ─── */
 * {
-  border-color: var(--border);
+  border-color: var(--text-muted);
 }
 
 body {
   background-color: var(--background);
-  color: var(--foreground);
+  color: var(--text);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;

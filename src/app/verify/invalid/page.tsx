@@ -6,7 +6,7 @@ export default function VerifyInvalidPage() {
       <div className="w-full max-w-md space-y-4 text-center">
         <div className="text-5xl">✗</div>
         <h1 className="text-2xl font-bold">Invalid link</h1>
-        <p className="text-muted-foreground">
+        <p className="text-text-muted">
           This verification link is not valid. It may have been copied incorrectly.
         </p>
         <Link href="/" className="text-sm underline underline-offset-4">

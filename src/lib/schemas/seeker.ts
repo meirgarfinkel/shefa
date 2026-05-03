@@ -17,7 +17,6 @@ export const CreateSeekerProfileSchema = z.object({
   lastName: z.string().min(1).max(100),
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
-  zip: z.string().min(1).max(10),
   workAuthorization: z.boolean(),
   isAdult: z.literal(true, {
     message: "You must be 18 or older to use this platform",
@@ -40,7 +39,6 @@ export const UpdateSeekerProfileSchema = z.object({
   lastName: z.string().min(1).max(100),
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
-  zip: z.string().min(1).max(10),
   workAuthorization: z.boolean(),
   availableDays: z.array(DayOfWeek).transform((days) => [...new Set(days)]),
   jobSeekText: z.string().min(1).max(1000),

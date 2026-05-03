@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import { ChevronDownIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { JobCard } from "@/components/ui/job-card";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -52,15 +51,6 @@ const RADIUS_OPTIONS = [
   { value: "100", label: "Within 100 miles" },
 ];
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debounced;
-}
-
 function toggleItem<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
 }
@@ -68,8 +58,8 @@ function toggleItem<T>(arr: T[], item: T): T[] {
 export default function JobsPage() {
   const { data: session } = useSession();
 
-  const [cityInput, setCityInput] = useState("");
-  const [stateInput, setStateInput] = useState("");
+  const [stateAbbr, setStateAbbr] = useState("");
+  const [city, setCity] = useState("");
   const [radius, setRadius] = useState("any");
   const [jobType, setJobType] = useState("any");
   const [arrangements, setArrangements] = useState<ArrangementValue[]>([]);
@@ -79,8 +69,11 @@ export default function JobsPage() {
 
   const locationInitialized = useRef(false);
 
-  const city = useDebounce(cityInput, 400);
-  const state = useDebounce(stateInput, 400);
+  const { data: states = [] } = trpc.location.states.useQuery();
+  const { data: cities = [] } = trpc.location.citiesByState.useQuery(
+    { stateAbbr },
+    { enabled: !!stateAbbr },
+  );
 
   const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
 
@@ -98,15 +91,15 @@ export default function JobsPage() {
     const profileCity = seekerProfile?.city ?? employerProfile?.city;
     const profileState = seekerProfile?.state ?? employerProfile?.state;
     if (!profileCity || !profileState) return;
-    setCityInput(profileCity);
-    setStateInput(profileState);
+    setStateAbbr(profileState);
+    setCity(profileCity);
     setRadius("25");
     locationInitialized.current = true;
   }, [seekerProfile, employerProfile]);
 
   const { data: jobs, isLoading } = trpc.jobPosting.list.useQuery({
     city: city || undefined,
-    state: state || undefined,
+    state: stateAbbr || undefined,
     radiusMiles: radius !== "any" ? Number(radius) : undefined,
     jobType: jobType !== "any" ? [jobType as "FULL_TIME" | "PART_TIME" | "EITHER"] : undefined,
     workArrangement: arrangements.length ? arrangements : undefined,
@@ -117,7 +110,7 @@ export default function JobsPage() {
 
   const hasFilters =
     !!city ||
-    !!state ||
+    !!stateAbbr ||
     radius !== "any" ||
     jobType !== "any" ||
     arrangements.length > 0 ||
@@ -125,8 +118,8 @@ export default function JobsPage() {
     skillIds.length > 0;
 
   function clearFilters() {
-    setCityInput("");
-    setStateInput("");
+    setStateAbbr("");
+    setCity("");
     setRadius("any");
     setJobType("any");
     setArrangements([]);
@@ -151,22 +144,39 @@ export default function JobsPage() {
       />
 
       {/* Compact filter bar */}
-      <div className="border-border bg-card mb-6 rounded-lg border p-3">
+      <div className="bg-surface-1 mb-6 rounded-lg p-3">
         <div className="flex flex-wrap items-center gap-2">
           {/* Location */}
-          <Input
-            value={cityInput}
-            onChange={(e) => setCityInput(e.target.value)}
-            placeholder="City"
-            className="h-8 w-28 text-sm"
-          />
-          <Input
-            value={stateInput}
-            onChange={(e) => setStateInput(e.target.value)}
-            placeholder="ST"
-            maxLength={2}
-            className="h-8 w-10 text-sm"
-          />
+          <Select
+            value={stateAbbr}
+            onValueChange={(val) => {
+              setStateAbbr(val);
+              setCity("");
+            }}
+          >
+            <SelectTrigger className="h-8 w-36 text-sm">
+              <SelectValue placeholder="State" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {states.map((s) => (
+                <SelectItem key={s.abbr} value={s.abbr}>
+                  {s.abbr} — {s.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={city} onValueChange={setCity} disabled={!stateAbbr}>
+            <SelectTrigger className="h-8 w-36 text-sm">
+              <SelectValue placeholder={stateAbbr ? "City" : "State first"} />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {cities.map((c) => (
+                <SelectItem key={c.name} value={c.name}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={radius} onValueChange={setRadius}>
             <SelectTrigger className="h-8 w-40 text-sm">
               <SelectValue placeholder="Any distance" />
@@ -181,7 +191,7 @@ export default function JobsPage() {
             </SelectContent>
           </Select>
 
-          <div className="bg-border h-5 w-px" />
+          <div className="bg-background h-5 w-px" />
 
           {/* Job type */}
           <Select value={jobType} onValueChange={setJobType}>
@@ -192,16 +202,18 @@ export default function JobsPage() {
               <SelectItem value="any">Any type</SelectItem>
               <SelectItem value="FULL_TIME">Full-time</SelectItem>
               <SelectItem value="PART_TIME">Part-time</SelectItem>
-              <SelectItem value="EITHER">Full or part-time</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Arrangement */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-border bg-muted h-8 gap-1.5 font-normal">
+              <Button
+                variant="outline"
+                className="bg-primary/20 h-8 gap-1.5 rounded-lg font-normal"
+              >
                 {arrangements.length > 0 ? `Arrangement (${arrangements.length})` : "Arrangement"}
-                <ChevronDownIcon className="text-muted-foreground size-3.5" />
+                <ChevronDownIcon className="text-text-muted size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -220,9 +232,12 @@ export default function JobsPage() {
           {/* Work days */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-border bg-muted h-8 gap-1.5 font-normal">
+              <Button
+                variant="outline"
+                className="bg-primary/20 h-8 gap-1.5 rounded-lg font-normal"
+              >
                 {workDays.length > 0 ? `Days (${workDays.length})` : "Days"}
-                <ChevronDownIcon className="text-muted-foreground size-3.5" />
+                <ChevronDownIcon className="text-text-muted size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -244,10 +259,10 @@ export default function JobsPage() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
-                  className="border-border bg-muted h-8 gap-1.5 font-normal"
+                  className="border-transprent bg-surface-3 h-8 gap-1.5 font-normal"
                 >
                   {skillIds.length > 0 ? `Skills (${skillIds.length})` : "Skills"}
-                  <ChevronDownIcon className="text-muted-foreground size-3.5" />
+                  <ChevronDownIcon className="text-text-muted size-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="max-h-64 overflow-y-auto">
@@ -270,7 +285,7 @@ export default function JobsPage() {
             </DropdownMenu>
           )}
 
-          <div className="bg-border h-5 w-px" />
+          <div className="bg-background h-5 w-px" />
 
           {/* Sort */}
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as "newest" | "closest")}>
@@ -284,7 +299,7 @@ export default function JobsPage() {
           </Select>
 
           {hasFilters && (
-            <Button variant="ghost" className="h-8 text-sm" onClick={clearFilters}>
+            <Button variant="ghost" className="h-8 rounded-lg text-sm" onClick={clearFilters}>
               Clear
             </Button>
           )}
@@ -293,7 +308,7 @@ export default function JobsPage() {
 
       {/* Results count */}
       {!isLoading && jobs !== undefined && (
-        <p className="text-muted-foreground mt-2 mb-4 text-sm">
+        <p className="text-text-muted mt-2 mb-4 text-sm">
           {jobs.length === 0
             ? hasFilters
               ? "No jobs match your filters."
@@ -302,9 +317,7 @@ export default function JobsPage() {
         </p>
       )}
 
-      {isLoading && (
-        <div className="text-muted-foreground py-16 text-center">Loading listings…</div>
-      )}
+      {isLoading && <div className="text-text-muted py-16 text-center">Loading listings…</div>}
 
       {!isLoading && jobs && jobs.length > 0 && (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

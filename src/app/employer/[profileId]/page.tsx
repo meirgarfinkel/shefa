@@ -43,15 +43,13 @@ export default function EmployerProfilePage({
   } = trpc.employer.getPublicProfile.useQuery({ id: profileId });
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>
-    );
+    return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
   }
 
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">This employer profile was not found.</p>
+        <p className="text-text-muted">This employer profile was not found.</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/jobs")}>
           Browse jobs
         </Button>
@@ -64,7 +62,7 @@ export default function EmployerProfilePage({
       {/* Back link */}
       <Link
         href="/jobs"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
+        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm"
       >
         ← Browse jobs
       </Link>
@@ -74,7 +72,7 @@ export default function EmployerProfilePage({
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
             <h1 className="text-xl font-medium">{profile.companyName}</h1>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="text-text-muted mt-1 text-sm">
               {profile.city}, {profile.state}
               {profile.industry && ` · ${INDUSTRY_LABELS[profile.industry] ?? profile.industry}`}
             </p>
@@ -83,7 +81,7 @@ export default function EmployerProfilePage({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <span className="bg-muted rounded-full px-3 py-1 text-sm">
+          <span className="bg-surface-3 rounded-full px-3 py-1 text-sm">
             {profile._count.jobPostings === 1
               ? "1 active job"
               : `${profile._count.jobPostings} jobs`}
@@ -93,7 +91,7 @@ export default function EmployerProfilePage({
               href={profile.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-muted hover:bg-muted/70 rounded-full px-3 py-1 text-sm transition-colors"
+              className="bg-surface-3 hover:bg-surface-3/70 rounded-full px-3 py-1 text-sm transition-colors"
             >
               Website ↗
             </a>
@@ -106,10 +104,8 @@ export default function EmployerProfilePage({
       {/* About */}
       {profile.aboutCompany && (
         <div className="my-6">
-          <h2 className="mb-3 text-base font-medium">About {profile.companyName}</h2>
-          <p className="text-muted-foreground text-sm whitespace-pre-wrap">
-            {profile.aboutCompany}
-          </p>
+          <h2 className="text-text mb-3 font-medium">About {profile.companyName}</h2>
+          <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.aboutCompany}</p>
         </div>
       )}
 
@@ -118,10 +114,8 @@ export default function EmployerProfilePage({
         <>
           {profile.aboutCompany && <Separator />}
           <div className="my-6">
-            <h2 className="mb-3 text-base font-medium">Why we give people a chance</h2>
-            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
-              {profile.missionText}
-            </p>
+            <h2 className="text-text mb-3 font-medium">Why we give people a chance</h2>
+            <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.missionText}</p>
           </div>
         </>
       )}

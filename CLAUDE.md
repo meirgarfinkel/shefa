@@ -290,8 +290,8 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 - One accent: `text-primary` / `bg-primary` / `border-primary` only
 - No second accent color ever
 - Transitions: `transition-colors duration-150` only — no movement on hover
-- Surface layers: `bg-background` → `bg-card` → `bg-muted` (max 3, never deeper)
-- Borders on all cards: `border border-border`, hover: `hover:border-border/60`
+- Surface layers: `bg-background` → `bg-surface-1` → `bg-surface-3` (max 3, never deeper)
+- Borders on all cards: `border border-transprent`, hover: `hover:border-transprent/60`
 - Font weights: `font-normal` and `font-medium` only (badges may use `font-semibold`)
 - Radius: `rounded-full` (pills) · `rounded-md` (buttons/inputs) · `rounded-lg` (cards)
 - Min font size: `text-xs` — never `text-[10px]` or smaller
@@ -301,10 +301,10 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 | Status | Classes |
 |---|---|
 | ACTIVE | `bg-success/15 text-success border-success/25` |
-| DRAFT | `bg-muted text-muted-foreground border-border` |
+| DRAFT | `bg-surface-3 text-text-muted border-transprent` |
 | PAUSED | `bg-warning/15 text-warning border-warning/25` |
 | FILLED | `bg-primary/15 text-primary border-primary/25` |
-| EXPIRED / CLOSED | `bg-destructive/15 text-destructive border-destructive/25` |
+| EXPIRED / CLOSED | `bg-danger/15 text-danger border-danger/25` |
 
 ### Custom components to use (do not re-implement)
 

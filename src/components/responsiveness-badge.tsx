@@ -7,7 +7,7 @@ export function ResponsivenessBadge({
 }) {
   if (isNew) {
     return (
-      <span className="border-border bg-muted text-muted-foreground inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium">
+      <span className="border-transprent bg-surface-3 text-text-muted inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium">
         New
       </span>
     );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { LocationPicker } from "@/components/ui/location-picker";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 
@@ -64,17 +65,43 @@ export default function JobEditPage() {
 
   const [saved, setSaved] = useState(false);
 
+  // Memoized so the form only resets when the job data reference actually changes,
+  // not on every render. Using `values` (not defaultValues) is the RHF-recommended
+  // pattern for edit forms backed by async data.
+  const formValues = useMemo(
+    () =>
+      job
+        ? {
+            id: job.id,
+            title: job.title,
+            description: job.description,
+            jobType: job.jobType,
+            workArrangement: job.workArrangement,
+            city: job.city,
+            state: job.state,
+            minHourlyRate: Number(job.minHourlyRate),
+            payNotes: job.payNotes ?? undefined,
+            workDays: job.workDays as EditFormValues["workDays"],
+            scheduleNotes: job.scheduleNotes ?? undefined,
+            workAuthRequired: job.workAuthRequired,
+            whatWeTeach: job.whatWeTeach ?? undefined,
+            whatWereLookingFor: job.whatWereLookingFor ?? undefined,
+            status: job.status as EditFormValues["status"],
+            preferredSkillIds: job.preferredSkills.map((s) => s.skillId),
+            requiredLanguageIds: job.requiredLanguages.map((l) => l.languageId),
+          }
+        : undefined,
+    [job],
+  );
+
   const form = useForm<EditFormValues>({
     resolver: zodResolver(UpdateJobPostingSchema),
     defaultValues: {
       id: jobId,
       title: "",
       description: "",
-      jobType: undefined,
-      workArrangement: undefined,
       city: "",
       state: "",
-      zip: "",
       payNotes: "",
       workDays: [],
       scheduleNotes: "",
@@ -84,31 +111,8 @@ export default function JobEditPage() {
       preferredSkillIds: [],
       requiredLanguageIds: [],
     },
+    values: formValues,
   });
-
-  useEffect(() => {
-    if (!job) return;
-    form.reset({
-      id: job.id,
-      title: job.title,
-      description: job.description,
-      jobType: job.jobType,
-      workArrangement: job.workArrangement,
-      city: job.city,
-      state: job.state,
-      zip: job.zip,
-      minHourlyRate: Number(job.minHourlyRate),
-      payNotes: job.payNotes ?? undefined,
-      workDays: job.workDays as EditFormValues["workDays"],
-      scheduleNotes: job.scheduleNotes ?? undefined,
-      workAuthRequired: job.workAuthRequired,
-      whatWeTeach: job.whatWeTeach ?? undefined,
-      whatWereLookingFor: job.whatWereLookingFor ?? undefined,
-      status: job.status as EditFormValues["status"],
-      preferredSkillIds: job.preferredSkills.map((s) => s.skillId),
-      requiredLanguageIds: job.requiredLanguages.map((l) => l.languageId),
-    });
-  }, [job, form]);
 
   const updatePosting = trpc.jobPosting.update.useMutation({
     onSuccess: () => {
@@ -123,13 +127,11 @@ export default function JobEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!job) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Job not found.</div>
-    );
+    return <div className="text-text-muted px-4 py-16 text-center text-sm">Job not found.</div>;
   }
 
   const isClosed = job.status === "CLOSED" || job.status === "EXPIRED";
@@ -138,7 +140,7 @@ export default function JobEditPage() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
         href="/employer/jobs"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-150"
+        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-150"
       >
         <ArrowLeftIcon className="size-3.5" />
         My jobs
@@ -151,7 +153,7 @@ export default function JobEditPage() {
       />
 
       {isClosed && (
-        <div className="border-destructive/30 bg-destructive/10 text-destructive mb-6 rounded-lg border p-4 text-sm">
+        <div className="border-danger/30 bg-danger/10 text-danger mb-6 rounded-lg border p-4 text-sm">
           This posting is {job.status.toLowerCase()} and cannot be edited.
         </div>
       )}
@@ -285,47 +287,7 @@ export default function JobEditPage() {
           {/* Location */}
           <div className="space-y-4">
             <h2 className="font-medium">Location</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-1">
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input {...field} disabled={isClosed} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="NY" maxLength={2} disabled={isClosed} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip *</FormLabel>
-                    <FormControl>
-                      <Input {...field} maxLength={10} disabled={isClosed} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <LocationPicker />
           </div>
 
           <Separator />
@@ -395,10 +357,10 @@ export default function JobEditPage() {
                         key={day.value}
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
                           isClosed
-                            ? "border-border text-muted-foreground cursor-not-allowed border opacity-50"
+                            ? "border-transprent text-text-muted cursor-not-allowed border opacity-50"
                             : field.value?.includes(day.value)
                               ? "border-primary/40 bg-primary/20 text-primary border"
-                              : "border-border hover:bg-muted border"
+                              : "border-transprent hover:bg-surface-3 border"
                         }`}
                       >
                         <input
@@ -518,7 +480,7 @@ export default function JobEditPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -602,7 +564,7 @@ export default function JobEditPage() {
           </div>
 
           {updatePosting.isError && (
-            <p className="text-destructive text-sm">
+            <p className="text-danger text-sm">
               {updatePosting.error.message ?? "Something went wrong. Please try again."}
             </p>
           )}
@@ -620,7 +582,7 @@ export default function JobEditPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="border-border hover:bg-muted border transition-colors duration-150"
+                className="border-transprent hover:bg-surface-3 border transition-colors duration-150"
                 onClick={() => router.push("/employer/jobs")}
               >
                 Cancel

@@ -48,7 +48,7 @@ export async function Nav() {
             ) : (
               <Link
                 href="/sign-in"
-                className="text-muted-foreground hover:text-foreground text-sm transition-colors duration-150"
+                className="text-text-muted hover:text-text text-sm transition-colors duration-150"
               >
                 Sign in
               </Link>

@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LocationPicker } from "@/components/ui/location-picker";
 
 const COMPANY_SIZES = [
   { value: "SIZE_1_10", label: "1–10 employees" },
@@ -68,7 +69,6 @@ export default function EmployerProfileNewPage() {
       companyName: "",
       city: "",
       state: "",
-      zip: "",
     },
   });
 
@@ -84,7 +84,7 @@ export default function EmployerProfileNewPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-xl font-medium">Set up your employer profile</h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-text-muted mt-1">
           Tell candidates who you are. Required fields are marked with *.
         </p>
       </div>
@@ -259,47 +259,7 @@ export default function EmployerProfileNewPage() {
           {/* Location */}
           <div className="space-y-4">
             <h2 className="font-medium">Location</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-1">
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="NY" maxLength={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <LocationPicker />
           </div>
 
           <Separator />
@@ -308,7 +268,7 @@ export default function EmployerProfileNewPage() {
           <div className="space-y-6">
             <div>
               <h2 className="font-medium">About your company</h2>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-text-muted text-sm">
                 Optional — helps candidates understand who you are.
               </p>
             </div>
@@ -355,7 +315,7 @@ export default function EmployerProfileNewPage() {
           </div>
 
           {createProfile.isError && (
-            <p className="text-destructive text-sm">
+            <p className="text-danger text-sm">
               {createProfile.error.message ?? "Something went wrong. Please try again."}
             </p>
           )}

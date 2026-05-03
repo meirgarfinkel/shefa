@@ -8,7 +8,7 @@ The pattern is:
 
 1. Define raw CSS custom properties in `:root` (these are the shadcn theme variables)
 2. Wire them into Tailwind v4 utilities via `@theme inline`
-3. Use semantic Tailwind classes everywhere (`bg-background`, `text-foreground`, etc.)
+3. Use semantic Tailwind classes everywhere (`bg-background`, `text-text`, etc.)
 
 shadcn components read from these same CSS variables automatically — that's the integration.
 You never touch `tailwind.config.js` because it doesn't exist.
@@ -30,16 +30,16 @@ Background is a medium teal; cards and inputs are darker blue-teal wells.
 | Token                | Utility class                 | Value     | Usage                               |
 | -------------------- | ----------------------------- | --------- | ----------------------------------- |
 | `--background`       | `bg-background`               | `#506d6c` | Page base (layer 0)                 |
-| `--card`             | `bg-card`                     | `#2d505a` | Cards, panels (layer 1)             |
-| `--popover`          | `bg-popover`                  | `#19374b` | Popovers, dropdowns (layer 2)       |
-| `--muted`            | `bg-muted`                    | `#28303d` | Subtle sections, inputs (layer 2)   |
-| `--foreground`       | `text-foreground`             | `#f0f2f5` | Primary text                        |
-| `--muted-foreground` | `text-muted-foreground`       | `#bce4eb` | Secondary / supporting text         |
+| `--card`             | `bg-surface-1`                | `#2d505a` | Cards, panels (layer 1)             |
+| `--popover`          | `bg-surface-2`                  | `#19374b` | Popovers, dropdowns (layer 2)       |
+| `--muted`            | `bg-surface-3`                | `#28303d` | Subtle sections, inputs (layer 2)   |
+| `--text`             | `text-text`             | `#f0f2f5` | Primary text                        |
+| `--surface-3`        | `text-text-muted`             | `#bce4eb` | Secondary / supporting text         |
 | `--primary`          | `text-primary` / `bg-primary` | `#6eb5c0` | Accent — misty teal                 |
 | `--success`          | `text-success`                | `#55da86` | Active, confirmed states            |
 | `--warning`          | `text-warning`                | `#c4a04a` | Paused, caution states              |
-| `--destructive`      | `text-destructive`            | `#c46a6a` | Errors, closed, danger              |
-| `--border`           | `border-border`               | 12% white | All borders                         |
+| `--destructive`      | `text-danger`            | `#c46a6a` | Errors, closed, danger              |
+| `--border`           | `border-transprent`               | 12% white | All borders                         |
 
 ### One accent only
 
@@ -54,8 +54,8 @@ Maximum 3 layers. Never nest deeper.
 
 ```
 Layer 0 — bg-background   → page base
-Layer 1 — bg-card         → primary content blocks
-Layer 2 — bg-muted        → nested sections, overlays, inputs
+Layer 1 — bg-surface-1         → primary content blocks
+Layer 2 — bg-surface-3        → nested sections, overlays, inputs
 ```
 
 ---
@@ -65,7 +65,7 @@ Layer 2 — bg-muted        → nested sections, overlays, inputs
 | Use               | Class       | Weight          |
 | ----------------- | ----------- | --------------- |
 | Page heading      | `text-xl`   | `font-medium`   |
-| Section heading   | `text-base` | `font-medium`   |
+| Section heading   | `text-text` | `font-medium`   |
 | Body              | `text-sm`   | `font-normal`   |
 | Supporting / meta | `text-xs`   | `font-normal`   |
 | Form label        | `text-xs`   | `font-medium`   |
@@ -109,8 +109,8 @@ Use only these values. Never arbitrary spacing.
 
 ## Borders
 
-Always `border border-border`. Never omit borders on cards.
-Hover state: `hover:border-border/60` — slightly more visible, no movement.
+Always `border border-transprent`. Never omit borders on cards.
+Hover state: `hover:border-transprent/60` — slightly more visible, no movement.
 
 ---
 
@@ -124,7 +124,7 @@ All transitions must be:
 
 ```tsx
 // Correct
-className = "transition-colors duration-150 hover:bg-muted hover:border-border/60";
+className = "transition-colors duration-150 hover:bg-surface-3 hover:border-transprent/60";
 
 // Wrong — element moves
 className = "transition-transform hover:scale-105";
@@ -137,7 +137,7 @@ className = "transition-transform hover:scale-105";
 ### Card
 
 ```tsx
-<div className="border-border bg-card hover:border-border/60 rounded-lg border p-5 transition-colors duration-150">
+<div className="border-transprent bg-surface-1 hover:border-transprent/60 rounded-lg border p-5 transition-colors duration-150">
   {children}
 </div>
 ```
@@ -155,7 +155,7 @@ className = "transition-transform hover:scale-105";
 ```tsx
 <Button
   variant="ghost"
-  className="border-border hover:bg-muted border transition-colors duration-150"
+  className="border-transprent hover:bg-surface-3 border transition-colors duration-150"
 >
   Cancel
 </Button>
@@ -164,7 +164,7 @@ className = "transition-transform hover:scale-105";
 ### Destructive button (close, delete)
 
 ```tsx
-<Button className="bg-destructive/15 border-destructive/30 text-destructive hover:bg-destructive/25 border transition-colors duration-150">
+<Button className="bg-danger/15 border-danger/30 text-danger hover:bg-danger/25 border transition-colors duration-150">
   Close job
 </Button>
 ```
@@ -172,13 +172,13 @@ className = "transition-transform hover:scale-105";
 ### Input / Textarea
 
 ```tsx
-<Input className="bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus-visible:ring-primary transition-colors duration-150" />
+<Input className="bg-surface-3 border-transprent text-text placeholder:text-text-muted focus:border-primary focus-visible:ring-primary transition-colors duration-150" />
 ```
 
 ### Form label
 
 ```tsx
-<Label className="text-muted-foreground text-xs font-medium" />
+<Label className="text-text-muted text-xs font-medium" />
 ```
 
 ---
@@ -215,12 +215,12 @@ These are Shefa-specific, not shadcn primitives:
 
 | Avoid                                        | Use instead                                   |
 | -------------------------------------------- | --------------------------------------------- |
-| Raw hex in className                         | Semantic token (`bg-card`, `text-foreground`) |
+| Raw hex in className                         | Semantic token (`bg-surface-1`, `text-text`) |
 | `font-bold`, `font-semibold` (except badges) | `font-medium`                                 |
 | `rounded-xl` or larger                       | `rounded-lg` max                              |
-| `shadow-lg`, `shadow-xl`                     | `border border-border`                        |
+| `shadow-lg`, `shadow-xl`                     | `border border-transprent`                        |
 | `bg-blue-500`, `bg-green-400`                | Status tokens                                 |
-| Hover animations that move                   | `hover:bg-muted` only                         |
+| Hover animations that move                   | `hover:bg-surface-3` only                         |
 | `style={{ color: '#...' }}`                  | Tailwind class                                |
 | Second accent color                          | One accent: `--primary` only                  |
 | `text-[10px]`                                | `text-xs` minimum                             |

@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LocationPicker } from "@/components/ui/location-picker";
 
 const DAYS = [
   { value: "SUN", label: "Sun" },
@@ -59,7 +60,6 @@ export default function SeekerProfileNewPage() {
       lastName: "",
       city: "",
       state: "",
-      zip: "",
       workAuthorization: false,
       availableDays: [],
       jobSeekText: "",
@@ -80,7 +80,7 @@ export default function SeekerProfileNewPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-xl font-medium">Create your profile</h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-text-muted mt-1">
           This is how employers will find you. Required fields are marked with *.
         </p>
       </div>
@@ -92,7 +92,7 @@ export default function SeekerProfileNewPage() {
             control={form.control}
             name="isAdult"
             render={({ field }) => (
-              <FormItem className="bg-card flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
+              <FormItem className="bg-surface-1 flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
                 <FormControl>
                   <Checkbox
                     checked={field.value === true}
@@ -147,47 +147,7 @@ export default function SeekerProfileNewPage() {
           {/* Location */}
           <div className="space-y-4">
             <h2 className="font-medium">Location</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-1">
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="NY" maxLength={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <LocationPicker />
           </div>
 
           <Separator />
@@ -200,7 +160,7 @@ export default function SeekerProfileNewPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-card flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-surface-1 flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -227,10 +187,10 @@ export default function SeekerProfileNewPage() {
                     {DAYS.map((day) => (
                       <label
                         key={day.value}
-                        className={`bg-primary-foreground/10 flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
+                        className={`bg-text/10 flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "bg-success text-primary-foreground"
-                            : "hover:bg-muted"
+                            ? "bg-success text-text"
+                            : "hover:bg-surface-3"
                         }`}
                       >
                         <input
@@ -270,7 +230,7 @@ export default function SeekerProfileNewPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -337,7 +297,7 @@ export default function SeekerProfileNewPage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-medium">Optional — add later if you like</h2>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-text-muted text-sm">
                 These fields help employers find you but aren&apos;t required to get started.
               </p>
             </div>
@@ -455,7 +415,7 @@ export default function SeekerProfileNewPage() {
           </div>
 
           {createProfile.isError && (
-            <p className="text-destructive text-sm">
+            <p className="text-danger text-sm">
               {createProfile.error.message ?? "Something went wrong. Please try again."}
             </p>
           )}

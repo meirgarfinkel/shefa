@@ -167,7 +167,6 @@ model SeekerProfile {
   lastName          String
   city              String
   state             String
-  zip               String
   workAuthorization Boolean
   availableDays     DayOfWeek[]
   jobSeekText       String      @db.VarChar(1000)
@@ -206,7 +205,6 @@ model EmployerProfile {
   companySize CompanySize
   city        String
   state       String
-  zip         String
 
   // Optional
   roleAtCompany String?
@@ -242,7 +240,6 @@ model JobPosting {
   workArrangement    WorkArrangement
   city               String
   state              String
-  zip                String
   lat                Float?
   lon                Float?
   minHourlyRate      Decimal         @db.Decimal(8, 2)
@@ -382,6 +379,30 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Geography ────────────────────────────────────────────────────────────────
+
+model State {
+  id   String @id @default(cuid())
+  name String @unique // "New York"
+  abbr String @unique // "NY"
+  lat  Float
+  lon  Float
+
+  cities City[]
+}
+
+model City {
+  id      String @id @default(cuid())
+  name    String
+  stateId String
+  state   State  @relation(fields: [stateId], references: [id])
+  lat     Float
+  lon     Float
+
+  @@unique([name, stateId])
+  @@index([stateId])
 }
 
 // ─── Taxonomy ─────────────────────────────────────────────────────────────────

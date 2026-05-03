@@ -36,7 +36,7 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 **Required at signup:**
 
 - First name, last name
-- City, state, zip (no street address)
+- City, state (dropdown-selected from seeded geography tables; no zip)
 - Work authorization (yes/no)
 - Available days (multi-select Sun–Sat)
 - Skills (multi-select from curated list)
@@ -64,7 +64,7 @@ Base account. Fields: id, email (verified), phone (collected, unverified), auth 
 - First name, last name (the contact human)
 - Company name
 - Company size (1–10 / 11–50 / 51–200 / 201+)
-- City, state, zip
+- City, state (dropdown-selected from geography tables; no zip)
 
 **Optional:**
 
@@ -85,7 +85,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Title, description (max 5000 chars)
 - Job type (full-time / part-time / either)
 - Work arrangement (remote / on-site / hybrid)
-- Location: city, state, zip (defaults from employer, editable per job)
+- Location: city, state (dropdown-selected from geography tables; no zip; defaults from employer profile)
 - Minimum hourly rate (number, required)
 - Pay notes (optional free text — for "based on experience," raises, etc.)
 - Work days (multi-select Sun–Sat)

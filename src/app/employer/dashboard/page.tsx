@@ -15,14 +15,7 @@ export default function EmployerDashboardPage() {
       <PageHeader
         title="Dashboard"
         description="Manage your jobs and company profile."
-        actions={
-          <Button
-            className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
-            onClick={() => router.push("/employer/jobs/new")}
-          >
-            Post a job
-          </Button>
-        }
+        actions={<Button onClick={() => router.push("/employer/jobs/new")}>Post a job</Button>}
       />
 
       <div className="mb-8 grid gap-4 md:grid-cols-3">
@@ -31,8 +24,8 @@ export default function EmployerDashboardPage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-base font-medium">Recent activity</h2>
-        <div className="border-border bg-card text-muted-foreground rounded-lg border p-6 text-sm">
+        <h2 className="text-text mb-3 font-medium">Recent activity</h2>
+        <div className="bg-surface-1 text-text-muted rounded-lg p-6 text-sm">
           No recent activity yet.
         </div>
       </div>

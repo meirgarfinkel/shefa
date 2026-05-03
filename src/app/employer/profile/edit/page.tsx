@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-header";
+import { LocationPicker } from "@/components/ui/location-picker";
 
 const COMPANY_SIZES = [
   { value: "SIZE_1_10", label: "1–10 employees" },
@@ -76,7 +77,6 @@ export default function EmployerProfileEditPage() {
       companySize: undefined,
       city: "",
       state: "",
-      zip: "",
     },
   });
 
@@ -89,7 +89,6 @@ export default function EmployerProfileEditPage() {
       companySize: profile.companySize,
       city: profile.city,
       state: profile.state,
-      zip: profile.zip,
       roleAtCompany: profile.roleAtCompany ?? undefined,
       industry: profile.industry ?? undefined,
       website: profile.website ?? undefined,
@@ -119,12 +118,12 @@ export default function EmployerProfileEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!profile) {
     return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
+      <div className="text-text-muted px-4 py-16 text-center text-sm">
         No profile found. Please complete your profile first.
       </div>
     );
@@ -135,15 +134,15 @@ export default function EmployerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your company profile up to date." />
 
       {/* Email section */}
-      <div className="border-border bg-card mb-8 rounded-lg border p-5">
-        <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
+      <div className="border-transprent bg-surface-1 mb-8 rounded-lg border p-5">
+        <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
           {!showEmailForm && !emailSent && (
             <Button
               type="button"
               variant="ghost"
-              className="border-border hover:bg-muted h-8 border text-sm transition-colors duration-150"
+              className="border-transprent hover:bg-surface-3 h-8 border text-sm transition-colors duration-150"
               onClick={() => setShowEmailForm(true)}
             >
               Change email
@@ -153,7 +152,7 @@ export default function EmployerProfileEditPage() {
 
         {showEmailForm && (
           <div className="mt-4 space-y-3">
-            <p className="text-muted-foreground text-xs">
+            <p className="text-text-muted text-xs">
               Enter your new email. We&apos;ll send a confirmation link — your address only changes
               when you click it.
             </p>
@@ -186,7 +185,7 @@ export default function EmployerProfileEditPage() {
               </Button>
             </div>
             {requestEmailChange.isError && (
-              <p className="text-destructive text-xs">
+              <p className="text-danger text-xs">
                 {requestEmailChange.error.message ?? "Something went wrong."}
               </p>
             )}
@@ -348,47 +347,7 @@ export default function EmployerProfileEditPage() {
           {/* Location */}
           <div className="space-y-4">
             <h2 className="font-medium">Location</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-1">
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="NY" maxLength={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <LocationPicker />
           </div>
 
           <Separator />
@@ -439,7 +398,7 @@ export default function EmployerProfileEditPage() {
           </div>
 
           {updateProfile.isError && (
-            <p className="text-destructive text-sm">
+            <p className="text-danger text-sm">
               {updateProfile.error.message ?? "Something went wrong. Please try again."}
             </p>
           )}

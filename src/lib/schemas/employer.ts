@@ -32,7 +32,6 @@ export const CreateEmployerProfileSchema = z.object({
   companySize: CompanySize,
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
-  zip: z.string().min(1).max(10),
   // Optional
   roleAtCompany: z.string().max(100).optional(),
   industry: Industry.optional(),
@@ -50,7 +49,6 @@ export const UpdateEmployerProfileSchema = z.object({
   companySize: CompanySize,
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
-  zip: z.string().min(1).max(10),
   roleAtCompany: z.string().max(100).optional(),
   industry: Industry.optional(),
   website: z.url({ protocol: /^https?$/ }).optional(),

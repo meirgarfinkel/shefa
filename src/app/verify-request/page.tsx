@@ -11,7 +11,7 @@ export default function VerifyRequestPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-text-muted text-sm">
             Didn&apos;t get it? Check your spam folder or go back and try again.
           </p>
         </CardContent>

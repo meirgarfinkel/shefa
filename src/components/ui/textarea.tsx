@@ -7,8 +7,8 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
       data-slot="textarea"
       className={cn(
         // base
-        "bg-popover/60 flex min-h-20 w-full rounded-md px-3 py-2 text-sm",
-        "placeholder:text-muted-foreground",
+        "bg-surface-2/60 flex min-h-20 w-full rounded-md px-3 py-2 text-sm",
+        "placeholder:text-text-muted",
         "transition-colors duration-150",
 
         // 🚫 remove ALL rings/outlines
@@ -16,10 +16,10 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
         "ring-0 focus:ring-0 focus-visible:ring-0",
         "shadow-none focus:shadow-none focus-visible:shadow-none",
         "border-0 focus:border-0 focus-visible:border-0",
-        "focus:bg-popover/80",
+        "focus:bg-surface-2/80",
 
         // invalid state (clean, no glow)
-        "aria-invalid:border-destructive/60",
+        "aria-invalid:border-danger/60",
 
         // disabled
         "disabled:cursor-not-allowed disabled:opacity-50",

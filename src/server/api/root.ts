@@ -9,6 +9,7 @@ import { conversationRouter } from "@/server/api/routers/conversation";
 import { messageRouter } from "@/server/api/routers/message";
 import { notificationRouter } from "@/server/api/routers/notification";
 import { reportRouter } from "@/server/api/routers/report";
+import { locationRouter } from "@/server/api/routers/location";
 
 export const appRouter = createTRPCRouter({
   user: userRouter,
@@ -21,6 +22,7 @@ export const appRouter = createTRPCRouter({
   message: messageRouter,
   notification: notificationRouter,
   report: reportRouter,
+  location: locationRouter,
 });
 
 export type AppRouter = typeof appRouter;

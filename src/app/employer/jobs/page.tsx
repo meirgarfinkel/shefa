@@ -39,24 +39,24 @@ export default function EmployerJobsPage() {
         }
       />
 
-      {isLoading && <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>}
+      {isLoading && <div className="text-text-muted py-16 text-center text-sm">Loading…</div>}
 
       {!isLoading && jobs?.length === 0 && (
-        <div className="border-border bg-card text-muted-foreground rounded-lg border py-16 text-center text-sm">
+        <div className="border-transprent bg-surface-1 text-text-muted rounded-lg border py-16 text-center text-sm">
           No job postings yet.{" "}
-          <Link href="/employer/jobs/new" className="text-foreground underline underline-offset-2">
+          <Link href="/employer/jobs/new" className="text-text underline underline-offset-2">
             Post your first job.
           </Link>
         </div>
       )}
 
       {!isLoading && jobs && jobs.length > 0 && (
-        <div className="border-border bg-card overflow-hidden rounded-lg border">
+        <div className="border-transprent bg-surface-1 overflow-hidden rounded-lg border">
           {jobs.map((job, i) => (
             <div
               key={job.id}
               className={`flex items-center gap-4 px-4 py-3 ${
-                i < jobs.length - 1 ? "border-border border-b" : ""
+                i < jobs.length - 1 ? "border-transprent border-b" : ""
               }`}
             >
               <div className="min-w-0 flex-1">
@@ -64,7 +64,7 @@ export default function EmployerJobsPage() {
                   <p className="truncate font-medium">{job.title}</p>
                   <StatusBadge status={job.status} />
                 </div>
-                <p className="text-muted-foreground mt-0.5 text-xs">
+                <p className="text-text-muted mt-0.5 text-xs">
                   {job.city}, {job.state} · Posted{" "}
                   {new Date(job.createdAt).toLocaleDateString("en-US", {
                     month: "short",

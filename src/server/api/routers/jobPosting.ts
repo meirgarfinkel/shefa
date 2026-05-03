@@ -6,7 +6,19 @@ import {
   UpdateJobPostingSchema,
   ListJobPostingsSchema,
 } from "@/lib/schemas/jobPosting";
-import { geocodeCityState } from "@/lib/geocode";
+import type { PrismaClient } from "@prisma/client";
+
+async function lookupCityCoords(
+  prisma: PrismaClient,
+  city: string,
+  stateAbbr: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const record = await prisma.city.findFirst({
+    where: { name: { equals: city, mode: "insensitive" }, state: { abbr: stateAbbr } },
+    select: { lat: true, lon: true },
+  });
+  return record ?? null;
+}
 
 export const jobPostingRouter = createTRPCRouter({
   create: protectedProcedure.input(CreateJobPostingSchema).mutation(async ({ ctx, input }) => {
@@ -23,7 +35,7 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     const { preferredSkillIds, requiredLanguageIds, ...fields } = input;
-    const coords = await geocodeCityState(fields.city, fields.state);
+    const coords = await lookupCityCoords(ctx.prisma, fields.city, fields.state);
 
     return ctx.prisma.jobPosting.create({
       data: {
@@ -63,7 +75,7 @@ export const jobPostingRouter = createTRPCRouter({
     // Always ORDER BY distance so geoIds are distance-sorted for "closest" sort.
     let geoIds: string[] | undefined;
     if (input.radiusMiles && input.city && input.state) {
-      const coords = await geocodeCityState(input.city, input.state);
+      const coords = await lookupCityCoords(ctx.prisma, input.city, input.state);
       if (coords) {
         const radiusMeters = input.radiusMiles * 1609.344;
         const rows = await ctx.prisma.$queryRaw<{ id: string }[]>`
@@ -87,13 +99,17 @@ export const jobPostingRouter = createTRPCRouter({
       where: {
         ...(input.employerProfileId && { employerProfileId: input.employerProfileId }),
         ...(statusFilter !== undefined && { status: statusFilter }),
-        // When radius search succeeded, filter by geo IDs; otherwise fall back to text match
+        // When radius search succeeded, filter by geo IDs.
+        // When radius was requested but geocoding failed, fall back to text match.
+        // When no radius was requested (any distance), don't filter by location.
         ...(geoIds !== undefined
           ? { id: { in: geoIds } }
-          : {
-              ...(input.city && { city: { contains: input.city, mode: "insensitive" } }),
-              ...(input.state && { state: { contains: input.state, mode: "insensitive" } }),
-            }),
+          : input.radiusMiles
+            ? {
+                ...(input.city && { city: { contains: input.city, mode: "insensitive" } }),
+                ...(input.state && { state: { contains: input.state, mode: "insensitive" } }),
+              }
+            : {}),
         ...(input.jobType?.length && { jobType: { in: input.jobType } }),
         ...(input.workArrangement?.length && { workArrangement: { in: input.workArrangement } }),
         ...(input.workDays?.length && { workDays: { hasSome: input.workDays } }),
@@ -190,12 +206,11 @@ export const jobPostingRouter = createTRPCRouter({
       throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update a closed posting" });
     }
 
-    // Re-geocode if city or state is being updated
     let coords: { lat: number; lon: number } | null = null;
     if (fields.city !== undefined || fields.state !== undefined) {
       const city = fields.city ?? posting.city;
       const state = fields.state ?? posting.state;
-      coords = await geocodeCityState(city, state);
+      coords = await lookupCityCoords(ctx.prisma, city, state);
     }
 
     return ctx.prisma.jobPosting.update({

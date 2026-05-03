@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-header";
+import { LocationPicker } from "@/components/ui/location-picker";
 
 const DAYS = [
   { value: "SUN", label: "Sun" },
@@ -67,7 +68,6 @@ export default function SeekerProfileEditPage() {
       lastName: "",
       city: "",
       state: "",
-      zip: "",
       workAuthorization: false,
       availableDays: [],
       jobSeekText: "",
@@ -83,7 +83,6 @@ export default function SeekerProfileEditPage() {
       lastName: profile.lastName,
       city: profile.city,
       state: profile.state,
-      zip: profile.zip,
       workAuthorization: profile.workAuthorization,
       availableDays: profile.availableDays as UpdateSeekerProfileInput["availableDays"],
       jobSeekText: profile.jobSeekText,
@@ -117,12 +116,12 @@ export default function SeekerProfileEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!profile) {
     return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
+      <div className="text-text-muted px-4 py-16 text-center text-sm">
         No profile found. Please complete your profile first.
       </div>
     );
@@ -133,15 +132,15 @@ export default function SeekerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your profile up to date." />
 
       {/* Email section */}
-      <div className="border-border bg-card mb-8 rounded-lg border p-5">
-        <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
+      <div className="border-transprent bg-surface-1 mb-8 rounded-lg border p-5">
+        <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
           {!showEmailForm && !emailSent && (
             <Button
               type="button"
               variant="ghost"
-              className="border-border hover:bg-muted h-8 border text-sm transition-colors duration-150"
+              className="border-transprent hover:bg-surface-3 h-8 border text-sm transition-colors duration-150"
               onClick={() => setShowEmailForm(true)}
             >
               Change email
@@ -151,7 +150,7 @@ export default function SeekerProfileEditPage() {
 
         {showEmailForm && (
           <div className="mt-4 space-y-3">
-            <p className="text-muted-foreground text-xs">
+            <p className="text-text-muted text-xs">
               Enter your new email. We&apos;ll send a confirmation link — your address only changes
               when you click it.
             </p>
@@ -184,7 +183,7 @@ export default function SeekerProfileEditPage() {
               </Button>
             </div>
             {requestEmailChange.isError && (
-              <p className="text-destructive text-xs">
+              <p className="text-danger text-xs">
                 {requestEmailChange.error.message ?? "Something went wrong."}
               </p>
             )}
@@ -238,47 +237,7 @@ export default function SeekerProfileEditPage() {
           {/* Location */}
           <div className="space-y-4">
             <h2 className="font-medium">Location</h2>
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem className="col-span-1">
-                    <FormLabel>City *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="NY" maxLength={2} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="zip"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Zip *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <LocationPicker />
           </div>
 
           <Separator />
@@ -291,7 +250,7 @@ export default function SeekerProfileEditPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-card flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-surface-1 flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -319,7 +278,7 @@ export default function SeekerProfileEditPage() {
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
                           field.value?.includes(day.value)
                             ? "bg-primary/20 text-primary border-primary/40 border"
-                            : "border-border hover:bg-muted border"
+                            : "border-transprent hover:bg-surface-3 border"
                         }`}
                       >
                         <input
@@ -377,7 +336,7 @@ export default function SeekerProfileEditPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -527,7 +486,7 @@ export default function SeekerProfileEditPage() {
           </div>
 
           {updateProfile.isError && (
-            <p className="text-destructive text-sm">
+            <p className="text-danger text-sm">
               {updateProfile.error.message ?? "Something went wrong. Please try again."}
             </p>
           )}
