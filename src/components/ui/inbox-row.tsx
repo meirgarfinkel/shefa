@@ -25,7 +25,7 @@ export function InboxRow({
       <div
         className={cn(
           "flex items-center gap-3 px-4 py-3 transition-colors duration-150",
-          "border-transprent border-b last:border-b-0",
+          "border-b last:border-b-0",
           "hover:bg-surface-3/50 cursor-pointer",
           className,
         )}
@@ -36,7 +36,7 @@ export function InboxRow({
         </div>
 
         {/* Avatar */}
-        <div className="bg-surface-3 border-transprent flex size-9 flex-shrink-0 items-center justify-center rounded-full border">
+        <div className="bg-surface-3 flex size-9 flex-shrink-0 items-center justify-center rounded-full border">
           <span className="text-primary text-xs font-medium">{initials}</span>
         </div>
 

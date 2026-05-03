@@ -132,7 +132,7 @@ export default function SeekerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your profile up to date." />
 
       {/* Email section */}
-      <div className="border-transprent bg-surface-1 mb-8 rounded-lg border p-5">
+      <div className="bg-surface-1 mb-8 rounded-lg p-5">
         <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
@@ -277,7 +277,7 @@ export default function SeekerProfileEditPage() {
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
                           field.value?.includes(day.value)
                             ? "bg-primary/20 text-primary border-primary/40 border"
-                            : "border-transprent hover:bg-surface-3 border"
+                            : "hover:bg-surface-3 border"
                         }`}
                       >
                         <input
@@ -493,7 +493,7 @@ export default function SeekerProfileEditPage() {
           <div className="flex items-center gap-3">
             <Button
               type="submit"
-              className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
+              className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 transition-colors duration-150"
               disabled={updateProfile.isPending}
             >
               {updateProfile.isPending ? "Saving…" : "Save changes"}

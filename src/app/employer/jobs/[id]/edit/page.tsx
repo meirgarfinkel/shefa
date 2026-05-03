@@ -152,7 +152,7 @@ export default function JobEditPage() {
       />
 
       {isClosed && (
-        <div className="border-danger/30 bg-danger/10 text-danger mb-6 rounded-lg border p-4 text-sm">
+        <div className="border-danger/30 bg-danger/10 text-danger mb-6 rounded-lg p-4 text-sm">
           This posting is {job.status.toLowerCase()} and cannot be edited.
         </div>
       )}
@@ -356,10 +356,10 @@ export default function JobEditPage() {
                         key={day.value}
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
                           isClosed
-                            ? "border-transprent text-text-muted cursor-not-allowed border opacity-50"
+                            ? "text-text-muted cursor-not-allowed opacity-50"
                             : field.value?.includes(day.value)
-                              ? "border-primary/40 bg-primary/20 text-primary border"
-                              : "border-transprent hover:bg-surface-3 border"
+                              ? "bg-primary/20 text-primary"
+                              : "hover:bg-surface-3"
                         }`}
                       >
                         <input

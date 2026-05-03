@@ -291,7 +291,7 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 - No second accent color ever
 - Transitions: `transition-colors duration-150` only — no movement on hover
 - Surface layers: `bg-background` → `bg-surface-1` → `bg-surface-3` (max 3, never deeper)
-- Borders on all cards: `border border-transprent`, hover: `hover:border-transprent/60`
+- Avoid borders at all costs
 - Font weights: `font-normal` and `font-medium` only (badges may use `font-semibold`)
 - Radius: `rounded-full` (pills) · `rounded-md` (buttons/inputs) · `rounded-lg` (cards)
 - Min font size: `text-xs` — never `text-[10px]` or smaller
@@ -300,11 +300,11 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 
 | Status | Classes |
 |---|---|
-| ACTIVE | `bg-success/15 text-success border-success/25` |
-| DRAFT | `bg-surface-3 text-text-muted border-transprent` |
-| PAUSED | `bg-warning/15 text-warning border-warning/25` |
-| FILLED | `bg-primary/15 text-primary border-primary/25` |
-| EXPIRED / CLOSED | `bg-danger/15 text-danger border-danger/25` |
+| ACTIVE | `bg-success/15 text-success` |
+| DRAFT | `bg-surface-3 text-text-muted` |
+| PAUSED | `bg-warning/15 text-warning` |
+| FILLED | `bg-primary/15 text-primary` |
+| EXPIRED / CLOSED | `bg-danger/15 text-danger` |
 
 ### Custom components to use (do not re-implement)
 
@@ -319,5 +319,5 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 
 ### shadcn components to use for primitives
 
-Button, Input, Textarea, Label, Select, Card, Badge, Dialog, Sheet, Tooltip, Separator, Skeleton, Sonner (not Toast).
+Button, Input, Textarea, Label, Select, Card, Pill, Badge, Dialog, Sheet, Tooltip, Separator, Skeleton, Sonner (not Toast).
 Always customize with Tailwind classes — never override with inline styles.

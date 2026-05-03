@@ -241,7 +241,7 @@ export default function PostJobPage() {
                     {DAYS.map((day) => (
                       <label
                         key={day.value}
-                        className={`flex cursor-pointer items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                        className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
                             ? "border-primary bg-primary text-text"
                             : "hover:bg-surface-3"

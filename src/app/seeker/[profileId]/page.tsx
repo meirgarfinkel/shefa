@@ -78,7 +78,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
           <div className="flex flex-col items-end gap-2">
             <ResponsiveBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
             {profile.status === "PAUSED" && (
-              <span className="border-warning/25 bg-warning/15 text-warning rounded-full border px-3 py-1 text-xs">
+              <span className="border-warning/25 bg-warning/15 text-warning rounded-full px-3 py-1 text-xs">
                 Not currently active
               </span>
             )}

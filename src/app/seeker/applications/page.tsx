@@ -15,16 +15,16 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-surface-3 text-text-muted border border-transprent",
-  VIEWED: "bg-warning/15 text-warning border border-warning/25",
-  RESPONDED: "bg-success/15 text-success border border-success/25",
+  SUBMITTED: "bg-surface-3 text-text-muted ",
+  VIEWED: "bg-warning/15 text-warning border-warning/25",
+  RESPONDED: "bg-success/15 text-success border-success/25",
 };
 
 function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted border-transprent border"}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted border"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -48,7 +48,7 @@ export default function SeekerApplicationsPage() {
       {!isLoading && applications?.length === 0 && (
         <div className="py-12 text-center">
           <p className="text-text-muted mb-4 text-sm">You haven&apos;t applied to any jobs yet.</p>
-          <Button asChild variant="ghost" className="border-transprent hover:bg-surface-3 border">
+          <Button asChild variant="ghost" className="hover:bg-surface-3 border">
             <Link href="/jobs">Browse listings</Link>
           </Button>
         </div>
@@ -57,7 +57,7 @@ export default function SeekerApplicationsPage() {
       {!isLoading && applications && applications.length > 0 && (
         <ul className="space-y-4">
           {applications.map((app) => (
-            <li key={app.id} className="border-transprent bg-surface-1 rounded-lg border p-4">
+            <li key={app.id} className="bg-surface-1 rounded-lg p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <Link href={`/jobs/${app.job.id}`} className="font-medium hover:underline">
@@ -94,7 +94,7 @@ export default function SeekerApplicationsPage() {
               </div>
 
               {app.message && (
-                <p className="border-transprent text-text-muted mt-2 border-t pt-2 text-xs italic">
+                <p className="text-text-muted mt-2 border-t pt-2 text-xs italic">
                   &ldquo;{app.message}&rdquo;
                 </p>
               )}

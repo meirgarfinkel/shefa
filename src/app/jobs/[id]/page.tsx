@@ -51,10 +51,10 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-surface-3 text-text-muted border border-transprent",
-  VIEWED: "bg-warning/15 text-warning border border-warning/25",
-  RESPONDED: "bg-success/15 text-success border border-success/25",
-  CLOSED: "bg-danger/15 text-danger border border-danger/25",
+  SUBMITTED: "bg-surface-3 text-text-muted",
+  VIEWED: "bg-warning/15 text-warning border-warning/25",
+  RESPONDED: "bg-success/15 text-success border-success/25",
+  CLOSED: "bg-danger/15 text-danger border-danger/25",
 };
 
 function ApplyDialog({

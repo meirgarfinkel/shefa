@@ -17,10 +17,10 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-surface-3 text-text-muted border border-transprent",
-  VIEWED: "bg-warning/15 text-warning border border-warning/25",
-  RESPONDED: "bg-success/15 text-success border border-success/25",
-  CLOSED: "bg-danger/15 text-danger border border-danger/25",
+  SUBMITTED: "bg-surface-3 text-text-muted",
+  VIEWED: "bg-warning/15 text-warning",
+  RESPONDED: "bg-success/15 text-success",
+  CLOSED: "bg-danger/15 text-danger",
 };
 
 const DAY_LABELS: Record<string, string> = {
@@ -37,7 +37,7 @@ function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted border-transprent border"}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -84,7 +84,7 @@ export default function EmployerJobApplicationsPage({
       {!isLoading && applications && applications.length > 0 && (
         <ul className="space-y-4">
           {applications.map((app) => (
-            <li key={app.id} className="border-transprent bg-surface-1 rounded-lg border p-4">
+            <li key={app.id} className="bg-surface-1 rounded-lg p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">
@@ -107,12 +107,12 @@ export default function EmployerJobApplicationsPage({
               </div>
 
               {app.message && (
-                <p className="border-transprent text-text-muted mt-3 border-t pt-3 text-sm italic">
+                <p className="text-text-muted mt-3 border-t pt-3 text-sm italic">
                   &ldquo;{app.message}&rdquo;
                 </p>
               )}
 
-              <div className="border-transprent mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
                 <p className="text-text-muted text-xs">
                   Applied {new Date(app.createdAt).toLocaleDateString()}
                 </p>

@@ -44,9 +44,7 @@ Background is a muted teal; cards and inputs are dark navy wells.
 
 > **Borders**: there is no `--border` CSS variable. The default border color is set globally via
 > `* { border-color: var(--text-muted); }` in `globals.css`. Applying `border` alone gives a
-> `text-muted`-colored border. The conventional class string in this project is
-> `border border-transprent` — `border-transprent` is a project convention (effectively overridden
-> by the `*` reset, producing a soft `text-muted` border).
+> `text-muted`-colored border. All borders are strongly discouraged.
 
 ### One accent only
 
@@ -120,9 +118,7 @@ Use only these values. Never arbitrary spacing.
 ---
 
 ## Borders
-
-Always `border border-transprent`. Never omit borders on cards.
-Hover state: `hover:border-transprent/60` — slightly more visible, no movement.
+Always avoid borders
 
 ---
 
@@ -131,12 +127,12 @@ Hover state: `hover:border-transprent/60` — slightly more visible, no movement
 All transitions must be:
 
 - Duration: `duration-150` only
-- Property: `transition-colors` — color/border/background only
+- Property: `transition-colors` — color/background only
 - No movement — no `translate`, `scale`, or `transform` on hover
 
 ```tsx
 // Correct
-className = "transition-colors duration-150 hover:bg-surface-3 hover:border-transprent/60";
+className = "transition-colors duration-150 hover:bg-surface-3";
 
 // Wrong — element moves
 className = "transition-transform hover:scale-105";
@@ -149,7 +145,7 @@ className = "transition-transform hover:scale-105";
 ### Card
 
 ```tsx
-<div className="border-transprent bg-surface-1 hover:border-transprent/60 rounded-lg border p-5 transition-colors duration-150">
+<div className="bg-surface-1 rounded-lg p-5 transition-colors duration-150">
   {children}
 </div>
 ```
@@ -157,7 +153,7 @@ className = "transition-transform hover:scale-105";
 ### Primary button (publish, confirm)
 
 ```tsx
-<Button className="bg-primary/15 border-primary/40 text-primary hover:bg-primary/25 border transition-colors duration-150">
+<Button className="bg-primary/15 text-primary hover:bg-primary/25 transition-colors duration-150">
   Publish job
 </Button>
 ```
@@ -167,7 +163,7 @@ className = "transition-transform hover:scale-105";
 ```tsx
 <Button
   variant="ghost"
-  className="border-transprent hover:bg-surface-3 border transition-colors duration-150"
+  className="hover:bg-surface-3 transition-colors duration-150"
 >
   Cancel
 </Button>
@@ -176,7 +172,7 @@ className = "transition-transform hover:scale-105";
 ### Destructive button (close, delete)
 
 ```tsx
-<Button className="bg-danger/15 border-danger/30 text-danger hover:bg-danger/25 border transition-colors duration-150">
+<Button className="bg-danger/15 text-danger hover:bg-danger/25 transition-colors duration-150">
   Close job
 </Button>
 ```
@@ -184,13 +180,13 @@ className = "transition-transform hover:scale-105";
 ### Input / Textarea
 
 ```tsx
-<Input className="bg-surface-3 border-transprent text-text placeholder:text-text-muted focus:border-primary focus-visible:ring-primary transition-colors duration-150" />
+<Input className="bg-surface-3 text-text placeholder:text-text-muted transition-colors duration-150" />
 ```
 
 ### Form label
 
 ```tsx
-<Label className="text-text-muted text-xs font-medium" />
+<Label className="text-text-muted text-sm font-medium" />
 ```
 
 ---
@@ -230,7 +226,7 @@ These are Shefa-specific, not shadcn primitives:
 | Raw hex in className                         | Semantic token (`bg-surface-1`, `text-text`) |
 | `font-bold`, `font-semibold` (except badges) | `font-medium`                                 |
 | `rounded-xl` or larger                       | `rounded-lg` max                              |
-| `shadow-lg`, `shadow-xl`                     | `border border-transprent`                        |
+| `shadow-lg`, `shadow-xl`                     | ``                                            |
 | `bg-blue-500`, `bg-green-400`                | Status tokens                                 |
 | Hover animations that move                   | `hover:bg-surface-3` only                         |
 | `style={{ color: '#...' }}`                  | Tailwind class                                |
