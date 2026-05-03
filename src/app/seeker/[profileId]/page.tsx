@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
+import Link from "next/link";
 
 const DAY_LABELS: Record<string, string> = {
   SUN: "Sun",
@@ -54,8 +55,8 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-text-muted">This profile was not found.</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/jobs")}>
-          Browse jobs
+        <Button asChild>
+          <Link href="/jobs">Browse jobs</Link>
         </Button>
       </div>
     );

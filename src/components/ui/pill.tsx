@@ -14,7 +14,7 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
         "transition-colors duration-150",
 
         // default (subtle)
-        "bg-secondary/15 text-text",
+        "bg-primary/15 text-text",
 
         // variants
         variant === "primary" && "bg-primary/15 text-primary",

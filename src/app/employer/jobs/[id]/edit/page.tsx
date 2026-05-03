@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -56,7 +56,6 @@ const USER_SETTABLE_STATUSES = [
 
 export default function JobEditPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
   const jobId = params.id;
 
   const { data: job, isLoading } = trpc.jobPosting.getById.useQuery({ id: jobId });
@@ -571,21 +570,12 @@ export default function JobEditPage() {
 
           {!isClosed && (
             <div className="flex items-center gap-3">
-              <Button
-                type="submit"
-                className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
-                disabled={updatePosting.isPending}
-              >
+              <Button type="submit" disabled={updatePosting.isPending}>
                 {updatePosting.isPending ? "Saving…" : "Save changes"}
               </Button>
               {saved && <p className="text-success text-sm">Saved.</p>}
-              <Button
-                type="button"
-                variant="ghost"
-                className="border-transprent hover:bg-surface-3 border transition-colors duration-150"
-                onClick={() => router.push("/employer/jobs")}
-              >
-                Cancel
+              <Button asChild variant="ghost">
+                <Link href="/employer/jobs">Cancel</Link>
               </Button>
             </div>
           )}

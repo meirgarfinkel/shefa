@@ -208,10 +208,7 @@ export default function JobsPage() {
           {/* Arrangement */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="bg-primary/20 h-8 gap-1.5 rounded-lg font-normal"
-              >
+              <Button variant="outline" className="bg-primary/20 h-8 gap-1.5 rounded-lg">
                 {arrangements.length > 0 ? `Arrangement (${arrangements.length})` : "Arrangement"}
                 <ChevronDownIcon className="text-text-muted size-3.5" />
               </Button>
@@ -232,10 +229,7 @@ export default function JobsPage() {
           {/* Work days */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                className="bg-primary/20 h-8 gap-1.5 rounded-lg font-normal"
-              >
+              <Button variant="outline" className="bg-primary/20 h-8 gap-1.5 rounded-lg">
                 {workDays.length > 0 ? `Days (${workDays.length})` : "Days"}
                 <ChevronDownIcon className="text-text-muted size-3.5" />
               </Button>
@@ -257,10 +251,7 @@ export default function JobsPage() {
           {skillGroups && Object.keys(skillGroups).length > 0 && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="border-transprent bg-surface-3 h-8 gap-1.5 font-normal"
-                >
+                <Button variant="outline" className="bg-primary/20 h-8 gap-1.5 rounded-lg">
                   {skillIds.length > 0 ? `Skills (${skillIds.length})` : "Skills"}
                   <ChevronDownIcon className="text-text-muted size-3.5" />
                 </Button>

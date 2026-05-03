@@ -217,7 +217,7 @@ export default function ConversationPage({
                   isMine ? "bg-primary text-text" : "bg-surface-3 text-text"
                 }`}
               >
-                <p className="break-words whitespace-pre-wrap">{msg.body}</p>
+                <p className="wrap-break-word whitespace-pre-wrap">{msg.body}</p>
                 <p
                   className={`mt-1 text-right text-xs ${
                     isMine ? "text-text/70" : "text-text-muted"

@@ -2,11 +2,11 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
@@ -129,7 +129,6 @@ function ApplyDialog({
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const router = useRouter();
   const { data: session } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -143,6 +142,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     trpc.seeker.getMyProfile.useQuery(undefined, {
       enabled: session?.user?.role === "SEEKER",
     });
+  const { data: employerProfile } = trpc.employer.getProfile.useQuery(undefined, {
+    enabled: session?.user?.role === "EMPLOYER",
+  });
 
   if (isLoading) {
     return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
@@ -152,8 +154,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <p className="text-text-muted">This job posting was not found.</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push("/jobs")}>
-          Back to listings
+        <Button asChild>
+          <Link href="/jobs">Back to listings</Link>
         </Button>
       </div>
     );
@@ -161,6 +163,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   const sortedDays = [...job.workDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
   const isSeeker = session?.user?.role === "SEEKER";
+  const isOwner =
+    session?.user?.role === "EMPLOYER" && employerProfile?.id === job.employerProfile.id;
   const hasProfile =
     isSeeker && !seekerProfileLoading && seekerProfile !== null && seekerProfile !== undefined;
   const noProfile = isSeeker && !seekerProfileLoading && !seekerProfile;
@@ -180,9 +184,24 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       <div className="flex items-center justify-center p-4">
         <Card className="w-full max-w-xl">
           <CardHeader>
-            <div className="flex flex-wrap justify-between gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-2">
               <CardTitle>{job.title}</CardTitle>
-              <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+              <div className="flex items-center gap-2">
+                {isOwner && (
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="bg-primary hover:bg-success hover:text-surface-1 h-7 gap-1.5 text-xs transition-colors duration-150"
+                  >
+                    <Link href={`/employer/jobs/${id}/edit`}>
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </Link>
+                  </Button>
+                )}
+                <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+              </div>
             </div>
             <CardDescription>
               <span>🏢 </span>
@@ -301,7 +320,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     {job.preferredSkills.map((ps) => (
                       <span
                         key={ps.skill.id}
-                        className="bg-secondary/15 text-text rounded-lg px-2.5 py-0.5 text-xs"
+                        className="bg-primary/15 text-text rounded-lg px-2.5 py-0.5 text-xs"
                       >
                         {ps.skill.name}
                       </span>

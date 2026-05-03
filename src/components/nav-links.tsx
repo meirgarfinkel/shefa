@@ -16,7 +16,7 @@ export function NavLinks({ links }: { links: NavLink[] }) {
           <Link
             key={link.href}
             href={link.href}
-            className={`text-sm transition-colors ${
+            className={`text-lg transition-colors ${
               isActive ? "text-text font-medium" : "text-text-muted hover:text-text"
             }`}
           >

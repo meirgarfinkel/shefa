@@ -15,7 +15,7 @@ export default function Home() {
         <ol className="list-inside list-decimal text-center font-mono text-sm/6 sm:text-left">
           <li className="mb-2 tracking-[-.01em]">
             Get started by editing{" "}
-            <code className="rounded bg-black/[.05] px-1 py-0.5 font-mono font-semibold">
+            <code className="rounded bg-black/5 px-1 py-0.5 font-mono font-semibold">
               src/app/page.tsx
             </code>
             .

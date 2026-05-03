@@ -25,15 +25,12 @@ export default function EmployerJobsPage() {
   const isLoading = profileLoading || jobsLoading;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
+    <div className="mx-auto max-w-3xl px-3 py-8 md:px-8">
       <PageHeader
         title="Your job postings"
         description={profile?.companyName}
         actions={
-          <Button
-            asChild
-            className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
-          >
+          <Button asChild>
             <Link href="/employer/jobs/new">Post a job</Link>
           </Button>
         }
@@ -42,7 +39,7 @@ export default function EmployerJobsPage() {
       {isLoading && <div className="text-text-muted py-16 text-center text-sm">Loading…</div>}
 
       {!isLoading && jobs?.length === 0 && (
-        <div className="border-transprent bg-surface-1 text-text-muted rounded-lg border py-16 text-center text-sm">
+        <div className="bg-surface-1 text-text-muted rounded-lg py-16 text-center text-sm">
           No job postings yet.{" "}
           <Link href="/employer/jobs/new" className="text-text underline underline-offset-2">
             Post your first job.
@@ -51,12 +48,12 @@ export default function EmployerJobsPage() {
       )}
 
       {!isLoading && jobs && jobs.length > 0 && (
-        <div className="border-transprent bg-surface-1 overflow-hidden rounded-lg border">
+        <div className="bg-surface-1 overflow-hidden rounded-md">
           {jobs.map((job, i) => (
             <div
               key={job.id}
               className={`flex items-center gap-4 px-4 py-3 ${
-                i < jobs.length - 1 ? "border-transprent border-b" : ""
+                i < jobs.length - 1 ? "border-b" : ""
               }`}
             >
               <div className="min-w-0 flex-1">

@@ -22,28 +22,36 @@ All token values are defined once in `:root`.
 
 ---
 
-## Color palette — teal ocean
+## Color palette — dark ocean
 
-Warm teal-green mid-tones. Evokes sea glass, coastal fog, still water.
-Background is a medium teal; cards and inputs are darker blue-teal wells.
+Deep navy surfaces with a sky-blue accent. Evokes deep water, calm and focused.
+Background is a muted teal; cards and inputs are dark navy wells.
 
-| Token                | Utility class                 | Value     | Usage                               |
-| -------------------- | ----------------------------- | --------- | ----------------------------------- |
-| `--background`       | `bg-background`               | `#506d6c` | Page base (layer 0)                 |
-| `--card`             | `bg-surface-1`                | `#2d505a` | Cards, panels (layer 1)             |
-| `--popover`          | `bg-surface-2`                  | `#19374b` | Popovers, dropdowns (layer 2)       |
-| `--muted`            | `bg-surface-3`                | `#28303d` | Subtle sections, inputs (layer 2)   |
-| `--text`             | `text-text`             | `#f0f2f5` | Primary text                        |
-| `--surface-3`        | `text-text-muted`             | `#bce4eb` | Secondary / supporting text         |
-| `--primary`          | `text-primary` / `bg-primary` | `#6eb5c0` | Accent — misty teal                 |
-| `--success`          | `text-success`                | `#55da86` | Active, confirmed states            |
-| `--warning`          | `text-warning`                | `#c4a04a` | Paused, caution states              |
-| `--destructive`      | `text-danger`            | `#c46a6a` | Errors, closed, danger              |
-| `--border`           | `border-transprent`               | 12% white | All borders                         |
+| Token            | Utility class                 | Value     | Usage                             |
+| ---------------- | ----------------------------- | --------- | --------------------------------- |
+| `--background`   | `bg-background`               | `#4b6e6e` | Page base (layer 0)               |
+| `--surface-1`    | `bg-surface-1`                | `#1a222e` | Cards, panels (layer 1)           |
+| `--surface-2`    | `bg-surface-2`                | `#202a38` | Popovers, dropdowns (layer 2)     |
+| `--surface-3`    | `bg-surface-3`                | `#283444` | Subtle sections, inputs (layer 2) |
+| `--text`         | `text-text`                   | `#ebf2f8` | Primary text                      |
+| `--text-muted`   | `text-text-muted`             | `#bbd3eb` | Secondary / supporting text       |
+| `--text-inverse` | `text-text-inverse`           | `#121822` | Text on light surfaces            |
+| `--primary`      | `text-primary` / `bg-primary` | `#78bee6` | Accent — sky blue                 |
+| `--secondary`    | `text-secondary` / `bg-secondary` | `#6e8ca0` | Muted secondary accent         |
+| `--success`      | `text-success`                | `#5ad28c` | Active, confirmed states          |
+| `--warning`      | `text-warning`                | `#d2af5a` | Paused, caution states            |
+| `--danger`       | `text-danger`                 | `#d26e6e` | Errors, closed, danger            |
+
+> **Borders**: there is no `--border` CSS variable. The default border color is set globally via
+> `* { border-color: var(--text-muted); }` in `globals.css`. Applying `border` alone gives a
+> `text-muted`-colored border. The conventional class string in this project is
+> `border border-transprent` — `border-transprent` is a project convention (effectively overridden
+> by the `*` reset, producing a soft `text-muted` border).
 
 ### One accent only
 
-`--primary` (`#6eb5c0`) is the single accent. Never introduce a second accent color.
+`--primary` (`#78bee6`) is the single accent. Never introduce a second accent color.
+`--secondary` may be used for muted decorative elements (skill pills, etc.) but not as a competing accent.
 Hover variant: use `text-primary/80` or `bg-primary/20` — no separate variable needed.
 
 ---
@@ -53,10 +61,14 @@ Hover variant: use `text-primary/80` or `bg-primary/20` — no separate variable
 Maximum 3 layers. Never nest deeper.
 
 ```
-Layer 0 — bg-background   → page base
-Layer 1 — bg-surface-1         → primary content blocks
-Layer 2 — bg-surface-3        → nested sections, overlays, inputs
+Layer 0 — bg-background  → page base
+Layer 1 — bg-surface-1   → primary content blocks (cards, panels)
+Layer 2 — bg-surface-2   → popovers, dropdowns, overlays
+Layer 2 — bg-surface-3   → nested sections, inputs within cards
 ```
+
+`bg-surface-2` and `bg-surface-3` are both valid layer-2 surfaces; use surface-2 for floating
+elements (popovers/menus) and surface-3 for inline nested sections.
 
 ---
 

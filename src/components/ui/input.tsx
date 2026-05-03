@@ -7,7 +7,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       data-slot="input"
       className={cn(
         // base
-        "bg-surface-2/60 flex h-9 w-full min-w-0 rounded-md px-3 py-1 text-sm",
+        "text-text bg-secondary flex h-9 w-full min-w-0 rounded-md px-3 py-1 text-sm",
         "placeholder:text-text-muted transition-colors duration-150",
 
         // 🚫 kill ALL focus visuals (critical)

@@ -140,7 +140,7 @@ export default function SeekerProfileEditPage() {
             <Button
               type="button"
               variant="ghost"
-              className="border-transprent hover:bg-surface-3 h-8 border text-sm transition-colors duration-150"
+              className="bg-danger hover:bg-surface-3 h-8 text-sm transition-colors duration-150"
               onClick={() => setShowEmailForm(true)}
             >
               Change email
@@ -164,7 +164,6 @@ export default function SeekerProfileEditPage() {
               />
               <Button
                 type="button"
-                className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 h-8 border text-sm transition-colors duration-150"
                 disabled={!emailInput || requestEmailChange.isPending}
                 onClick={() => requestEmailChange.mutate({ newEmail: emailInput })}
               >

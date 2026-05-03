@@ -134,7 +134,7 @@ export default function EmployerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your company profile up to date." />
 
       {/* Email section */}
-      <div className="border-transprent bg-surface-1 mb-8 rounded-lg border p-5">
+      <div className="bg-surface-1 mb-8 rounded-lg p-5">
         <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
@@ -142,7 +142,7 @@ export default function EmployerProfileEditPage() {
             <Button
               type="button"
               variant="ghost"
-              className="border-transprent hover:bg-surface-3 h-8 border text-sm transition-colors duration-150"
+              className="bg-danger text-text hover:bg-surface-3 h-8 text-sm transition-colors duration-150"
               onClick={() => setShowEmailForm(true)}
             >
               Change email
@@ -166,7 +166,6 @@ export default function EmployerProfileEditPage() {
               />
               <Button
                 type="button"
-                className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 h-8 border text-sm transition-colors duration-150"
                 disabled={!emailInput || requestEmailChange.isPending}
                 onClick={() => requestEmailChange.mutate({ newEmail: emailInput })}
               >
@@ -404,11 +403,7 @@ export default function EmployerProfileEditPage() {
           )}
 
           <div className="flex items-center gap-3">
-            <Button
-              type="submit"
-              className="border-primary/40 bg-primary/15 text-primary hover:bg-primary/25 border transition-colors duration-150"
-              disabled={updateProfile.isPending}
-            >
+            <Button type="submit" disabled={updateProfile.isPending}>
               {updateProfile.isPending ? "Saving…" : "Save changes"}
             </Button>
             {saved && <p className="text-success text-sm">Saved.</p>}

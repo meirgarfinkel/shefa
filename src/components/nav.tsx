@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import Link from "next/link";
 import { NavLinks, type NavLink } from "./nav-links";
 import { UserMenu } from "./user-menu";
+import { MobileNav } from "./mobile-nav";
 
 function linksForRole(role: string): NavLink[] {
   if (role === "SEEKER") {
@@ -35,24 +36,30 @@ export async function Nav() {
 
   return (
     <>
-      <header className="bg-background fixed top-0 right-0 left-0 z-50 h-16 border-b">
-        <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-4">
-          <Link href="/" className="text-xl font-medium tracking-tight">
+      <header className="bg-secondary shadow-surface-3/60 fixed top-0 right-0 left-0 z-50 h-16 shadow-sm">
+        <div className="mx-auto flex h-full items-center justify-between px-6">
+          <Link href="/" className="text-2xl font-medium tracking-tight">
             Shefa
           </Link>
 
           <div className="flex items-center gap-4">
-            {links.length > 0 && <NavLinks links={links} />}
-            {email ? (
-              <UserMenu email={email} />
-            ) : (
-              <Link
-                href="/sign-in"
-                className="text-text-muted hover:text-text text-sm transition-colors duration-150"
-              >
-                Sign in
-              </Link>
-            )}
+            {/* Desktop nav — hidden on mobile */}
+            <div className="hidden items-center gap-4 md:flex">
+              {links.length > 0 && <NavLinks links={links} />}
+              {email ? (
+                <UserMenu email={email} />
+              ) : (
+                <Link
+                  href="/sign-in"
+                  className="text-text-muted hover:text-text text-sm transition-colors duration-150"
+                >
+                  Sign in
+                </Link>
+              )}
+            </div>
+
+            {/* Mobile hamburger — hidden on desktop */}
+            <MobileNav links={links} email={email} />
           </div>
         </div>
       </header>

@@ -52,12 +52,12 @@ export function JobCard({
         <div className="pointer-events-none absolute inset-0 rounded-lg bg-linear-to-b from-white/7 via-transparent to-transparent" />
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-text hover:text-primary truncate text-sm font-medium">{title}</h3>
+            <h3 className="text-text truncate text-lg font-medium">{title}</h3>
             <p className="text-text-muted mt-0.5 text-xs">{companyName}</p>
           </div>
           {showStatus && <StatusBadge status={status} />}
         </div>
-        <div className="text-text-muted flex flex-wrap gap-3 text-xs">
+        <div className="flex flex-wrap gap-3">
           <Pill>
             <span>
               {city}, {state}

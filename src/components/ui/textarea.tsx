@@ -7,7 +7,7 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
       data-slot="textarea"
       className={cn(
         // base
-        "bg-surface-2/60 flex min-h-20 w-full rounded-md px-3 py-2 text-sm",
+        "bg-surface-3/80 flex min-h-20 w-full rounded-md px-3 py-2 text-sm",
         "placeholder:text-text-muted",
         "transition-colors duration-150",
 
@@ -16,7 +16,7 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
         "ring-0 focus:ring-0 focus-visible:ring-0",
         "shadow-none focus:shadow-none focus-visible:shadow-none",
         "border-0 focus:border-0 focus-visible:border-0",
-        "focus:bg-surface-2/80",
+        "focus:bg-surface-1/80",
 
         // invalid state (clean, no glow)
         "aria-invalid:border-danger/60",
