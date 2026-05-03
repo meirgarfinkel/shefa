@@ -12,8 +12,8 @@
 |-------|------|--------|
 | 1 | Foundation | ✅ Done |
 | 2 | Auth + base User | ✅ Done |
-| 3 | Profiles | ✅ Backend + signup UI — ⚠️ no profile edit pages |
-| 4 | Job postings | ✅ Backend + core UI — ⚠️ no job edit page, no status controls |
+| 3 | Profiles | ✅ Backend + signup UI + **edit pages done** |
+| 4 | Job postings | ✅ Backend + core UI + **job edit page done** |
 | 5 | Applications + messaging | ✅ **Full backend + full messaging UI done** |
 | 6 | Freshness system | ✅ Done |
 | 7 | Notifications + responsiveness | ✅ Done |
@@ -22,6 +22,30 @@
 ---
 
 ## What was completed this session
+
+### Edit pages + email change flow (Phase 8 polish)
+
+**`DESIGN_SYSTEM.md`** — color table updated to match actual `globals.css` values. Palette renamed from "misty mountain" to "teal ocean". Background is now `#506d6c` (warm teal-green), cards are `#2d505a`, muted-foreground is `#bce4eb`, success is `#55da86`.
+
+**New tRPC procedures:**
+- `seeker.getMyFullProfile` — returns all profile fields + skillIds + languageIds arrays
+- `seeker.updateProfile` — replaces skills/languages in a single transaction
+- `employer.getFullProfile` — returns all employer profile fields
+- `employer.updateProfile` — full profile update
+- `user.requestEmailChange` — sends magic link to new email (uses existing `VerificationToken` table with `identifier = "email_change:{userId}:{newEmail}"`)
+
+**New API route:** `src/app/api/change-email/route.ts` — GET handler, validates token, updates `user.email`, deletes token, redirects to `/?emailChanged=1`.
+
+**New pages:**
+- `src/app/seeker/profile/edit/page.tsx` — pre-filled with all profile fields; email-change card at top
+- `src/app/employer/profile/edit/page.tsx` — same for employer; email-change card at top
+- `src/app/employer/jobs/[id]/edit/page.tsx` — pre-filled job form; status dropdown; disabled when CLOSED/EXPIRED
+
+**Nav updated:** Profile link added for both SEEKER (`/seeker/profile/edit`) and EMPLOYER (`/employer/profile/edit`).
+
+**Employer jobs list:** Edit button added per job row linking to `/employer/jobs/{id}/edit`.
+
+---
 
 ### Messaging UI (Phase 5 completion)
 
@@ -77,11 +101,10 @@ All messaging UI is now built and wired up. Backend was already complete; this s
 
 | Gap | Notes |
 |-----|-------|
-| Seeker profile edit page | Only the "new profile" signup page exists |
-| Employer profile edit page | Same — only "new" page exists |
-| Job edit page (`/employer/jobs/[id]/edit`) | `jobPosting.update` procedure exists |
-| Job status controls (publish, pause, close, fill) | `jobPosting.updateStatus` exists |
-| Application status controls (employer side) | `application.updateStatus` now has UI but only basic buttons — no seeker profile link |
+| Application status controls (employer side) | Only basic buttons — no seeker profile link |
+| Notification preferences UI | Procedures exist; no settings page |
+| Admin profile / admin tools | No admin-facing pages at all |
+| Application status controls (employer side) | Only basic buttons — no seeker profile link |
 | Notification preferences UI | Procedures exist; no settings page |
 | Admin profile / admin tools | No admin-facing pages at all |
 

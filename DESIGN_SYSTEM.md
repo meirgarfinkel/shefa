@@ -15,29 +15,31 @@ You never touch `tailwind.config.js` because it doesn't exist.
 
 ---
 
-## Single theme — dark only
+## Single theme — one palette only
 
-No light/dark toggle. No `.dark` class. One theme, always dark.
+No light/dark toggle. No `.dark` class. One theme, always the same.
 All token values are defined once in `:root`.
 
 ---
 
-## Color palette — misty mountain
+## Color palette — teal ocean
 
-Muted, cool-toned, slightly brighter than pure slate. Evokes fog, water, distance.
+Warm teal-green mid-tones. Evokes sea glass, coastal fog, still water.
+Background is a medium teal; cards and inputs are darker blue-teal wells.
 
-| Token                   | Utility class                 | Value     | Usage                               |
-| ----------------------- | ----------------------------- | --------- | ----------------------------------- |
-| `--background`          | `bg-background`               | `#161b22` | Page base (layer 0)                 |
-| `--card`                | `bg-card`                     | `#1f2733` | Cards, panels (layer 1)             |
-| `--muted` / `--popover` | `bg-muted`                    | `#28303d` | Subtle sections, overlays (layer 2) |
-| `--foreground`          | `text-foreground`             | `#f0f2f5` | Primary text                        |
-| `--muted-foreground`    | `text-muted-foreground`       | `#9baab8` | Secondary / supporting text         |
-| `--primary`             | `text-primary` / `bg-primary` | `#6eb5c0` | Accent — misty teal                 |
-| `--success`             | `text-success`                | `#5dab7a` | Active, confirmed states            |
-| `--warning`             | `text-warning`                | `#c4a04a` | Paused, caution states              |
-| `--destructive`         | `text-destructive`            | `#c46a6a` | Errors, closed, danger              |
-| `--border`              | `border-border`               | 12% white | All borders                         |
+| Token                | Utility class                 | Value     | Usage                               |
+| -------------------- | ----------------------------- | --------- | ----------------------------------- |
+| `--background`       | `bg-background`               | `#506d6c` | Page base (layer 0)                 |
+| `--card`             | `bg-card`                     | `#2d505a` | Cards, panels (layer 1)             |
+| `--popover`          | `bg-popover`                  | `#19374b` | Popovers, dropdowns (layer 2)       |
+| `--muted`            | `bg-muted`                    | `#28303d` | Subtle sections, inputs (layer 2)   |
+| `--foreground`       | `text-foreground`             | `#f0f2f5` | Primary text                        |
+| `--muted-foreground` | `text-muted-foreground`       | `#bce4eb` | Secondary / supporting text         |
+| `--primary`          | `text-primary` / `bg-primary` | `#6eb5c0` | Accent — misty teal                 |
+| `--success`          | `text-success`                | `#55da86` | Active, confirmed states            |
+| `--warning`          | `text-warning`                | `#c4a04a` | Paused, caution states              |
+| `--destructive`      | `text-destructive`            | `#c46a6a` | Errors, closed, danger              |
+| `--border`           | `border-border`               | 12% white | All borders                         |
 
 ### One accent only
 

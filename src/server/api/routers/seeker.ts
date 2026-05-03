@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { CreateSeekerProfileSchema } from "@/lib/schemas/seeker";
+import { CreateSeekerProfileSchema, UpdateSeekerProfileSchema } from "@/lib/schemas/seeker";
 
 export const seekerRouter = createTRPCRouter({
   getPublicProfile: publicProcedure
@@ -43,6 +43,60 @@ export const seekerRouter = createTRPCRouter({
     });
     return profile;
   }),
+
+  getMyFullProfile: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "SEEKER") {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    const profile = await ctx.prisma.seekerProfile.findUnique({
+      where: { userId: ctx.user.id },
+      include: {
+        skills: { select: { skillId: true } },
+        languages: { select: { languageId: true } },
+      },
+    });
+    if (!profile) return null;
+    const { skills, languages, ...rest } = profile;
+    return {
+      ...rest,
+      skillIds: skills.map((s) => s.skillId),
+      languageIds: languages.map((l) => l.languageId),
+    };
+  }),
+
+  updateProfile: protectedProcedure
+    .input(UpdateSeekerProfileSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "SEEKER") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      const profile = await ctx.prisma.seekerProfile.findUnique({
+        where: { userId: ctx.user.id },
+        select: { id: true },
+      });
+      if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+
+      const { skillIds, languageIds, ...profileFields } = input;
+
+      return ctx.prisma.seekerProfile.update({
+        where: { userId: ctx.user.id },
+        data: {
+          ...profileFields,
+          ...(skillIds !== undefined && {
+            skills: {
+              deleteMany: {},
+              create: skillIds.map((skillId) => ({ skillId })),
+            },
+          }),
+          ...(languageIds !== undefined && {
+            languages: {
+              deleteMany: {},
+              create: languageIds.map((languageId) => ({ languageId })),
+            },
+          }),
+        },
+      });
+    }),
 
   createProfile: protectedProcedure
     .input(CreateSeekerProfileSchema)

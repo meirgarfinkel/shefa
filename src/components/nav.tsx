@@ -9,6 +9,7 @@ function linksForRole(role: string): NavLink[] {
       { href: "/jobs", label: "Browse Jobs" },
       { href: "/seeker/applications", label: "My Applications" },
       { href: "/messages", label: "Messages" },
+      { href: "/seeker/profile/edit", label: "Profile" },
     ];
   }
   if (role === "EMPLOYER") {
@@ -17,6 +18,7 @@ function linksForRole(role: string): NavLink[] {
       { href: "/jobs", label: "Browse Jobs" },
       { href: "/employer/jobs", label: "My Jobs" },
       { href: "/messages", label: "Messages" },
+      { href: "/employer/profile/edit", label: "Profile" },
     ];
   }
   if (role === "ADMIN") {

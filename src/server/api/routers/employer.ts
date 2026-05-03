@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { CreateEmployerProfileSchema } from "@/lib/schemas/employer";
+import { CreateEmployerProfileSchema, UpdateEmployerProfileSchema } from "@/lib/schemas/employer";
 
 export const employerRouter = createTRPCRouter({
   getPublicProfile: publicProcedure
@@ -67,6 +67,33 @@ export const employerRouter = createTRPCRouter({
       activeJobsCount: profile._count.jobPostings,
     };
   }),
+
+  getFullProfile: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "EMPLOYER") {
+      throw new TRPCError({ code: "FORBIDDEN" });
+    }
+    return ctx.prisma.employerProfile.findUnique({
+      where: { userId: ctx.user.id },
+    });
+  }),
+
+  updateProfile: protectedProcedure
+    .input(UpdateEmployerProfileSchema)
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "EMPLOYER") {
+        throw new TRPCError({ code: "FORBIDDEN" });
+      }
+      const profile = await ctx.prisma.employerProfile.findUnique({
+        where: { userId: ctx.user.id },
+        select: { id: true },
+      });
+      if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+
+      return ctx.prisma.employerProfile.update({
+        where: { userId: ctx.user.id },
+        data: input,
+      });
+    }),
 
   createProfile: protectedProcedure
     .input(CreateEmployerProfileSchema)

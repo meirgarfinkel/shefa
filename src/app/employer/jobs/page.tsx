@@ -78,6 +78,9 @@ export default function EmployerJobsPage() {
                   <Link href={`/employer/jobs/${job.id}/applications`}>Applications</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
+                  <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm">
                   <Link href={`/jobs/${job.id}`}>View</Link>
                 </Button>
               </div>

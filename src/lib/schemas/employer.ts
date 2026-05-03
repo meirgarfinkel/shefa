@@ -42,3 +42,20 @@ export const CreateEmployerProfileSchema = z.object({
 });
 
 export type CreateEmployerProfileInput = z.infer<typeof CreateEmployerProfileSchema>;
+
+export const UpdateEmployerProfileSchema = z.object({
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+  companyName: z.string().min(1).max(200),
+  companySize: CompanySize,
+  city: z.string().min(1).max(100),
+  state: z.string().min(1).max(100),
+  zip: z.string().min(1).max(10),
+  roleAtCompany: z.string().max(100).optional(),
+  industry: Industry.optional(),
+  website: z.url({ protocol: /^https?$/ }).optional(),
+  aboutCompany: z.string().max(2000).optional(),
+  missionText: z.string().max(1000).optional(),
+});
+
+export type UpdateEmployerProfileInput = z.infer<typeof UpdateEmployerProfileSchema>;

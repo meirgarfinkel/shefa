@@ -1,0 +1,10 @@
+create edit seeker profile page
+create edit employer profile page
+put application status badge on jobs (applied)
+create job edit page
+clear button needs bg
+nav is not mobile responsive
+make filter mobile responsive
+update ui of jobs in list
+look into getting a list of cities ans states
+capitalize everything before gets into db?
