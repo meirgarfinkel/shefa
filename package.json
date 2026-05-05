@@ -15,6 +15,7 @@
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check",
     "worker": "tsx src/server/jobs/worker.ts",
+    "seed:jobs": "tsx scripts/seed-fake-jobs.ts",
     "prepare": "husky"
   },
   "dependencies": {

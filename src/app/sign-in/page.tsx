@@ -48,7 +48,6 @@ export default function SignInPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="h-9"
             />
             <Button type="submit" disabled={loading}>
               {loading ? "Sending…" : "Send magic link"}

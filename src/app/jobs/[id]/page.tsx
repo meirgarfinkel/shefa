@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Pencil } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import {
   Dialog,
@@ -52,9 +52,9 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
   SUBMITTED: "bg-surface-3 text-text-muted",
-  VIEWED: "bg-warning/15 text-warning border-warning/25",
-  RESPONDED: "bg-success/15 text-success border-success/25",
-  CLOSED: "bg-danger/15 text-danger border-danger/25",
+  VIEWED: "bg-warning/15 text-warning",
+  RESPONDED: "bg-success/15 text-success",
+  CLOSED: "bg-danger/15 text-danger",
 };
 
 function ApplyDialog({
@@ -115,7 +115,7 @@ function ApplyDialog({
         )}
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submit.isPending}>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submit.isPending}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={submit.isPending}>
@@ -147,7 +147,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   });
 
   if (isLoading) {
-    return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
+    return <div className="text-text-muted mx-auto max-w-3xl px-3 py-16 text-center">Loading…</div>;
   }
 
   if (error || !job) {
@@ -172,227 +172,203 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const currentStatus = myStatus?.status;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      {/* Back link */}
-      <Link
-        href="/jobs"
-        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm"
-      >
+    <div className="mx-auto max-w-2xl space-y-3 p-5">
+      <Link href="/jobs" className="text-text-inverse hover:text-text">
         ← Back to listings
       </Link>
 
-      <div className="flex items-center justify-center p-4">
-        <Card className="w-full max-w-xl">
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <CardTitle>{job.title}</CardTitle>
-              <div className="flex items-center gap-2">
-                {isOwner && (
-                  <Button
-                    asChild
-                    variant="ghost"
-                    size="sm"
-                    className="bg-primary hover:bg-success hover:text-surface-1 h-7 gap-1.5 text-xs transition-colors duration-150"
-                  >
-                    <Link href={`/employer/jobs/${id}/edit`}>
-                      <Pencil className="h-3 w-3" />
-                      Edit
-                    </Link>
-                  </Button>
-                )}
-                <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
-              </div>
-            </div>
-            <CardDescription>
-              <span>🏢 </span>
-              <Link
-                href={`/employer/${job.employerProfile.id}`}
-                className="hover:text-text font-medium"
-              >
-                {job.employerProfile.companyName}
-              </Link>
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <Pill>
-                <span>
-                  📍 {job.city}, {job.state}
-                </span>
+      <div />
+
+      <Card className="w-full">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <CardTitle>{job.title}</CardTitle>
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <Button asChild size="sm">
+                <Link href={`/employer/jobs/${id}/edit`}>
+                  <Pencil className="h-3 w-3" />
+                  Edit
+                </Link>
+              </Button>
+            )}
+            <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+          </div>
+        </div>
+        <CardDescription>
+          <span>🏢 </span>
+          <Link
+            href={`/employer/${job.employerProfile.id}`}
+            className="hover:text-text font-medium"
+          >
+            {job.employerProfile.companyName}
+          </Link>
+        </CardDescription>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Pill variant="dark">
+              <span>
+                📍 {job.city}, {job.state}
+              </span>
+            </Pill>
+            <Pill variant="dark">
+              <span>🕒 {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}</span>
+            </Pill>
+            <Pill variant="dark">
+              <span>🚗 {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}</span>
+            </Pill>
+            {job.workAuthRequired && (
+              <Pill variant="dark">
+                <span>✅ Work auth required</span>
               </Pill>
-              <Pill>
-                <span>🕒 {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}</span>
-              </Pill>
-              <Pill>
-                <span>🚗 {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}</span>
-              </Pill>
-              {job.workAuthRequired && (
-                <Pill>
-                  <span>✅ Work auth required</span>
-                </Pill>
-              )}
-            </div>
+            )}
+          </div>
 
-            <Separator />
-
-            {/* Quick facts */}
-            <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div>
-                <p className="text-text-muted text-xs font-medium tracking-wide uppercase">Pay</p>
-                <p className="text-text mt-1 text-sm font-medium">
-                  From ${Number(job.minHourlyRate).toFixed(2)}/hr
-                </p>
-                {job.payNotes && <p className="text-text-muted mt-0.5 text-xs">{job.payNotes}</p>}
-              </div>
-
-              {sortedDays.length > 0 && (
-                <div>
-                  <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
-                    Work days
-                  </p>
-                  <p className="text-text mt-1 text-sm">
-                    {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
-                  </p>
-                  {job.scheduleNotes && (
-                    <p className="text-text-muted mt-0.5 text-xs">{job.scheduleNotes}</p>
-                  )}
-                </div>
-              )}
-
-              {job.requiredLanguages.length > 0 && (
-                <div>
-                  <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
-                    Languages
-                  </p>
-                  <p className="text-text mt-1 text-sm">
-                    {job.requiredLanguages.map((l) => l.language.name).join(", ")}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Description */}
+          <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <h2 className="text-text mb-1 text-sm font-medium">📄 About the role</h2>
-              <div className="bg-primary/20 rounded-lg p-4">
-                <p className="text-text-muted text-sm">{job.description}</p>
-              </div>
+              <p className="text-text-muted text-sm font-medium tracking-wide uppercase">Pay</p>
+              <p className="text-text mt-1 text-sm font-medium">
+                From ${Number(job.minHourlyRate).toFixed(2)}/hr
+              </p>
+              {job.payNotes && <p className="text-text-muted mt-0.5 text-xs">{job.payNotes}</p>}
             </div>
 
-            {/* Opportunity callouts */}
-            {(job.whatWeTeach || job.whatWereLookingFor) && (
-              <>
-                <div className="my-5 space-y-4">
-                  {job.whatWeTeach && (
-                    <div>
-                      <h2 className="text-text mb-1 text-sm font-medium">
-                        🎓 We&apos;ll teach you
-                      </h2>
-                      <div className="bg-primary/20 rounded-lg p-4">
-                        <p className="text-text-muted text-sm">{job.whatWeTeach}</p>
-                      </div>
-                    </div>
-                  )}
-                  {job.whatWereLookingFor && (
-                    <div>
-                      <h2 className="text-text mb-1 text-sm font-medium">
-                        🔍 What we&apos;re looking for
-                      </h2>
-                      <div className="bg-primary/20 rounded-lg p-4">
-                        <p className="text-text-muted text-sm">{job.whatWereLookingFor}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <Separator />
-              </>
-            )}
-
-            {/* Preferred skills */}
-            {job.preferredSkills.length > 0 && (
-              <>
-                <Separator />
-                <div className="my-6">
-                  <h2 className="text-text mb-3 text-sm font-medium">🛠️ Preferred skills</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {job.preferredSkills.map((ps) => (
-                      <span
-                        key={ps.skill.id}
-                        className="bg-primary/15 text-text rounded-lg px-2.5 py-0.5 text-xs"
-                      >
-                        {ps.skill.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Apply CTA */}
-            <Separator />
-            <div className="mt-8">
-              {!isSeeker && (
-                <p className="text-text-muted text-sm">Sign in as a job seeker to apply.</p>
-              )}
-
-              {noProfile && (
-                <p className="text-text-muted text-sm">
-                  <Link href="/seeker/profile/new" className="text-primary underline">
-                    Complete your seeker profile
-                  </Link>{" "}
-                  to apply for jobs.
+            {sortedDays.length > 0 && (
+              <div>
+                <p className="text-text-muted text-sm font-medium tracking-wide uppercase">
+                  Work days
                 </p>
-              )}
-
-              {hasProfile && !hasApplied && myStatus?.status !== "CLOSED" && (
-                <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
-                  Apply for this job
-                </Button>
-              )}
-
-              {hasProfile && hasApplied && currentStatus !== "CLOSED" && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${
-                      APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]
-                    }`}
-                  >
-                    {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
-                  </span>
-                  <Link href="/seeker/applications" className="text-text-muted text-sm underline">
-                    View my applications
-                  </Link>
-                </div>
-              )}
-
-              {hasProfile && (myStatus?.status === "CLOSED" || (!myStatus && submitted)) && (
-                <div className="space-y-2">
-                  {submitted && (
-                    <p className="text-success text-sm">
-                      Application submitted! The employer will be in touch.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {hasProfile && (
-              <ApplyDialog
-                jobId={id}
-                jobTitle={job.title}
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                onSuccess={() => {
-                  setDialogOpen(false);
-                  setSubmitted(true);
-                }}
-              />
+                <p className="text-text mt-1 text-sm">
+                  {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
+                </p>
+                {job.scheduleNotes && (
+                  <p className="text-text-muted mt-0.5 text-xs">{job.scheduleNotes}</p>
+                )}
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
+
+            {job.requiredLanguages.length > 0 && (
+              <div>
+                <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
+                  Languages
+                </p>
+                <p className="mt-1 text-sm">
+                  {job.requiredLanguages.map((l) => l.language.name).join(", ")}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Description */}
+          <h2>📄 About the role</h2>
+          <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">{job.description}</div>
+
+          {/* Opportunity callouts */}
+          {(job.whatWeTeach || job.whatWereLookingFor) && (
+            <>
+              <div className="my-5 space-y-4">
+                {job.whatWeTeach && (
+                  <div>
+                    <h2>🎓 We&apos;ll teach you</h2>
+                    <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">
+                      {job.whatWeTeach}
+                    </div>
+                  </div>
+                )}
+                {job.whatWereLookingFor && (
+                  <div>
+                    <h2>🔍 What we&apos;re looking for</h2>
+                    <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">
+                      {job.whatWereLookingFor}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Separator />
+            </>
+          )}
+
+          {/* Preferred skills */}
+          {job.preferredSkills.length > 0 && (
+            <>
+              <Separator />
+              <div className="my-6">
+                <h2>🛠️ Preferred skills</h2>
+                <div className="flex flex-wrap gap-2">
+                  {job.preferredSkills.map((ps) => (
+                    <span
+                      key={ps.skill.id}
+                      className="bg-primary/15 rounded-full px-2.5 py-0.5 shadow-md"
+                    >
+                      {ps.skill.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Apply CTA */}
+          <Separator />
+          <div className="mt-8">
+            {!isSeeker && (
+              <p className="text-text-muted text-sm">Sign in as a job seeker to apply.</p>
+            )}
+
+            {noProfile && (
+              <p className="text-text-muted text-sm">
+                <Link href="/seeker/profile/new" className="text-primary underline">
+                  Complete your seeker profile
+                </Link>{" "}
+                to apply for jobs.
+              </p>
+            )}
+
+            {hasProfile && !hasApplied && myStatus?.status !== "CLOSED" && (
+              <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
+                Apply for this job
+              </Button>
+            )}
+
+            {hasProfile && hasApplied && currentStatus !== "CLOSED" && (
+              <div className="flex flex-wrap items-center gap-3">
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]
+                  }`}
+                >
+                  {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
+                </span>
+                <Link href="/seeker/applications" className="text-text-muted text-sm underline">
+                  View my applications
+                </Link>
+              </div>
+            )}
+
+            {hasProfile && (myStatus?.status === "CLOSED" || (!myStatus && submitted)) && (
+              <div className="space-y-2">
+                {submitted && (
+                  <p className="text-success text-sm">
+                    Application submitted! The employer will be in touch.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {hasProfile && (
+            <ApplyDialog
+              jobId={id}
+              jobTitle={job.title}
+              open={dialogOpen}
+              onOpenChange={setDialogOpen}
+              onSuccess={() => {
+                setDialogOpen(false);
+                setSubmitted(true);
+              }}
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -234,6 +234,52 @@ export const jobPostingRouter = createTRPCRouter({
     });
   }),
 
+  search: publicProcedure
+    .input(z.object({ q: z.string().min(1).max(200).trim() }))
+    .query(async ({ ctx, input }) => {
+      // <% triggers the GIN trigram index on each column branch.
+      // word_similarity() is only used in SELECT for weighted scoring (never in WHERE).
+      // Title is weighted 2x; over-fetch 100 so the client can re-sort without re-querying.
+      const rows = await ctx.prisma.$queryRaw<{ id: string; rank: number }[]>`
+        SELECT id,
+               (
+                 word_similarity(${input.q}, title) * 2.0 +
+                 word_similarity(${input.q}, COALESCE(description, '')) * 1.0
+               ) AS rank
+        FROM "JobPosting"
+        WHERE (
+                ${input.q} <% title
+                OR ${input.q} <% COALESCE(description, '')
+              )
+          AND status = 'ACTIVE'
+        ORDER BY rank DESC, "createdAt" DESC
+        LIMIT 100
+      `;
+
+      if (rows.length === 0) return [];
+
+      const rankMap: Record<string, number> = Object.fromEntries(
+        rows.map((r) => [r.id, Number(r.rank)]),
+      );
+      const ids = rows.map((r) => r.id);
+
+      const jobs = await ctx.prisma.jobPosting.findMany({
+        where: { id: { in: ids } },
+        include: {
+          preferredSkills: { include: { skill: true } },
+          requiredLanguages: { include: { language: true } },
+          employerProfile: { select: { companyName: true, city: true, state: true } },
+          _count: { select: { applications: true } },
+        },
+      });
+
+      const byId = new Map(jobs.map((j) => [j.id, j]));
+      return ids
+        .map((id) => byId.get(id))
+        .filter((j) => j !== undefined)
+        .map((j) => ({ ...j, rank: rankMap[j.id] ?? 0 }));
+    }),
+
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {

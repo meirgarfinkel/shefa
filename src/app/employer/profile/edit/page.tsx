@@ -139,12 +139,7 @@ export default function EmployerProfileEditPage() {
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
           {!showEmailForm && !emailSent && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="bg-danger text-text hover:bg-surface-3 h-8 text-sm transition-colors duration-150"
-              onClick={() => setShowEmailForm(true)}
-            >
+            <Button type="button" variant="destructive" onClick={() => setShowEmailForm(true)}>
               Change email
             </Button>
           )}

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 type PillProps = React.ComponentProps<"span"> & {
-  variant?: "default" | "primary" | "success" | "warning" | "danger";
+  variant?: "default" | "dark" | "success" | "warning" | "danger";
 };
 
 export function Pill({ className, variant = "default", ...props }: PillProps) {
@@ -10,17 +10,13 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
       data-slot="pill"
       className={cn(
         // base
-        "inline-flex items-center rounded-full px-2.5 py-2 text-xs font-medium",
-        "transition-colors duration-150",
-
-        // default (subtle)
-        "bg-primary/15 text-text",
+        "bg-primary/15 rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
 
         // variants
-        variant === "primary" && "bg-primary/15 text-primary",
-        variant === "success" && "bg-success/15 text-success",
-        variant === "warning" && "bg-warning/15 text-warning",
-        variant === "danger" && "bg-danger/15 text-danger",
+        variant === "dark" && "bg-surface-1/60",
+        variant === "success" && "bg-success/50",
+        variant === "warning" && "bg-warning/50",
+        variant === "danger" && "bg-danger/50",
 
         className,
       )}

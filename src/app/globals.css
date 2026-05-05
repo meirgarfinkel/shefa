@@ -1,22 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: rgb(75, 110, 110);
+  --background: rgb(124, 163, 170);
 
-  --surface-1: rgb(26, 34, 46);
-  --surface-2: rgb(32, 42, 56);
-  --surface-3: rgb(40, 52, 68);
+  --surface-1: rgb(26, 34, 46, 0.9);
+  --surface-2: rgb(32, 42, 56, 0.9);
+  --surface-3: rgba(40, 52, 68, 0.9);
 
   --text: rgb(235, 242, 248);
-  --text-muted: rgb(187, 211, 235);
+  --text-muted: rgba(212, 232, 252, 0.877);
   --text-inverse: rgb(18, 24, 34);
 
-  --primary: rgb(120, 190, 230);
-  --secondary: rgb(92, 129, 129);
+  --primary: rgb(129, 200, 241);
+  --primary-muted: rgb(192, 184, 176);
+  --primary-muted-2: rgb(107, 166, 201);
+  --secondary: rgb(100, 133, 133);
 
-  --success: rgb(90, 210, 140);
-  --warning: rgb(210, 175, 90);
-  --danger: rgb(210, 110, 110);
+  --success: rgb(135, 219, 135);
+  --warning: rgb(238, 188, 97);
+  --danger: rgb(255, 70, 70);
 
   /* Radius */
   --radius: 0.5rem;
@@ -35,6 +37,7 @@
   --color-text-inverse: var(--text-inverse);
 
   --color-primary: var(--primary);
+  --color-primary-muted: var(--primary-muted);
   --color-secondary: var(--secondary);
 
   --color-success: var(--success);
@@ -60,8 +63,19 @@ body {
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  color: var(--text);
 }
-
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+.gradient-top {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
+}
+.gradient-bottom {
+  background: linear-gradient(to top, var(--surface-3), transparent);
+}
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
   width: 6px;

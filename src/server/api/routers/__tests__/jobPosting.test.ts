@@ -10,6 +10,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 function makeMockPrisma() {
   return {
+    $queryRaw: vi.fn(),
     employerProfile: {
       findUnique: vi.fn(),
     },
@@ -82,6 +83,16 @@ const MOCK_JOB_DRAFT = {
 };
 
 const MOCK_JOB_ACTIVE = { ...MOCK_JOB_DRAFT, status: "ACTIVE" };
+
+// Shape returned by search's findMany (includes employerProfile + _count)
+const MOCK_JOB_SEARCH_RESULT = {
+  ...MOCK_JOB_ACTIVE,
+  lat: 40.65,
+  lon: -73.95,
+  requiredLanguages: [],
+  employerProfile: { companyName: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
+  _count: { applications: 0 },
+};
 const MOCK_JOB_CLOSED = { ...MOCK_JOB_DRAFT, status: "CLOSED" };
 
 const VALID_CREATE_INPUT = {
@@ -328,23 +339,26 @@ describe("jobPosting.list", () => {
 
   // ── New filter fields ──
 
-  it("applies state filter with case-insensitive contains when provided", async () => {
+  it("applies state filter as geo fallback when radiusMiles given but geocoding fails", async () => {
+    // city.findFirst returns null (geocoding failure) — router falls back to text match.
+    // state/city text filter is ONLY applied inside the radiusMiles fallback branch.
     const caller = createCaller(makeCtx(null, db));
-    await caller.list({ state: "NY" });
+    await caller.list({ state: "NY", radiusMiles: 25 });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.state).toEqual({ contains: "NY", mode: "insensitive" });
   });
 
-  it("omits state from where when not provided", async () => {
+  it("omits state from where when no radiusMiles provided", async () => {
+    // Without radiusMiles there is no geo-filter branch — state is not used as a WHERE condition.
     const caller = createCaller(makeCtx(null, db));
-    await caller.list({});
+    await caller.list({ state: "NY" });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.state).toBeUndefined();
   });
 
-  it("applies city filter with case-insensitive contains when provided", async () => {
+  it("applies city filter as geo fallback when radiusMiles given but geocoding fails", async () => {
     const caller = createCaller(makeCtx(null, db));
-    await caller.list({ city: "Brooklyn" });
+    await caller.list({ city: "Brooklyn", radiusMiles: 25 });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.city).toEqual({ contains: "Brooklyn", mode: "insensitive" });
   });
@@ -402,7 +416,7 @@ describe("jobPosting.list", () => {
 
   it("non-owner still sees only ACTIVE even when other filters are applied", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.list({ state: "NY", jobType: ["FULL_TIME"] });
+    await caller.list({ state: "NY", radiusMiles: 25, jobType: ["FULL_TIME"] });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["ACTIVE"] });
     expect(where.state).toEqual({ contains: "NY", mode: "insensitive" });
@@ -629,5 +643,123 @@ describe("jobPosting.delete", () => {
     await expect(caller.delete({ id: "no-such-job" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+});
+
+// ── jobPosting.search ─────────────────────────────────────────────────────────
+
+describe("jobPosting.search", () => {
+  let db: ReturnType<typeof makeMockPrisma>;
+
+  beforeEach(() => {
+    db = makeMockPrisma();
+    db.$queryRaw.mockResolvedValue([]);
+    db.jobPosting.findMany.mockResolvedValue([]);
+  });
+
+  // ── Happy path ──
+
+  it("returns empty array when no trigram matches exist", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.search({ q: "chef" });
+    expect(result).toEqual([]);
+  });
+
+  it("returns jobs with rank attached from the raw query", async () => {
+    db.$queryRaw.mockResolvedValue([{ id: JOB_ID, rank: 1.5 }]);
+    db.jobPosting.findMany.mockResolvedValue([MOCK_JOB_SEARCH_RESULT]);
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.search({ q: "cook" });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ id: JOB_ID, rank: 1.5 });
+  });
+
+  it("preserves rank order from raw query regardless of findMany return order", async () => {
+    db.$queryRaw.mockResolvedValue([
+      { id: "job-a", rank: 2.0 },
+      { id: "job-b", rank: 0.8 },
+    ]);
+    // findMany returns them in reverse — the procedure must re-sort by raw query order
+    db.jobPosting.findMany.mockResolvedValue([
+      { ...MOCK_JOB_SEARCH_RESULT, id: "job-b" },
+      { ...MOCK_JOB_SEARCH_RESULT, id: "job-a" },
+    ]);
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.search({ q: "kitchen" });
+    expect(result[0]!.id).toBe("job-a");
+    expect(result[1]!.id).toBe("job-b");
+  });
+
+  it("coerces rank to number when Postgres returns a string (numeric type edge case)", async () => {
+    // Some Postgres numeric types come back as strings through certain drivers
+    db.$queryRaw.mockResolvedValue([{ id: JOB_ID, rank: "1.23" as unknown as number }]);
+    db.jobPosting.findMany.mockResolvedValue([MOCK_JOB_SEARCH_RESULT]);
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.search({ q: "cook" });
+    expect(typeof result[0]!.rank).toBe("number");
+    expect(result[0]!.rank).toBeCloseTo(1.23);
+  });
+
+  it("skips findMany entirely when the raw query returns no rows", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.search({ q: "xyz" });
+    expect(db.jobPosting.findMany).not.toHaveBeenCalled();
+  });
+
+  // ── Silent failure ──
+
+  it("omits a job that disappeared between the raw query and findMany", async () => {
+    // Race condition: job deleted after trigram scan but before Prisma fetch
+    db.$queryRaw.mockResolvedValue([
+      { id: "job-a", rank: 2.0 },
+      { id: "job-gone", rank: 1.0 },
+    ]);
+    db.jobPosting.findMany.mockResolvedValue([{ ...MOCK_JOB_SEARCH_RESULT, id: "job-a" }]);
+    const caller = createCaller(makeCtx(null, db));
+    const result = await caller.search({ q: "cook" });
+    expect(result).toHaveLength(1);
+    expect(result[0]!.id).toBe("job-a");
+  });
+
+  // ── Input validation ──
+
+  it("rejects empty string", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.search({ q: "" })).rejects.toThrow(TRPCError);
+  });
+
+  it("rejects string longer than 200 characters", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.search({ q: "a".repeat(201) })).rejects.toThrow(TRPCError);
+  });
+
+  it("accepts exactly 200 characters", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.search({ q: "a".repeat(200) })).resolves.toBeDefined();
+  });
+
+  it("passes the trimmed query to the raw SQL, not the raw whitespace-padded input", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.search({ q: "  cook  " });
+    // $queryRaw is called as a tagged template: first arg is TemplateStringsArray,
+    // subsequent args are the interpolated values. The first interpolated value is input.q.
+    expect(db.$queryRaw.mock.calls[0]?.[1]).toBe("cook");
+  });
+
+  // ── Public access ──
+
+  it("is accessible to unauthenticated users", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.search({ q: "cook" })).resolves.toBeDefined();
+  });
+
+  it("is accessible to a SEEKER", async () => {
+    const caller = createCaller(makeCtx("SEEKER", db));
+    await expect(caller.search({ q: "cook" })).resolves.toBeDefined();
+  });
+
+  it("is accessible to an EMPLOYER", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await expect(caller.search({ q: "cook" })).resolves.toBeDefined();
   });
 });
