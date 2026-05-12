@@ -46,7 +46,7 @@ export default function RoleSelectPage() {
       >
         <Card
           className={[
-            "cursor-pointer transition-colors duration-150",
+            "cursor-pointer transition-colors duration-100",
             "hover:bg-dark/70",
             loadingRole && !isLoading ? "opacity-50" : "",
             isLoading ? "border-primary/60" : "",

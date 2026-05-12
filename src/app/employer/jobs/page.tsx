@@ -78,13 +78,16 @@ export default function EmployerJobsPage() {
       {isLoading && <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>}
 
       {!isLoading && jobs?.length === 0 && (
-        <div className="bg-dark text-muted-foreground rounded-md py-16 text-center text-sm">
+        <div className="bg-popover text-muted-foreground rounded-md py-16 text-center text-sm">
           {statusFilter !== "all" ? (
             `No ${statusFilter.toLowerCase()} job postings.`
           ) : (
             <>
               No job postings yet.{" "}
-              <Link href="/employer/jobs/new" className="text-light underline underline-offset-2">
+              <Link
+                href="/employer/jobs/new"
+                className="text-popover-foreground underline underline-offset-2"
+              >
                 Post your first job.
               </Link>
             </>
@@ -93,7 +96,7 @@ export default function EmployerJobsPage() {
       )}
 
       {!isLoading && jobs && jobs.length > 0 && (
-        <div className="bg-dark overflow-hidden rounded-md">
+        <div className="bg-popover overflow-hidden rounded-md">
           {jobs.map((job, i) => (
             <div
               key={job.id}

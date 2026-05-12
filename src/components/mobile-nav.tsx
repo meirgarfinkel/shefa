@@ -48,16 +48,18 @@ export function MobileNav({ links, email }: MobileNavProps) {
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop */}
-          <div className="bg-surface-3/80 absolute inset-0" onClick={() => setOpen(false)} />
+          <div
+            className="bg-gray-dark-1/60 absolute inset-0 backdrop-blur-xs"
+            onClick={() => setOpen(false)}
+          />
 
           {/* Drawer */}
-          <div className="bg-dark absolute top-0 right-0 flex h-full w-65 flex-col">
+          <div className="bg-gray-dark-1/60 absolute top-0 right-0 flex h-full w-65 flex-col backdrop-blur-md">
             {/* Header */}
-            <div className="border-primary flex h-16 items-center justify-between border-b px-4">
-              <span className="font-medium">Shefa</span>
+            <div className="border-primary flex h-16 items-center justify-end border-b pr-8">
               <button
                 onClick={() => setOpen(false)}
-                className="text-muted-foreground hover:text-light transition-colors"
+                className="text-muted-foreground hover:text-popover-foreground transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -73,10 +75,10 @@ export function MobileNav({ links, email }: MobileNavProps) {
                     key={link.href}
                     href={link.href}
                     onClick={() => setOpen(false)}
-                    className={`rounded-md px-3 py-2 text-sm transition-colors duration-150 ${
+                    className={`rounded-md px-3 py-2 text-sm transition-colors duration-100 ${
                       isActive
-                        ? "bg-text-muted text-light font-medium"
-                        : "text-light hover:bg-text-muted hover:text-light"
+                        ? "bg-text-muted text-popover-foreground font-medium"
+                        : "text-popover-foreground hover:bg-text-muted hover:text-popover-foreground"
                     }`}
                   >
                     {link.label}
@@ -92,7 +94,7 @@ export function MobileNav({ links, email }: MobileNavProps) {
                   <>
                     <p className="text-muted-foreground truncate text-xs">{email}</p>
                     <button
-                      className="text-muted-foreground hover:bg-text-muted hover:text-light w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
                       onClick={() => {
                         setOpen(false);
                         void signOut({ callbackUrl: "/sign-in" });
@@ -105,7 +107,7 @@ export function MobileNav({ links, email }: MobileNavProps) {
                   <Link
                     href="/sign-in"
                     onClick={() => setOpen(false)}
-                    className="text-muted-foreground hover:bg-text-muted hover:text-light block rounded-md px-3 py-2 text-sm transition-colors"
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
                   >
                     Sign in
                   </Link>

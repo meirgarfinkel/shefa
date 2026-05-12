@@ -12,14 +12,13 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card bg-surface-3/60 hover:bg-surface-3/70 relative flex flex-col overflow-hidden rounded-md p-5 text-sm shadow-xl",
+        "bg-card/90 hover:bg-card/30 flex flex-col overflow-hidden rounded-md p-5 shadow-md backdrop-blur-lg hover:shadow-lg",
         className,
       )}
       {...props}
     >
       {/* Subtle top lighting gradient */}
       <div className="pointer-events-none absolute inset-0 z-0 rounded-md bg-linear-to-b from-white/15 via-transparent to-transparent" />
-      <div className="from-dark/50 pointer-events-none absolute inset-0 z-0 rounded-md bg-linear-to-t via-transparent to-transparent" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col gap-4">{props.children}</div>
@@ -31,10 +30,7 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-header"
-      className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 rounded-t-lg text-2xl has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto]",
-        className,
-      )}
+      className={cn("flex flex-col space-y-1.5", className)}
       {...props}
     />
   );
@@ -52,11 +48,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
 
 function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
-      data-slot="card-description"
-      className={cn("text-muted-foreground", className)}
-      {...props}
-    />
+    <div data-slot="card-description" className={cn("text-text-muted", className)} {...props} />
   );
 }
 
@@ -78,7 +70,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("bg-surface-3 flex items-center rounded-b-lg border-t p-4", className)}
+      className={cn("bg-blue-dark-3 flex items-center rounded-b-lg border-t p-4", className)}
       {...props}
     />
   );

@@ -10,7 +10,7 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **API layer**: tRPC
 - **Database**: PostgreSQL
 - **ORM**: Prisma 6 (`prisma-client-js`, standard output — no driver adapter, `DATABASE_URL` via datasource block)
-- **Auth**: Auth.js (NextAuth) with email magic links via Resend
+- **Auth**: Auth.js v5 (`next-auth@beta`) with Google OAuth + email magic links via Resend; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with Prisma adapter)
 - **Background jobs**: BullMQ + Redis
 - **Email**: Resend
 - **Validation**: Zod

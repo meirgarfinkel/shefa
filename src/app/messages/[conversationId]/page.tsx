@@ -106,7 +106,7 @@ export default function ConversationPage({
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <p className="text-muted-foreground">Conversation not found.</p>
-        <Button variant="outline" className="mt-4" asChild>
+        <Button variant="ghost" className="mt-4" asChild>
           <Link href="/messages">Back to messages</Link>
         </Button>
       </div>
@@ -139,7 +139,10 @@ export default function ConversationPage({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <Link href="/messages" className="text-muted-foreground hover:text-light text-sm">
+          <Link
+            href="/messages"
+            className="text-muted-foreground hover:text-popover-foreground text-sm"
+          >
             ← Messages
           </Link>
           <Separator orientation="vertical" className="h-4" />
@@ -218,13 +221,15 @@ export default function ConversationPage({
             <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-sm ${
-                  isMine ? "bg-primary text-light" : "bg-surface-3 text-light"
+                  isMine
+                    ? "bg-primary text-popover-foreground"
+                    : "bg-blue-dark-3 text-popover-foreground"
                 }`}
               >
                 <p className="wrap-break-word whitespace-pre-wrap">{msg.body}</p>
                 <p
                   className={`mt-1 text-right text-xs ${
-                    isMine ? "text-light/70" : "text-muted-foreground"
+                    isMine ? "text-popover-foreground/70" : "text-muted-foreground"
                   }`}
                 >
                   {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -242,7 +247,7 @@ export default function ConversationPage({
 
       {/* Blocked state */}
       {isBlocked && (
-        <div className="bg-surface-3 text-muted-foreground rounded-md px-4 py-3 text-center text-sm">
+        <div className="bg-blue-dark-3 text-muted-foreground rounded-md px-4 py-3 text-center text-sm">
           {callerBlocked ? "You have blocked this conversation." : "This conversation is blocked."}
         </div>
       )}

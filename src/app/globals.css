@@ -1,180 +1,198 @@
 @import "tailwindcss";
 
-/* ────────────────────────────────────────────────────────────
-   BASE DESIGN TOKENS
-   ──────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   RAW COLOR PALETTE
+   Store ONLY raw RGB triplets here.
+   Never add opacity at this layer.
+   ───────────────────────────────────────────── */
 :root {
-  /* Surfaces & backgrounds — all glass (semi-transparent light blue) */
-  --background: rgba(25, 64, 112, 0.288);
-  --border-col: rgba(228, 165, 72, 0.466);
-  --surface-2: rgba(155, 200, 255, 0.15);
-  --surface-3: rgba(155, 200, 255, 0.25);
+  /* Neutrals */
+  --blue-dark-1: 10 51 78;
+  --blue-dark-2: 43 64 91;
+  --blue-dark-3: 68 94 124;
+  --blue-light-1: 139 165 193;
+  --blue-light-2: 174 206 253;
+  --gray-dark-1: 41 48 56;
+  --gray-light-1: 208 210 211;
 
-  /* Text colours */
-  --light: rgba(191, 212, 235);
-  --light-muted: rgb(220, 238, 255);
-  --dark: rgb(20, 35, 55);
-  --dark-muted: rgba(155, 200, 255, 0.2);
+  /* Blues */
 
-  /* Primary & secondary */
-  --primary: rgb(143, 184, 246);
-  --primary-muted: rgba(114, 124, 128, 0.966);
-
-  /* Feedback */
-  --success: rgb(135, 219, 135);
-  --warning: rgb(221, 139, 44);
-  --danger: rgb(255, 70, 70);
+  /* Status */
+  --red: 250 67 98;
+  --orange: 217 119 87;
+  --yellow: 255 214 79;
+  --green: 183 225 121;
 
   /* Radius */
-  --radius: 0.5rem;
-  --ring: var(--primary-muted);
+  --radius: 0.75rem;
 }
 
-/* ────────────────────────────────────────────────────────────
-   SHADCN/UI COMPATIBLE VARIABLES
-   ──────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   SEMANTIC DESIGN TOKENS
+   These CAN contain opacity/transparency.
+   ───────────────────────────────────────────── */
 :root {
-  --card: rgba(155, 200, 255, 0.18);
-  --card-foreground: var(--light);
-  --popover: rgba(140, 190, 255, 0.35);
-  --popover-foreground: var(--light);
-  --primary-foreground: var(--dark);
-  --secondary-foreground: var(--light-muted);
-  --muted: rgba(155, 200, 255, 0.2);
-  --muted-foreground: var(--light-muted);
-  --accent: var(--warning);
-  --accent-foreground: var(--light);
-  --destructive: var(--danger);
-  --destructive-foreground: var(--light);
-  --border: var(--border-col);
-  --input: rgba(155, 200, 255, 0.22);
-  --ring: var(--primary-muted);
+  /* Base app */
+  --background: rgb(var(--gray-light-1));
+  --foreground: rgb(var(--gray-dark-1));
+
+  /* Component tokens */
+  --card: rgb(var(--primary));
+  --popover: rgb(var(--blue-dark-1));
+  --muted: rgb(var(--blue-dark-2));
+
+  /* Interactive */
+  --primary: rgb(var(--blue-light-1));
+  --secondary: rgb(var(--blue-light-2));
+  --accent: rgb(var(--orange));
+
+  /* States */
+  --success: rgb(var(--green));
+  --warning: rgb(var(--yellow));
+  --destructive: rgb(var(--red));
+
+  /* Borders / inputs */
+  --border: rgb(var(--gray-light-1) / 0.22);
+  --input: rgb(var(--blue-light-1) / 0.12);
+  --ring: rgb(var(--blue-light-2));
+
+  /* Foregrounds */
+  --card-foreground: rgb(var(--gray-light-1));
+  --popover-foreground: rgb(var(--gray-light-1));
+
+  --primary-foreground: rgb(var(--gray-dark-1));
+  --secondary-foreground: rgb(var(--gray-light-1));
+  --muted-foreground: rgb(var(--gray-light-2) / 0.7);
+
+  --accent-foreground: rgb(var(--gray-light-1));
+  --destructive-foreground: rgb(var(--gray-light-1));
 }
 
-/* ────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
    TAILWIND V4 THEME MAPPING
-   ──────────────────────────────────────────────────────────── */
+   Expose BOTH:
+   - solid utility colors
+   - semantic design tokens
+   ───────────────────────────────────────────── */
 @theme inline {
-  /* Backgrounds & surfaces */
+  /* Semantic */
   --color-background: var(--background);
-  --color-surface-2: var(--surface-2);
-  --color-surface-3: var(--surface-3);
+  --color-foreground: var(--foreground);
 
-  /* Text colours */
-  --color-light: var(--light);
-  --color-light-muted: var(--light-muted);
-  --color-dark: var(--dark);
-  --color-dark-muted: var(--dark-muted);
-
-  /* Theme colours */
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary-muted: var(--primary-muted);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  /* Feedback */
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-
-  /* shadcn/ui aliases */
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: rgb(var(--blue-light-1));
+  --color-secondary-foreground: var(--secondary-foreground);
+
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border-col);
+
+  --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Radius scale — --radius is the default so "rounded" === "rounded-md" */
-  --radius: 0.5rem;
-  --radius-sm: calc(var(--radius) - 2px);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) + 4px);
-  --radius-xl: calc(var(--radius) + 8px);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  /* RAW SOLID COLORS
+     These allow:
+     bg-blue-dark-3
+     bg-blue-dark-3/40
+     text-blue-light-2
+     etc.
+  */
+  --color-gray-light-1: rgb(var(--gray-light-1));
+
+  --color-blue-light-1: rgb(var(--blue-light-1));
+  --color-blue-dark-3: rgb(var(--blue-dark-3));
+  --color-blue-dark-2: rgb(var(--blue-dark-2));
+
+  --color-blue-light-2: rgb(var(--blue-light-2));
+  --color-blue-dark-1: rgb(var(--blue-dark-1));
+
+  --color-gray-dark-1: rgb(var(--gray-dark-1));
+
+  --color-danger: rgb(var(--danger));
+  --color-accent-orange: rgb(var(--accent-orange));
+  --color-warning: rgb(var(--warning));
+  --color-success: rgb(var(--success));
+
+  /* Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
   --radius-full: 9999px;
 }
 
-/* ────────────────────────────────────────────────────────────
-   GLOBAL RESETS & BASE STYLES
-   ──────────────────────────────────────────────────────────── */
-.border {
-  border-color: var(--border-col);
-  border-width: 0.1px;
+@layer base {
+  * {
+    @apply border-border;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+  }
 }
 
+/* ─────────────────────────────────────────────
+   GLOBAL BASE STYLES
+   ───────────────────────────────────────────── */
 body {
-  position: relative;
-  background: transparent;
-  color: var(--dark);
+  background-color: var(--background);
+  color: var(--foreground);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Blurred background image — sits behind everything */
 body::before {
   content: "";
   position: fixed;
-  inset: -5%;
+  inset: 0;
   z-index: -1;
+  pointer-events: none;
   background-image: url("/israeli-flag.jpg");
   background-size: cover;
   background-position: center;
   filter: blur(3px);
 }
 
-/* ────────────────────────────────────────────────────────────
-   GLOBAL GLASS EFFECT
-   ──────────────────────────────────────────────────────────── */
-
-/* Heavy blur for major surfaces */
-header,
-[data-slot="card"],
-[data-slot="dialog-content"],
-[data-slot="dropdown-menu-content"],
-[data-slot="select-content"],
-[data-slot="popover-content"],
-[data-slot="command"] {
-  backdrop-filter: blur(18px) saturate(160%);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-}
-
-/* Lighter blur for inline controls */
-[data-slot="input"],
-[data-slot="textarea"],
-[data-slot="button"] {
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-/* ────────────────────────────────────────────────────────────
-   SCROLLBAR
-   ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgb(240 242 245 / 15%);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(240 242 245 / 25%);
-}
-
-/* ─── Focus ring ─── */
+/* ─────────────────────────────────────────────
+   FOCUS STATES
+   ───────────────────────────────────────────── */
 :focus-visible {
-  outline: 0px solid var(--ring);
-  outline-offset: 0px;
+  outline: none;
+
+  box-shadow:
+    0 0 0 1px var(--ring),
+    0 0 0 4px rgb(var(--blue-light-2) / 0.15);
+
+  border-radius: var(--radius-sm);
+}
+
+/* ─────────────────────────────────────────────
+   SELECTION
+   ───────────────────────────────────────────── */
+::selection {
+  background: rgb(var(--blue-light-2) / 0.3);
+  color: rgb(var(--gray-light-1));
 }

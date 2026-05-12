@@ -51,7 +51,7 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-surface-3 text-muted-foreground",
+  SUBMITTED: "bg-blue-dark-3 text-muted-foreground",
   VIEWED: "bg-warning/15 text-warning",
   RESPONDED: "bg-success/15 text-success",
   CLOSED: "bg-danger/15 text-danger",
@@ -200,7 +200,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <span>🏢 </span>
           <Link
             href={`/employer/${job.employerProfile.id}`}
-            className="hover:text-light font-medium"
+            className="hover:text-popover-foreground font-medium"
           >
             {job.employerProfile.companyName}
           </Link>
@@ -230,7 +230,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                 Pay
               </p>
-              <p className="text-light mt-1 text-sm font-medium">
+              <p className="text-popover-foreground mt-1 text-sm font-medium">
                 From ${Number(job.minHourlyRate).toFixed(2)}/hr
               </p>
               {job.payNotes && (
@@ -243,7 +243,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                   Work days
                 </p>
-                <p className="text-light mt-1 text-sm">
+                <p className="text-popover-foreground mt-1 text-sm">
                   {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                 </p>
                 {job.scheduleNotes && (

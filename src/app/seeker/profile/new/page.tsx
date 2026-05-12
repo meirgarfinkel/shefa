@@ -92,7 +92,7 @@ export default function SeekerProfileNewPage() {
             control={form.control}
             name="isAdult"
             render={({ field }) => (
-              <FormItem className="bg-dark flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
+              <FormItem className="bg-popover flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
                 <FormControl>
                   <Checkbox
                     checked={field.value === true}
@@ -160,7 +160,7 @@ export default function SeekerProfileNewPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-dark flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-popover flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -189,8 +189,8 @@ export default function SeekerProfileNewPage() {
                         key={day.value}
                         className={`bg-text/10 flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "bg-success text-light"
-                            : "hover:bg-surface-3"
+                            ? "bg-success text-popover-foreground"
+                            : "hover:bg-blue-dark-3"
                         }`}
                       >
                         <input

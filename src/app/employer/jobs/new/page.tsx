@@ -243,8 +243,8 @@ export default function PostJobPage() {
                         key={day.value}
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "border-primary bg-primary text-light"
-                            : "hover:bg-surface-3"
+                            ? "border-primary bg-primary text-popover-foreground"
+                            : "hover:bg-blue-dark-3"
                         }`}
                       >
                         <input

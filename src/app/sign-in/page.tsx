@@ -9,6 +9,7 @@ export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -16,6 +17,13 @@ export default function SignInPage() {
     await signIn("resend", { email, redirect: false });
     setSubmitted(true);
     setLoading(false);
+  }
+
+  async function handleGoogleSignIn() {
+    setGoogleLoading(true);
+    const params = new URLSearchParams(window.location.search);
+    const callbackUrl = params.get("callbackUrl") ?? "/";
+    await signIn("google", { callbackUrl });
   }
 
   if (submitted) {
@@ -34,14 +42,26 @@ export default function SignInPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-sm">
+    <div className="fixed inset-0 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Sign in to Shefa</CardTitle>
-          <CardDescription>Enter your email and we&apos;ll send you a magic link.</CardDescription>
+          <CardDescription>Use Google or a magic link to sign in.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4">
+          <Button
+            type="button"
+            variant="ghost"
+            className="bg-blue-dark-3 hover:bg-blue-dark-2 w-full transition-colors duration-100"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+          >
+            {googleLoading ? "Redirecting…" : "Continue with Google"}
+          </Button>
+
+          <p className="text-muted-foreground text-center text-xs">or continue with email</p>
+
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <Input
               type="email"
               placeholder="you@example.com"

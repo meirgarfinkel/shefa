@@ -103,7 +103,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
 
       {/* What they're looking for */}
       <div className="my-6">
-        <h2 className="text-light mb-2 font-medium">What they&apos;re looking for</h2>
+        <h2 className="text-popover-foreground mb-2 font-medium">What they&apos;re looking for</h2>
         <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.jobSeekText}</p>
       </div>
 
@@ -112,7 +112,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-light mb-2 font-medium">About</h2>
+            <h2 className="text-popover-foreground mb-2 font-medium">About</h2>
             <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.about}</p>
           </div>
         </>
@@ -153,10 +153,10 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-light mb-3 font-medium">Skills</h2>
+            <h2 className="text-popover-foreground mb-3 font-medium">Skills</h2>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((skill) => (
-                <span key={skill} className="bg-surface-3 rounded-full px-3 py-1 text-sm">
+                <span key={skill} className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
                   {skill}
                 </span>
               ))}
@@ -173,10 +173,10 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-light mb-3 font-medium">Languages</h2>
+            <h2 className="text-popover-foreground mb-3 font-medium">Languages</h2>
             <div className="flex flex-wrap gap-2">
               {profile.languages.map((lang) => (
-                <span key={lang} className="bg-surface-3 rounded-full px-3 py-1 text-sm">
+                <span key={lang} className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
                   {lang}
                 </span>
               ))}

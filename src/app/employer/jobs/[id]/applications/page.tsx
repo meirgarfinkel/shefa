@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-surface-3 text-muted-foreground",
+  SUBMITTED: "bg-blue-dark-3 text-muted-foreground",
   VIEWED: "bg-warning/15 text-warning",
   RESPONDED: "bg-success/15 text-success",
   CLOSED: "bg-danger/15 text-danger",
@@ -37,7 +37,7 @@ function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-muted-foreground"}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-blue-dark-3 text-muted-foreground"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -66,7 +66,10 @@ export default function EmployerJobApplicationsPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
       <div className="mb-4">
-        <Link href="/employer/jobs" className="text-muted-foreground hover:text-light text-sm">
+        <Link
+          href="/employer/jobs"
+          className="text-muted-foreground hover:text-popover-foreground text-sm"
+        >
           ← My jobs
         </Link>
       </div>
@@ -84,7 +87,7 @@ export default function EmployerJobApplicationsPage({
       {!isLoading && applications && applications.length > 0 && (
         <ul className="space-y-4">
           {applications.map((app) => (
-            <li key={app.id} className="bg-dark rounded-md p-4">
+            <li key={app.id} className="bg-popover rounded-md p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">

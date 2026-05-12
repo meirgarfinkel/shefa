@@ -24,9 +24,9 @@ export function InboxRow({
     <Link href={`/messages/${conversationId}`}>
       <div
         className={cn(
-          "flex items-center gap-3 px-4 py-3 transition-colors duration-150",
+          "flex items-center gap-3 px-4 py-3 transition-colors duration-100",
           "border-b last:border-b-0",
-          "hover:bg-surface-3/50 cursor-pointer",
+          "hover:bg-blue-dark-3/50 cursor-pointer",
           className,
         )}
       >
@@ -36,13 +36,13 @@ export function InboxRow({
         </div>
 
         {/* Avatar */}
-        <div className="bg-surface-3 flex size-9 flex-shrink-0 items-center justify-center rounded-full border">
+        <div className="bg-blue-dark-3 flex size-9 flex-shrink-0 items-center justify-center rounded-full border">
           <span className="text-primary text-xs font-medium">{initials}</span>
         </div>
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <p className={cn("text-light truncate text-sm font-medium")}>{name}</p>
+          <p className={cn("text-popover-foreground truncate text-sm font-medium")}>{name}</p>
           <p className="text-muted-foreground truncate text-xs">{preview}</p>
         </div>
 

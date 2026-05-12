@@ -59,7 +59,7 @@ export default function MessagesPage() {
       )}
 
       {!isLoading && conversations && conversations.length > 0 && (
-        <div className="bg-dark overflow-hidden rounded-md border">
+        <div className="bg-popover overflow-hidden rounded-md border">
           {conversations.map((conv) => {
             const other = conv.participantA.id === callerId ? conv.participantB : conv.participantA;
             const isUnread = conv._count.messages > 0;

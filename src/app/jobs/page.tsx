@@ -1,15 +1,29 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, Suspense } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { SearchIcon } from "lucide-react";
+import { SearchIcon, XIcon, SlidersHorizontalIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { JobCard } from "@/components/ui/job-card";
-import { PageHeader } from "@/components/ui/page-header";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -24,6 +38,7 @@ import { FilterTrigger } from "@/components/ui/filter-trigger";
 
 type ArrangementValue = "ON_SITE" | "REMOTE" | "HYBRID";
 type DayValue = "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT";
+type SortValue = "best" | "newest" | "closest" | "pay";
 
 const ARRANGEMENT_OPTIONS: { value: ArrangementValue; label: string }[] = [
   { value: "ON_SITE", label: "On-site" },
@@ -49,6 +64,13 @@ const RADIUS_OPTIONS = [
   { value: "100", label: "Within 100 miles" },
 ];
 
+const SORT_LABELS: Record<SortValue, string> = {
+  best: "Best match",
+  newest: "Newest",
+  closest: "Closest",
+  pay: "Salary",
+};
+
 function approxDistanceSq(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const dx = (lon2 - lon1) * Math.cos((lat1 * Math.PI) / 180);
   const dy = lat2 - lat1;
@@ -57,6 +79,13 @@ function approxDistanceSq(lat1: number, lon1: number, lat2: number, lon2: number
 
 function toggleItem<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item];
+}
+
+function parseSortParam(value: string | null, hasQuery: boolean): SortValue {
+  if (value === "best" || value === "newest" || value === "closest" || value === "pay") {
+    return value;
+  }
+  return hasQuery ? "best" : "newest";
 }
 
 function JobsContent() {
@@ -81,18 +110,16 @@ function JobsContent() {
     const v = searchParams.get("skills");
     return v ? v.split(",").filter(Boolean) : [];
   });
-  const [sortBy, setSortByState] = useState<"best" | "newest" | "closest" | "pay">(() => {
-    const v = searchParams.get("sortBy");
-    if (v === "closest") return "closest";
-    if (v === "best") return "best";
-    return searchParams.get("q") ? "best" : "newest";
-  });
+  const [sortBy, setSortByState] = useState<SortValue>(() =>
+    parseSortParam(searchParams.get("sortBy"), !!searchParams.get("q")),
+  );
 
   const [searchQuery, setSearchQuery] = useState(() => searchParams.get("q") ?? "");
   const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const locationInitialized = useRef(false);
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { data: states = [] } = trpc.location.states.useQuery();
   const { data: cities = [] } = trpc.location.citiesByState.useQuery(
@@ -109,20 +136,26 @@ function JobsContent() {
     enabled: session?.user?.role === "EMPLOYER",
   });
 
-  function updateParams(updates: Record<string, string | string[] | null | undefined>) {
-    const params = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(updates)) {
-      if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) {
-        params.delete(key);
-      } else if (Array.isArray(value)) {
-        params.set(key, value.join(","));
-      } else {
-        params.set(key, value);
+  const searchParamsRef = useRef(searchParams);
+  searchParamsRef.current = searchParams;
+
+  const updateParams = useCallback(
+    (updates: Record<string, string | string[] | null | undefined>) => {
+      const params = new URLSearchParams(searchParamsRef.current.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) {
+          params.delete(key);
+        } else if (Array.isArray(value)) {
+          params.set(key, value.join(","));
+        } else {
+          params.set(key, value);
+        }
       }
-    }
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
 
   function setStateAbbr(val: string) {
     setStateAbbrState(val);
@@ -169,40 +202,57 @@ function JobsContent() {
     }, 300);
   }
 
-  function setSortBy(val: "best" | "newest" | "closest" | "pay") {
+  function clearSearch() {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    setSearchQuery("");
+    setDebouncedQuery("");
+    updateParams({ q: null });
+    setSortByState("newest");
+  }
+
+  function setSortBy(val: SortValue) {
     setSortByState(val);
     updateParams({ sortBy: val !== "newest" ? val : null });
   }
 
+  const profileCity = seekerProfile?.city ?? employerProfile?.city;
+  const profileState = seekerProfile?.state ?? employerProfile?.state;
+
   useEffect(() => {
     if (locationInitialized.current) return;
-    if (searchParams.get("state")) {
+    if (searchParamsRef.current.get("state")) {
       locationInitialized.current = true;
       return;
     }
-    const profileCity = seekerProfile?.city ?? employerProfile?.city;
-    const profileState = seekerProfile?.state ?? employerProfile?.state;
     if (!profileCity || !profileState) return;
 
     setStateAbbrState(profileState);
     setCityState(profileCity);
     setRadiusState("25");
 
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParamsRef.current.toString());
     params.set("state", profileState);
     params.set("city", profileCity);
     params.set("radius", "25");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 
     locationInitialized.current = true;
-  }, [seekerProfile, employerProfile, searchParams, pathname, router]);
+  }, [profileCity, profileState, pathname, router]);
 
-  const { data: searchResults, isLoading: searchIsLoading } = trpc.jobPosting.search.useQuery(
+  const {
+    data: searchResults,
+    isLoading: searchIsLoading,
+    error: searchError,
+  } = trpc.jobPosting.search.useQuery(
     { q: debouncedQuery },
     { enabled: debouncedQuery.length > 0 },
   );
 
-  const { data: listResults, isLoading: listIsLoading } = trpc.jobPosting.list.useQuery({
+  const {
+    data: listResults,
+    isLoading: listIsLoading,
+    error: listError,
+  } = trpc.jobPosting.list.useQuery({
     city: city || undefined,
     state: stateAbbr || undefined,
     radiusMiles: radius !== "any" ? Number(radius) : undefined,
@@ -215,6 +265,7 @@ function JobsContent() {
 
   const isSearchMode = debouncedQuery.length > 0;
   const isLoading = isSearchMode ? searchIsLoading : listIsLoading;
+  const queryError = isSearchMode ? searchError : listError;
 
   const refCity = useMemo(() => cities.find((c) => c.name === city) ?? null, [cities, city]);
 
@@ -254,12 +305,20 @@ function JobsContent() {
     workDays.length > 0 ||
     skillIds.length > 0;
 
+  const activeFilterCount = [
+    !!searchQuery,
+    !!stateAbbr || !!city,
+    radius !== "any",
+    jobType !== "any",
+    arrangements.length > 0,
+    workDays.length > 0,
+    skillIds.length > 0,
+  ].filter(Boolean).length;
+
   function clearFilters() {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     setSearchQuery("");
     setDebouncedQuery("");
-    const profileCity = seekerProfile?.city ?? employerProfile?.city;
-    const profileState = seekerProfile?.state ?? employerProfile?.state;
     const hasProfileLocation = !!(profileCity && profileState);
     if (hasProfileLocation) {
       setStateAbbrState(profileState);
@@ -286,37 +345,300 @@ function JobsContent() {
     locationInitialized.current = true;
   }
 
-  return (
-    <div className="mx-auto max-w-6xl px-4 pt-8 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
-      <PageHeader
-        title="Job listings"
-        description="Roles at employers who invest in their people."
-        actions={
-          session?.user?.role === "EMPLOYER" ? (
-            <Button asChild>
-              <Link href="/employer/jobs/new">Post a job</Link>
-            </Button>
-          ) : undefined
-        }
-      />
+  const countText =
+    !isLoading && !queryError && displayJobs !== undefined
+      ? isSearchMode
+        ? displayJobs.length === 0
+          ? `No results for "${debouncedQuery}"`
+          : `${displayJobs.length} result${displayJobs.length === 1 ? "" : "s"} for "${debouncedQuery}"`
+        : displayJobs.length === 0
+          ? hasFilters
+            ? "No jobs match your filters."
+            : "No open positions yet. Check back soon."
+          : `${displayJobs.length} job${displayJobs.length === 1 ? "" : "s"} found`
+      : null;
 
-      <div className="flex flex-col gap-6 md:flex-1 md:flex-row md:overflow-hidden">
-        {/* ── Filter sidebar ── */}
-        <aside className="w-full shrink-0 space-y-4 md:w-50">
+  return (
+    <div className="mx-auto max-w-6xl px-4 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
+      {/* ── Mobile sticky filter bar ── */}
+      <div className="bg-background/80 sticky top-16 z-10 -mx-4 flex items-center gap-2 px-4 py-2 backdrop-blur-md md:hidden">
+        <Button
+          variant="ghost"
+          onClick={() => setFilterOpen(true)}
+          className="bg-primary/20 hover:bg-primary/30 flex h-8 items-center gap-1.5 rounded-md px-3 text-sm shadow-lg transition-colors duration-100"
+        >
+          <SlidersHorizontalIcon className="size-3.5" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="bg-primary/30 ml-0.5 rounded-full px-1.5 text-xs">
+              {activeFilterCount}
+            </span>
+          )}
+        </Button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <FilterTrigger>{SORT_LABELS[sortBy]}</FilterTrigger>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
+              <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="closest">Closest</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="pay">Salary</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="ml-auto flex items-center gap-2">
+          {!isLoading && displayJobs !== undefined && (
+            <span className="text-muted-foreground text-xs">
+              {displayJobs.length} job{displayJobs.length === 1 ? "" : "s"}
+            </span>
+          )}
+          {session?.user?.role === "EMPLOYER" && (
+            <Button asChild size="sm" className="h-7 px-2 text-xs">
+              <Link href="/employer/jobs/new">Post job</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* ── Mobile filter dialog ── */}
+      <Dialog open={filterOpen} onOpenChange={setFilterOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-md" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Filters</DialogTitle>
+          </DialogHeader>
+
           {/* Search */}
-          <div className="relative">
-            <SearchIcon className="text-light absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-            <Input
-              placeholder="Search jobs…"
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9"
-            />
+          <div className="space-y-1.5">
+            <p className="px-1 font-medium">Search</p>
+            <div className="relative">
+              <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <Input
+                placeholder="Search jobs…"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="pr-8 pl-9"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={clearSearch}
+                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-100"
+                >
+                  <XIcon className="size-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Location */}
+          <div className="space-y-1.5">
+            <p className="px-1 font-medium">Location</p>
+            <Select value={stateAbbr || undefined} onValueChange={setStateAbbr}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent className="max-h-80">
+                {states.map((s) => (
+                  <SelectItem key={s.abbr} value={s.abbr}>
+                    {s.abbr} — {s.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={city || undefined} onValueChange={setCity} disabled={!stateAbbr}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={stateAbbr ? "City" : "State first"} />
+              </SelectTrigger>
+              <SelectContent className="max-h-64">
+                {cities.map((c) => (
+                  <SelectItem key={c.name} value={c.name}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={radius} onValueChange={setRadius}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any distance</SelectItem>
+                {RADIUS_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Job type */}
+          <div className="space-y-1.5">
+            <p className="px-1 font-medium">Job type</p>
+            <Select value={jobType} onValueChange={setJobType}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any type</SelectItem>
+                <SelectItem value="FULL_TIME">Full-time</SelectItem>
+                <SelectItem value="PART_TIME">Part-time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Arrangement */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <FilterTrigger
+                className="bg-gray-light-1/40 w-full justify-between font-normal"
+                activeCount={arrangements.length}
+              >
+                Arrangement
+              </FilterTrigger>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {ARRANGEMENT_OPTIONS.map((opt) => (
+                <DropdownMenuCheckboxItem
+                  key={opt.value}
+                  checked={arrangements.includes(opt.value)}
+                  onCheckedChange={() => setArrangements(toggleItem(arrangements, opt.value))}
+                >
+                  {opt.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Work days */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <FilterTrigger
+                className="bg-gray-light-1/40 w-full justify-between font-normal"
+                activeCount={workDays.length}
+              >
+                Days
+              </FilterTrigger>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {DAY_OPTIONS.map((day) => (
+                <DropdownMenuCheckboxItem
+                  key={day.value}
+                  checked={workDays.includes(day.value)}
+                  onCheckedChange={() => setWorkDays(toggleItem(workDays, day.value))}
+                >
+                  {day.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Skills */}
+          {skillGroups && Object.keys(skillGroups).length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <FilterTrigger
+                  className="bg-gray-light-1/40 w-full justify-between font-normal"
+                  activeCount={skillIds.length}
+                >
+                  Skills
+                </FilterTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                {Object.entries(skillGroups).map(([category, skills], i) => (
+                  <div key={category}>
+                    {i > 0 && <DropdownMenuSeparator />}
+                    <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                    {skills.map((skill) => (
+                      <DropdownMenuCheckboxItem
+                        key={skill.id}
+                        checked={skillIds.includes(skill.id)}
+                        onCheckedChange={() => setSkillIds(toggleItem(skillIds, skill.id))}
+                      >
+                        {skill.name}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </div>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Sort */}
+          <div className="space-y-1.5">
+            <p className="px-1 font-medium">Sort by</p>
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="best">Best match</SelectItem>
+                <SelectItem value="newest">Newest</SelectItem>
+                <SelectItem value="closest">Closest</SelectItem>
+                <SelectItem value="pay">Salary</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter className="flex-row items-center">
+            {hasFilters && (
+              <Button variant="ghost" onClick={clearFilters} className="mr-auto">
+                Clear all
+              </Button>
+            )}
+            <DialogClose asChild>
+              <Button variant="secondary">Done</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Desktop page header ── */}
+      <div className="hidden shrink-0 items-center justify-between gap-4 py-3 md:flex">
+        <div className="relative w-52">
+          <SearchIcon className="text-popover-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
+
+          <Input
+            placeholder="Search jobs…"
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="pr-8 pl-7"
+          />
+
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={clearSearch}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          )}
+        </div>
+        <h1 className="text-2xl font-semibold">Job Listings</h1>
+        {session?.user?.role === "EMPLOYER" && (
+          <Button asChild>
+            <Link href="/employer/jobs/new">Post a Job</Link>
+          </Button>
+        )}
+      </div>
+
+      {/* ── Layout: sidebar + list ── */}
+      <div className="flex flex-col gap-6 pt-3 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
+        {/* Desktop sidebar — sticky */}
+        <aside className="hidden w-52 shrink-0 space-y-5 md:block md:overflow-y-auto md:pb-8">
+          {/* Location */}
           <div>
-            <p className="mb-1.5 px-1 text-xs font-medium">Location</p>
+            <div className="flex justify-between">
+              <p className="mb-1.5 px-1 text-xs font-medium">Location</p>
+              {countText && <p className="mb-3 hidden text-xs md:block">{countText}</p>}
+            </div>
             <div className="space-y-1.5">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -472,6 +794,29 @@ function JobsContent() {
             </div>
           </div>
 
+          {/* Sort */}
+          <div>
+            <p className="mb-1.5 px-1 text-xs font-medium">Sort by</p>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <FilterTrigger className="w-full justify-between">
+                  {SORT_LABELS[sortBy]}
+                </FilterTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup
+                  value={sortBy}
+                  onValueChange={(v) => setSortBy(v as SortValue)}
+                >
+                  <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="closest">Closest</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="pay">Salary</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           {hasFilters && (
             <Button variant="ghost" onClick={clearFilters} className="w-full">
               Clear filters
@@ -479,81 +824,53 @@ function JobsContent() {
           )}
         </aside>
 
-        {/* ── Main content ── */}
-        <div className="min-w-0 flex-1 md:flex md:flex-col md:overflow-hidden">
-          {/* Results count + sort — does not scroll */}
-          {!isLoading && displayJobs !== undefined && (
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-sm">
-                {isSearchMode
-                  ? displayJobs.length === 0
-                    ? `No results for "${debouncedQuery}"`
-                    : `${displayJobs.length} result${displayJobs.length === 1 ? "" : "s"} for "${debouncedQuery}"`
-                  : displayJobs.length === 0
-                    ? hasFilters
-                      ? "No jobs match your filters."
-                      : "No open positions yet. Check back soon."
-                    : `${displayJobs.length} job${displayJobs.length === 1 ? "" : "s"} found`}
-              </p>
+        {/* ── Jobs list ── */}
+        <div className="min-w-0 flex-1 pb-8 md:overflow-y-auto">
+          {isLoading && (
+            <div className="text-muted-foreground py-16 text-center">Loading listings…</div>
+          )}
 
-              <div className="flex items-center gap-2">
-                <span className="text-sm">Sort by:</span>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <FilterTrigger>
-                      {sortBy === "best"
-                        ? "Best match"
-                        : sortBy === "newest"
-                          ? "Newest"
-                          : sortBy === "closest"
-                            ? "Closest"
-                            : "Salary"}
-                    </FilterTrigger>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuRadioGroup
-                      value={sortBy}
-                      onValueChange={(v) => setSortBy(v as "best" | "newest" | "closest" | "pay")}
-                    >
-                      <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="closest">Closest</DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="pay">Salary</DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+          {!isLoading && queryError && (
+            <div className="py-16 text-center">
+              <p className="text-destructive text-sm">
+                Something went wrong loading jobs. Please try again.
+              </p>
             </div>
           )}
 
-          {/* Scrollable jobs list */}
-          <div className="md:flex-1 md:overflow-y-auto">
-            {isLoading && (
-              <div className="text-muted-foreground py-16 text-center">Loading listings…</div>
-            )}
+          {!isLoading && !queryError && displayJobs !== undefined && displayJobs.length === 0 && (
+            <div className="py-16 text-center">
+              <p className="text-muted-foreground text-sm">
+                {isSearchMode
+                  ? `No results for "${debouncedQuery}"`
+                  : hasFilters
+                    ? "No jobs match your filters."
+                    : "No open positions yet. Check back soon."}
+              </p>
+            </div>
+          )}
 
-            {!isLoading && displayJobs && displayJobs.length > 0 && (
-              <div className="space-y-3 pb-8">
-                {displayJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    id={job.id}
-                    title={job.title}
-                    city={job.city}
-                    state={job.state}
-                    jobType={job.jobType}
-                    workArrangement={job.workArrangement}
-                    minHourlyRate={Number(job.minHourlyRate)}
-                    status={job.status}
-                    showStatus={Boolean(employerProfile)}
-                    companyName={job.employerProfile.companyName}
-                    href={`/jobs/${job.id}`}
-                    applicationCount={job._count.applications}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+          {!isLoading && !queryError && displayJobs && displayJobs.length > 0 && (
+            <div className="space-y-3">
+              {displayJobs.map((job) => (
+                <JobCard
+                  key={job.id}
+                  id={job.id}
+                  title={job.title}
+                  city={job.city}
+                  state={job.state}
+                  jobType={job.jobType}
+                  workArrangement={job.workArrangement}
+                  minHourlyRate={Number(job.minHourlyRate)}
+                  status={job.status}
+                  showStatus={Boolean(employerProfile)}
+                  companyName={job.employerProfile.companyName}
+                  href={`/jobs/${job.id}`}
+                  applicationCount={job._count.applications}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

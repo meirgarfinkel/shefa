@@ -23,6 +23,35 @@
 
 ## What was completed this session
 
+### Google OAuth + design system alignment (Phase 8 polish)
+
+**Google OAuth** (`src/auth.ts`, `src/app/sign-in/page.tsx`):
+- Added `Google` provider from `next-auth/providers/google` to `auth.ts` alongside existing Resend provider
+- Sign-in page now has a "Continue with Google" button above the magic link form with an "or continue with email" divider
+- Reads `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from environment; added both to `.env.example`
+- `middleware.ts` unchanged — still only imports from `auth.config.ts` (Edge-safe)
+- No schema migration needed — Prisma adapter handles OAuth account linking automatically
+
+**⚠️ You must add to `.env.local` before Google sign-in works:**
+```
+GOOGLE_CLIENT_ID=<your-google-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-client-secret>
+```
+Steps:
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Create OAuth 2.0 Client ID (Web application)
+3. Add `http://localhost:3000/api/auth/callback/google` as an Authorized redirect URI
+4. Copy Client ID and Client Secret into `.env.local`
+
+**`DESIGN_SYSTEM.md`** — full rewrite to match actual glassmorphism implementation:
+- Documents the blurred-photo background + semi-transparent glass surfaces
+- Corrects token names (`bg-card`, `text-dark`, `bg-blue-dark-2`, `bg-blue-dark-3`, `bg-popover`, etc.)
+- Documents global `backdrop-filter` blur applied via CSS selectors (no per-component setup needed)
+- Updates component patterns (job card, filter trigger, sign-in page)
+- Removes references to obsolete "dark ocean" solid-color tokens
+
+---
+
 ### Geography / location system (Phase 8 polish)
 
 **New DB models** (`prisma/schema.prisma`):

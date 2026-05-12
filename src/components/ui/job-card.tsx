@@ -49,7 +49,7 @@ export function JobCard({
 }: JobCardProps) {
   return (
     <Link href={href} className={cn("block", className)}>
-      <div className="bg-light/40 hover:bg-dark/15 rounded-md p-5 backdrop-blur-lg transition-colors duration-150">
+      <div className="bg-primary/30 hover:bg-primary/5 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 backdrop-blur-xs hover:shadow-lg hover:backdrop-blur-sm">
         {/* Title + company on left, pay + status on right */}
         <div className="mb-3 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">

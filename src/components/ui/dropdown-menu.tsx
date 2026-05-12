@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-dark text-muted-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-32 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-32 overflow-auto rounded-md p-1 shadow-md",
           className,
         )}
         {...props}
@@ -125,7 +125,7 @@ function DropdownMenuRadioItem({
       data-inset={inset}
       className={cn(
         "relative flex cursor-default items-center gap-1.5 rounded p-1 text-sm",
-        "hover:text-dark hover:bg-light",
+        "hover:text-popover hover:bg-popover-foreground",
         inset && "pl-7",
         className,
       )}

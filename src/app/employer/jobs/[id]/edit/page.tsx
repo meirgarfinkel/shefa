@@ -141,7 +141,7 @@ export default function JobEditPage() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
         href="/employer/jobs"
-        className="text-muted-foreground hover:text-light mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-150"
+        className="text-muted-foreground hover:text-popover-foreground mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-100"
       >
         <ArrowLeftIcon className="size-3.5" />
         My jobs
@@ -356,12 +356,12 @@ export default function JobEditPage() {
                     {DAYS.map((day) => (
                       <label
                         key={day.value}
-                        className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
+                        className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-100 ${
                           isClosed
                             ? "text-muted-foreground cursor-not-allowed opacity-50"
                             : field.value?.includes(day.value)
                               ? "bg-primary/20 text-primary"
-                              : "hover:bg-surface-3"
+                              : "hover:bg-blue-dark-3"
                         }`}
                       >
                         <input

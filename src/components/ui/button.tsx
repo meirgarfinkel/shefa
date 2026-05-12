@@ -4,12 +4,13 @@ import { Slot } from "radix-ui";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg rounded-md text-sm font-medium transition-colors duration-150 outline-none select-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default: "bg-primary hover:bg-success",
-        secondary: "bg-card hover:bg-card/80",
+        secondary:
+          "bg-popover text-popover-foreground hover:bg-popover-foreground hover:text-popover",
         ghost: "bg-dark/30 hover:bg-dark/20",
         destructive: "bg-danger/10 text-danger hover:bg-danger/20",
         link: "underline-offset-4 hover:underline",

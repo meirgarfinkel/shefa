@@ -243,7 +243,7 @@ export default function SeekerProfileEditPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-dark flex flex-row space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-popover flex flex-row space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -268,10 +268,10 @@ export default function SeekerProfileEditPage() {
                     {DAYS.map((day) => (
                       <label
                         key={day.value}
-                        className={`bg-primary-muted/50 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-150 ${
+                        className={`bg-primary-muted/50 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
                           field.value?.includes(day.value)
-                            ? "bg-surface-3"
-                            : "hover:bg-surface-3/50"
+                            ? "bg-blue-dark-3"
+                            : "hover:bg-blue-dark-3/50"
                         }`}
                       >
                         <input

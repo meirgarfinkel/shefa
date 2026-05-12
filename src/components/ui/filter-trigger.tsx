@@ -17,7 +17,9 @@ export const FilterTrigger = forwardRef<HTMLButtonElement, FilterTriggerProps>(
     >
       {children}
       {activeCount !== undefined && activeCount > 0 && (
-        <span className="bg-primary/30 ml-1 rounded-full px-1.5 text-xs">{activeCount}</span>
+        <span className="bg-popover text-popover-foreground ml-auto rounded-full px-1.5 text-xs font-medium">
+          {activeCount}
+        </span>
       )}
       <ChevronDownIcon className="size-3.5" />
     </Button>

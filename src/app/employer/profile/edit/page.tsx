@@ -134,7 +134,7 @@ export default function EmployerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your company profile up to date." />
 
       {/* Email section */}
-      <div className="bg-dark mb-8 rounded-md p-5">
+      <div className="bg-popover mb-8 rounded-md p-5">
         <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>

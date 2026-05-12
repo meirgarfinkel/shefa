@@ -36,7 +36,7 @@ export async function Nav() {
 
   return (
     <>
-      <header className="bg-dark text-light fixed top-0 right-0 left-0 z-50 h-16 shadow-md shadow-black/30">
+      <header className="bg-popover text-popover-foreground fixed top-0 right-0 left-0 z-50 h-16 shadow-md shadow-black/30">
         <div className="mx-auto flex h-full items-center justify-between px-6">
           <Link href="/" className="text-2xl font-medium tracking-tight">
             Shefa
@@ -51,7 +51,7 @@ export async function Nav() {
               ) : (
                 <Link
                   href="/sign-in"
-                  className="text-muted-foreground hover:text-light text-sm transition-colors duration-150"
+                  className="text-muted-foreground hover:text-popover-foreground text-sm transition-colors duration-100"
                 >
                   Sign in
                 </Link>

@@ -289,19 +289,20 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 - No `style={{ ... }}` for colors — always Tailwind classes
 - One accent: `text-primary` / `bg-primary` / `border-primary` only
 - No second accent color ever
-- Transitions: `transition-colors duration-150` only — no movement on hover
-- Surface layers: `bg-background` → `bg-surface-1` → `bg-surface-3` (max 3, never deeper)
+- Transitions: `transition-colors duration-100` only — no movement on hover
+- Surface layers: `bg-background` → `bg-card` (or `bg-blue-dark-2`) → `bg-blue-dark-3` (max 3, never deeper). There is no `bg-popover`.
 - Avoid borders at all costs
-- Font weights: `font-normal` and `font-medium` only (badges may use `font-semibold`)
+- Font weights: `font-normal` body, `font-medium` labels/headings, `font-bold` only for h1 page titles, `font-semibold` badges only
 - Radius: `rounded-full` (pills) · `rounded-md` (buttons/inputs) · `rounded-lg` (cards)
 - Min font size: `text-xs` — never `text-[10px]` or smaller
+- Design is glassmorphism over blurred photo — never use solid opaque backgrounds on `body`/`html`
 
 ### Status colors
 
 | Status | Classes |
 |---|---|
 | ACTIVE | `bg-success/15 text-success` |
-| DRAFT | `bg-surface-3 text-muted-foreground` |
+| DRAFT | `bg-blue-dark-3 text-muted-foreground` |
 | PAUSED | `bg-warning/15 text-warning` |
 | FILLED | `bg-primary/15 text-primary` |
 | EXPIRED / CLOSED | `bg-danger/15 text-danger` |

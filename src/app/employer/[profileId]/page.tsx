@@ -76,7 +76,7 @@ export default function EmployerProfilePage({
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <span className="bg-surface-3 rounded-full px-3 py-1 text-sm">
+          <span className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
             {profile._count.jobPostings === 1
               ? "1 active job"
               : `${profile._count.jobPostings} jobs`}
@@ -86,7 +86,7 @@ export default function EmployerProfilePage({
               href={profile.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-surface-3 hover:bg-surface-3/70 rounded-full px-3 py-1 text-sm transition-colors"
+              className="bg-blue-dark-3 hover:bg-blue-dark-3/70 rounded-full px-3 py-1 text-sm transition-colors"
             >
               Website ↗
             </a>

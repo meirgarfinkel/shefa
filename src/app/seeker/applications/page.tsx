@@ -17,17 +17,17 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-surface-3 text-success",
-  VIEWED: "bg-card text-success",
-  RESPONDED: "bg-card text-light",
-  CLOSED: "bg-surface-3 text-danger",
+  SUBMITTED: "bg-blue-dark-3 text-success",
+  VIEWED: "bg-popover text-success",
+  RESPONDED: "bg-popover text-popover-foreground",
+  CLOSED: "bg-blue-dark-3 text-danger",
 };
 
 function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-muted-foreground"}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-blue-dark-3 text-muted-foreground"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -53,7 +53,7 @@ export default function SeekerApplicationsPage() {
           <p className="text-muted-foreground mb-4 text-sm">
             You haven&apos;t applied to any jobs yet.
           </p>
-          <Button asChild variant="ghost" className="hover:bg-surface-3">
+          <Button asChild variant="ghost" className="hover:bg-blue-dark-3">
             <Link href="/jobs">Browse listings</Link>
           </Button>
         </div>

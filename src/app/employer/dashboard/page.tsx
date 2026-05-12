@@ -27,8 +27,8 @@ export default function EmployerDashboardPage() {
       </div>
 
       <div>
-        <h2 className="text-light mb-3 font-medium">Recent activity</h2>
-        <div className="bg-dark text-muted-foreground rounded-md p-6 text-sm">
+        <h2 className="text-popover-foreground mb-3 font-medium">Recent activity</h2>
+        <div className="bg-popover text-muted-foreground rounded-md p-6 text-sm">
           No recent activity yet.
         </div>
       </div>
