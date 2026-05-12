@@ -18,8 +18,8 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
   SUBMITTED: "bg-surface-3 text-success",
-  VIEWED: "bg-secondary text-success",
-  RESPONDED: "bg-secondary text-text",
+  VIEWED: "bg-card text-success",
+  RESPONDED: "bg-card text-light",
   CLOSED: "bg-surface-3 text-danger",
 };
 
@@ -27,7 +27,7 @@ function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted"}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-muted-foreground"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -46,11 +46,13 @@ export default function SeekerApplicationsPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
       <PageHeader title="My applications" description="Jobs you've applied to." />
 
-      {isLoading && <p className="text-text-muted text-sm">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
       {!isLoading && applications?.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-text-muted mb-4 text-sm">You haven&apos;t applied to any jobs yet.</p>
+          <p className="text-muted-foreground mb-4 text-sm">
+            You haven&apos;t applied to any jobs yet.
+          </p>
           <Button asChild variant="ghost" className="hover:bg-surface-3">
             <Link href="/jobs">Browse listings</Link>
           </Button>
@@ -72,7 +74,7 @@ export default function SeekerApplicationsPage() {
                   </CardDescription>
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-text-muted text-xs">
+                      <p className="text-muted-foreground text-xs">
                         Applied: {new Date(app.createdAt).toLocaleDateString()}
                       </p>
                       {app.job.status === "ACTIVE" && (
@@ -93,7 +95,7 @@ export default function SeekerApplicationsPage() {
                       )}
                     </div>
                     {app.message && (
-                      <p className="text-text-muted mt-2 border-t pt-2 text-xs italic">
+                      <p className="text-muted-foreground mt-2 border-t pt-2 text-xs italic">
                         Message: &ldquo;{app.message}&rdquo;
                       </p>
                     )}

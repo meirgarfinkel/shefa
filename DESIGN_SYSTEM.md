@@ -31,10 +31,10 @@ Background is a muted teal; cards and inputs are dark navy wells.
 | ---------------- | ----------------------------- | --------- | --------------------------------- |
 | `--background`   | `bg-background`               | `#4b6e6e` | Page base (layer 0)               |
 | `--surface-1`    | `bg-surface-1`                | `#1a222e` | Cards, panels (layer 1)           |
-| `--surface-2`    | `bg-surface-2`                | `#202a38` | Popovers, dropdowns (layer 2)     |
+| `--surface-2`    | `bg-popover`                | `#202a38` | Popovers, dropdowns (layer 2)     |
 | `--surface-3`    | `bg-surface-3`                | `#283444` | Subtle sections, inputs (layer 2) |
 | `--text`         | `text-text`                   | `#ebf2f8` | Primary text                      |
-| `--text-muted`   | `text-text-muted`             | `#bbd3eb` | Secondary / supporting text       |
+| `--text-muted`   | `text-muted-foreground`             | `#bbd3eb` | Secondary / supporting text       |
 | `--text-inverse` | `text-text-inverse`           | `#121822` | Text on light surfaces            |
 | `--primary`      | `text-primary` / `bg-primary` | `#78bee6` | Accent — sky blue                 |
 | `--secondary`    | `text-secondary` / `bg-secondary` | `#6e8ca0` | Muted secondary accent         |
@@ -61,11 +61,11 @@ Maximum 3 layers. Never nest deeper.
 ```
 Layer 0 — bg-background  → page base
 Layer 1 — bg-surface-1   → primary content blocks (cards, panels)
-Layer 2 — bg-surface-2   → popovers, dropdowns, overlays
+Layer 2 — bg-popover   → popovers, dropdowns, overlays
 Layer 2 — bg-surface-3   → nested sections, inputs within cards
 ```
 
-`bg-surface-2` and `bg-surface-3` are both valid layer-2 surfaces; use surface-2 for floating
+`bg-popover` and `bg-surface-3` are both valid layer-2 surfaces; use surface-2 for floating
 elements (popovers/menus) and surface-3 for inline nested sections.
 
 ---
@@ -180,13 +180,13 @@ className = "transition-transform hover:scale-105";
 ### Input / Textarea
 
 ```tsx
-<Input className="bg-surface-3 text-text placeholder:text-text-muted transition-colors duration-150" />
+<Input className="bg-surface-3 text-text placeholder:text-muted-foreground transition-colors duration-150" />
 ```
 
 ### Form label
 
 ```tsx
-<Label className="text-text-muted text-sm font-medium" />
+<Label className="text-muted-foreground text-sm font-medium" />
 ```
 
 ---

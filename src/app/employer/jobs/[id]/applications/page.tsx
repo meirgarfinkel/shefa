@@ -17,7 +17,7 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-surface-3 text-text-muted",
+  SUBMITTED: "bg-surface-3 text-muted-foreground",
   VIEWED: "bg-warning/15 text-warning",
   RESPONDED: "bg-success/15 text-success",
   CLOSED: "bg-danger/15 text-danger",
@@ -37,7 +37,7 @@ function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-text-muted"}`}
+      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-surface-3 text-muted-foreground"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -66,54 +66,54 @@ export default function EmployerJobApplicationsPage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
       <div className="mb-4">
-        <Link href="/employer/jobs" className="text-text-muted hover:text-text text-sm">
+        <Link href="/employer/jobs" className="text-muted-foreground hover:text-light text-sm">
           ← My jobs
         </Link>
       </div>
 
       <PageHeader title="Applications" description="Candidates who applied to this job posting." />
 
-      {isLoading && <p className="text-text-muted text-sm">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
       {!isLoading && applications?.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-text-muted text-sm">No applications yet.</p>
+          <p className="text-muted-foreground text-sm">No applications yet.</p>
         </div>
       )}
 
       {!isLoading && applications && applications.length > 0 && (
         <ul className="space-y-4">
           {applications.map((app) => (
-            <li key={app.id} className="bg-surface-1 rounded-lg p-4">
+            <li key={app.id} className="bg-dark rounded-md p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div>
                   <p className="font-medium">
                     {app.seekerProfile.firstName} {app.seekerProfile.lastName}
                   </p>
-                  <p className="text-text-muted text-sm">
+                  <p className="text-muted-foreground text-sm">
                     {app.seekerProfile.city}, {app.seekerProfile.state}
                   </p>
                   {app.seekerProfile.availableDays.length > 0 && (
-                    <p className="text-text-muted text-xs">
+                    <p className="text-muted-foreground text-xs">
                       Available:{" "}
                       {app.seekerProfile.availableDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                     </p>
                   )}
                   {app.seekerProfile.workAuthorization && (
-                    <p className="text-text-muted text-xs">Work authorized</p>
+                    <p className="text-muted-foreground text-xs">Work authorized</p>
                   )}
                 </div>
                 <AppStatusBadge status={app.status} />
               </div>
 
               {app.message && (
-                <p className="text-text-muted mt-3 border-t pt-3 text-sm italic">
+                <p className="text-muted-foreground mt-3 border-t pt-3 text-sm italic">
                   &ldquo;{app.message}&rdquo;
                 </p>
               )}
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                <p className="text-text-muted text-xs">
+                <p className="text-muted-foreground text-xs">
                   Applied {new Date(app.createdAt).toLocaleDateString()}
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -155,7 +155,7 @@ export default function EmployerJobApplicationsPage({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-text-muted text-xs"
+                        className="text-muted-foreground text-xs"
                         disabled={updateStatus.isPending}
                         onClick={() => updateStatus.mutate({ id: app.id, status: "CLOSED" })}
                       >

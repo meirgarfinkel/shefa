@@ -79,7 +79,7 @@ export default function PostJobPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-xl font-medium">Post a job</h1>
-        <p className="text-text-muted mt-1">
+        <p className="text-muted-foreground mt-1">
           Create a listing for your open position. Required fields are marked with *.
         </p>
       </div>
@@ -243,7 +243,7 @@ export default function PostJobPage() {
                         key={day.value}
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "border-primary bg-primary text-text"
+                            ? "border-primary bg-primary text-light"
                             : "hover:bg-surface-3"
                         }`}
                       >
@@ -362,7 +362,7 @@ export default function PostJobPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -401,7 +401,7 @@ export default function PostJobPage() {
           <div className="space-y-6">
             <div>
               <h2 className="font-medium">The opportunity</h2>
-              <p className="text-text-muted text-sm">
+              <p className="text-muted-foreground text-sm">
                 Help candidates understand why your posting is different.
               </p>
             </div>

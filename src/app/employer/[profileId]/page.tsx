@@ -41,13 +41,13 @@ export default function EmployerProfilePage({
   } = trpc.employer.getPublicProfile.useQuery({ id: profileId });
 
   if (isLoading) {
-    return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
   }
 
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-text-muted">This employer profile was not found.</p>
+        <p>This employer profile was not found.</p>
         <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
@@ -58,10 +58,7 @@ export default function EmployerProfilePage({
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       {/* Back link */}
-      <Link
-        href="/jobs"
-        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm"
-      >
+      <Link href="/jobs" className="mb-6 inline-flex items-center gap-1 text-sm">
         ← Browse jobs
       </Link>
 
@@ -70,7 +67,7 @@ export default function EmployerProfilePage({
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
             <h1 className="text-xl font-medium">{profile.companyName}</h1>
-            <p className="text-text-muted mt-1 text-sm">
+            <p className="mt-1 text-sm">
               {profile.city}, {profile.state}
               {profile.industry && ` · ${INDUSTRY_LABELS[profile.industry] ?? profile.industry}`}
             </p>
@@ -102,8 +99,8 @@ export default function EmployerProfilePage({
       {/* About */}
       {profile.aboutCompany && (
         <div className="my-6">
-          <h2 className="text-text mb-3 font-medium">About {profile.companyName}</h2>
-          <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.aboutCompany}</p>
+          <h2 className="mb-3 font-medium">About {profile.companyName}</h2>
+          <p className="text-sm whitespace-pre-wrap">{profile.aboutCompany}</p>
         </div>
       )}
 
@@ -112,8 +109,8 @@ export default function EmployerProfilePage({
         <>
           {profile.aboutCompany && <Separator />}
           <div className="my-6">
-            <h2 className="text-text mb-3 font-medium">Why we give people a chance</h2>
-            <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.missionText}</p>
+            <h2 className="mb-3 font-medium">Why we give people a chance</h2>
+            <p className="text-sm whitespace-pre-wrap">{profile.missionText}</p>
           </div>
         </>
       )}
@@ -122,7 +119,7 @@ export default function EmployerProfilePage({
       <Separator />
       <div className="mt-8">
         <Link href="/jobs">
-          <Button variant="outline">Browse all open jobs</Button>
+          <Button variant="ghost">Browse all open jobs</Button>
         </Link>
       </div>
     </div>

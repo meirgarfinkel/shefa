@@ -42,12 +42,12 @@ export function InboxRow({
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <p className={cn("text-text truncate text-sm font-medium")}>{name}</p>
-          <p className="text-text-muted truncate text-xs">{preview}</p>
+          <p className={cn("text-light truncate text-sm font-medium")}>{name}</p>
+          <p className="text-muted-foreground truncate text-xs">{preview}</p>
         </div>
 
         {/* Time */}
-        <span className="text-text-muted flex-shrink-0 text-xs">{timeAgo}</span>
+        <span className="text-muted-foreground flex-shrink-0 text-xs">{timeAgo}</span>
       </div>
     </Link>
   );

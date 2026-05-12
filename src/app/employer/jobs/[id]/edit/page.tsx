@@ -126,11 +126,13 @@ export default function JobEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!job) {
-    return <div className="text-text-muted px-4 py-16 text-center text-sm">Job not found.</div>;
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Job not found.</div>
+    );
   }
 
   const isClosed = job.status === "CLOSED" || job.status === "EXPIRED";
@@ -139,7 +141,7 @@ export default function JobEditPage() {
     <div className="mx-auto max-w-2xl px-4 py-8">
       <Link
         href="/employer/jobs"
-        className="text-text-muted hover:text-text mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-150"
+        className="text-muted-foreground hover:text-light mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-150"
       >
         <ArrowLeftIcon className="size-3.5" />
         My jobs
@@ -152,7 +154,7 @@ export default function JobEditPage() {
       />
 
       {isClosed && (
-        <div className="border-danger/30 bg-danger/10 text-danger mb-6 rounded-lg p-4 text-sm">
+        <div className="border-danger/30 bg-danger/10 text-danger mb-6 rounded-md p-4 text-sm">
           This posting is {job.status.toLowerCase()} and cannot be edited.
         </div>
       )}
@@ -356,7 +358,7 @@ export default function JobEditPage() {
                         key={day.value}
                         className={`flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors duration-150 ${
                           isClosed
-                            ? "text-text-muted cursor-not-allowed opacity-50"
+                            ? "text-muted-foreground cursor-not-allowed opacity-50"
                             : field.value?.includes(day.value)
                               ? "bg-primary/20 text-primary"
                               : "hover:bg-surface-3"
@@ -479,7 +481,7 @@ export default function JobEditPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

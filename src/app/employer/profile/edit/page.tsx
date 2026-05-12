@@ -118,12 +118,12 @@ export default function EmployerProfileEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!profile) {
     return (
-      <div className="text-text-muted px-4 py-16 text-center text-sm">
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
         No profile found. Please complete your profile first.
       </div>
     );
@@ -134,8 +134,8 @@ export default function EmployerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your company profile up to date." />
 
       {/* Email section */}
-      <div className="bg-surface-1 mb-8 rounded-lg p-5">
-        <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
+      <div className="bg-dark mb-8 rounded-md p-5">
+        <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm">{session?.user?.email}</p>
           {!showEmailForm && !emailSent && (
@@ -147,7 +147,7 @@ export default function EmployerProfileEditPage() {
 
         {showEmailForm && (
           <div className="mt-4 space-y-3">
-            <p className="text-text-muted text-xs">
+            <p className="text-muted-foreground text-xs">
               Enter your new email. We&apos;ll send a confirmation link — your address only changes
               when you click it.
             </p>

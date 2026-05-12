@@ -84,7 +84,7 @@ export default function EmployerProfileNewPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-xl font-medium">Set up your employer profile</h1>
-        <p className="text-text-muted mt-1">
+        <p className="text-muted-foreground mt-1">
           Tell candidates who you are. Required fields are marked with *.
         </p>
       </div>
@@ -268,7 +268,7 @@ export default function EmployerProfileNewPage() {
           <div className="space-y-6">
             <div>
               <h2 className="font-medium">About your company</h2>
-              <p className="text-text-muted text-sm">
+              <p className="text-muted-foreground text-sm">
                 Optional — helps candidates understand who you are.
               </p>
             </div>

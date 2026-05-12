@@ -48,13 +48,15 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
   });
 
   if (isLoading) {
-    return <div className="text-text-muted mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
+    return (
+      <div className="text-muted-foreground mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>
+    );
   }
 
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-text-muted">This profile was not found.</p>
+        <p className="text-muted-foreground">This profile was not found.</p>
         <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
@@ -71,7 +73,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
             <h1 className="text-xl font-medium">
               {profile.firstName} {profile.lastName}
             </h1>
-            <p className="text-text-muted mt-1 text-sm">
+            <p className="text-muted-foreground mt-1 text-sm">
               {profile.city}, {profile.state}
             </p>
           </div>
@@ -101,8 +103,8 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
 
       {/* What they're looking for */}
       <div className="my-6">
-        <h2 className="text-text mb-2 font-medium">What they&apos;re looking for</h2>
-        <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.jobSeekText}</p>
+        <h2 className="text-light mb-2 font-medium">What they&apos;re looking for</h2>
+        <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.jobSeekText}</p>
       </div>
 
       {/* About */}
@@ -110,8 +112,8 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-text mb-2 font-medium">About</h2>
-            <p className="text-text-muted text-sm whitespace-pre-wrap">{profile.about}</p>
+            <h2 className="text-light mb-2 font-medium">About</h2>
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.about}</p>
           </div>
         </>
       )}
@@ -123,7 +125,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         {profile.availableDays.length > 0 && (
           <div>
             <p className="mb-1 text-sm font-medium">Available days</p>
-            <p className="text-text-muted text-sm">
+            <p className="text-muted-foreground text-sm">
               {profile.availableDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
             </p>
           </div>
@@ -131,7 +133,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
 
         <div>
           <p className="mb-1 text-sm font-medium">Work authorization</p>
-          <p className="text-text-muted text-sm">
+          <p className="text-muted-foreground text-sm">
             {profile.workAuthorization ? "Authorized to work" : "Not authorized"}
           </p>
         </div>
@@ -139,7 +141,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         {profile.educationLevel && (
           <div>
             <p className="mb-1 text-sm font-medium">Education</p>
-            <p className="text-text-muted text-sm">
+            <p className="text-muted-foreground text-sm">
               {EDUCATION_LABELS[profile.educationLevel] ?? profile.educationLevel}
             </p>
           </div>
@@ -151,7 +153,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-text mb-3 font-medium">Skills</h2>
+            <h2 className="text-light mb-3 font-medium">Skills</h2>
             <div className="flex flex-wrap gap-2">
               {profile.skills.map((skill) => (
                 <span key={skill} className="bg-surface-3 rounded-full px-3 py-1 text-sm">
@@ -160,7 +162,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
               ))}
             </div>
             {profile.otherSkills && (
-              <p className="text-text-muted mt-2 text-sm">Also: {profile.otherSkills}</p>
+              <p className="text-muted-foreground mt-2 text-sm">Also: {profile.otherSkills}</p>
             )}
           </div>
         </>
@@ -171,7 +173,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
         <>
           <Separator />
           <div className="my-6">
-            <h2 className="text-text mb-3 font-medium">Languages</h2>
+            <h2 className="text-light mb-3 font-medium">Languages</h2>
             <div className="flex flex-wrap gap-2">
               {profile.languages.map((lang) => (
                 <span key={lang} className="bg-surface-3 rounded-full px-3 py-1 text-sm">
@@ -180,7 +182,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
               ))}
             </div>
             {profile.otherLanguages && (
-              <p className="text-text-muted mt-2 text-sm">Also: {profile.otherLanguages}</p>
+              <p className="text-muted-foreground mt-2 text-sm">Also: {profile.otherLanguages}</p>
             )}
           </div>
         </>

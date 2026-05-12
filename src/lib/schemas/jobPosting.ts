@@ -61,7 +61,7 @@ export const ListJobPostingsSchema = z.object({
   workArrangement: z.array(WorkArrangement).optional(),
   workDays: z.array(DayOfWeek).optional(),
   skillIds: z.array(z.string()).optional(),
-  sortBy: z.enum(["newest", "closest"]).default("newest"),
+  sortBy: z.enum(["newest", "closest", "pay"]).default("newest"),
 });
 
 export type CreateJobPostingInput = z.infer<typeof CreateJobPostingSchema>;

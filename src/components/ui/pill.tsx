@@ -10,12 +10,12 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
       data-slot="pill"
       className={cn(
         // base
-        "bg-primary/15 rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
+        "bg-background rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
 
         // variants
-        variant === "dark" && "bg-surface-1/60",
+        variant === "dark" && "bg-dark/60",
         variant === "success" && "bg-success/50",
-        variant === "warning" && "bg-warning/50",
+        variant === "warning" && "bg-warning/70",
         variant === "danger" && "bg-danger/50",
 
         className,

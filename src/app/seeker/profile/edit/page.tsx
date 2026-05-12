@@ -116,12 +116,12 @@ export default function SeekerProfileEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-text-muted px-4 py-16 text-center text-sm">Loading…</div>;
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
   }
 
   if (!profile) {
     return (
-      <div className="text-text-muted px-4 py-16 text-center text-sm">
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
         No profile found. Please complete your profile first.
       </div>
     );
@@ -132,8 +132,8 @@ export default function SeekerProfileEditPage() {
       <PageHeader title="Edit profile" description="Keep your profile up to date." />
 
       {/* Email section */}
-      <div className="bg-surface-2 mb-8 rounded-lg bg-linear-to-b from-white/15 via-transparent to-transparent p-5">
-        <p className="text-text-muted mb-1 text-xs font-medium">Email address</p>
+      <div className="bg-popover mb-8 rounded-md bg-linear-to-b from-white/15 via-transparent to-transparent p-5">
+        <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
         <div className="flex items-center justify-between">
           <p className="text-sm">{session?.user?.email}</p>
           {!showEmailForm && !emailSent && (
@@ -145,7 +145,7 @@ export default function SeekerProfileEditPage() {
 
         {showEmailForm && (
           <div className="space-y-3">
-            <p className="text-text-muted text-xs">
+            <p className="text-muted-foreground text-xs">
               Enter your new email. We&apos;ll send a confirmation link — your address only changes
               when you confirm it.
             </p>
@@ -243,7 +243,7 @@ export default function SeekerProfileEditPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-surface-1 flex flex-row space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-dark flex flex-row space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -329,7 +329,7 @@ export default function SeekerProfileEditPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">

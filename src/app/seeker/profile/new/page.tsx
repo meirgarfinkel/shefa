@@ -80,7 +80,7 @@ export default function SeekerProfileNewPage() {
     <div className="mx-auto max-w-2xl px-4 py-10">
       <div className="mb-8">
         <h1 className="text-xl font-medium">Create your profile</h1>
-        <p className="text-text-muted mt-1">
+        <p className="text-muted-foreground mt-1">
           This is how employers will find you. Required fields are marked with *.
         </p>
       </div>
@@ -92,7 +92,7 @@ export default function SeekerProfileNewPage() {
             control={form.control}
             name="isAdult"
             render={({ field }) => (
-              <FormItem className="bg-surface-1 flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
+              <FormItem className="bg-dark flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
                 <FormControl>
                   <Checkbox
                     checked={field.value === true}
@@ -160,7 +160,7 @@ export default function SeekerProfileNewPage() {
               control={form.control}
               name="workAuthorization"
               render={({ field }) => (
-                <FormItem className="bg-surface-1 flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
+                <FormItem className="bg-dark flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -189,7 +189,7 @@ export default function SeekerProfileNewPage() {
                         key={day.value}
                         className={`bg-text/10 flex cursor-pointer items-center justify-center rounded-md px-3 py-1.5 text-sm transition-colors ${
                           field.value?.includes(day.value)
-                            ? "bg-success text-text"
+                            ? "bg-success text-light"
                             : "hover:bg-surface-3"
                         }`}
                       >
@@ -230,7 +230,7 @@ export default function SeekerProfileNewPage() {
                   <div className="mt-2 space-y-4">
                     {Object.entries(skillGroups).map(([category, skills]) => (
                       <div key={category}>
-                        <p className="text-text-muted mb-2 text-xs font-medium tracking-wide uppercase">
+                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
                           {category}
                         </p>
                         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -297,7 +297,7 @@ export default function SeekerProfileNewPage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-medium">Optional — add later if you like</h2>
-              <p className="text-text-muted text-sm">
+              <p className="text-muted-foreground text-sm">
                 These fields help employers find you but aren&apos;t required to get started.
               </p>
             </div>

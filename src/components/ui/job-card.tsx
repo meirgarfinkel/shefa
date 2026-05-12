@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Pill } from "@/components/ui/pill";
 import type { JobStatus, JobType, WorkArrangement } from "@prisma/client";
+import { Car, Clock, MapPin } from "lucide-react";
 
 const JOB_TYPE_LABELS: Record<JobType, string> = {
   FULL_TIME: "Full-time",
@@ -48,32 +49,38 @@ export function JobCard({
 }: JobCardProps) {
   return (
     <Link href={href} className={cn("block", className)}>
-      <div className="bg-surface-3/60 hover:bg-surface-3/70 relative overflow-hidden rounded-lg p-5 transition-colors duration-100 hover:shadow-xl">
-        <div className="pointer-events-none absolute inset-0 z-0 rounded-lg bg-linear-to-b from-white/15 via-transparent to-transparent" />
-        <div className="from-surface-1/50 pointer-events-none absolute inset-0 z-0 rounded-lg bg-linear-to-t via-transparent to-transparent" />
-        <div className="relative z-10">
-          <div className="mb-3 flex items-start justify-between gap-3 whitespace-nowrap">
-            <div className="min-w-0">
-              <h3 className="text-text truncate text-lg font-medium">{title}</h3>
-              <p className="text-text-muted mt-0.5 text-xs">{companyName}</p>
-            </div>
+      <div className="bg-light/40 hover:bg-dark/15 rounded-md p-5 backdrop-blur-lg transition-colors duration-150">
+        {/* Title + company on left, pay + status on right */}
+        <div className="mb-3 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h3 className="truncate text-lg font-medium">{title}</h3>
+            <p className="mt-0.5 text-xs">{companyName}</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             {showStatus && <StatusBadge status={status} />}
-            <Pill variant="success">
-              <span>From ${minHourlyRate}/hr</span>
-            </Pill>
+            <Pill variant="warning">From ${minHourlyRate}/hr</Pill>
           </div>
-          <div>
-            📍 {city}, {state}
-          </div>
-          <div>🕒 {JOB_TYPE_LABELS[jobType]}</div>
-          <div className="flex justify-between">
-            🚗 {ARRANGEMENT_LABELS[workArrangement]}
-            {applicationCount > 0 && (
-              <Pill>
-                <span>{applicationCount} applied</span>
-              </Pill>
-            )}
-          </div>
+        </div>
+
+        {/* Meta row spread across full card width */}
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+          <span className="flex items-center gap-1.5">
+            <MapPin className="text-warning size-3.5 shrink-0" />
+            {city}, {state}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Clock className="text-warning size-3.5 shrink-0" />
+            {JOB_TYPE_LABELS[jobType]}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Car className="text-warning size-3.5 shrink-0" />
+            {ARRANGEMENT_LABELS[workArrangement]}
+          </span>
+          {applicationCount > 0 && (
+            <div className="ml-auto">
+              <Pill>{applicationCount} applied</Pill>
+            </div>
+          )}
         </div>
       </div>
     </Link>

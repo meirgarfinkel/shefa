@@ -51,7 +51,7 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-surface-3 text-text-muted",
+  SUBMITTED: "bg-surface-3 text-muted-foreground",
   VIEWED: "bg-warning/15 text-warning",
   RESPONDED: "bg-success/15 text-success",
   CLOSED: "bg-danger/15 text-danger",
@@ -103,7 +103,7 @@ function ApplyDialog({
             rows={4}
             className="resize-none"
           />
-          <p className="text-text-muted text-right text-xs">{message.length}/500</p>
+          <p className="text-muted-foreground text-right text-xs">{message.length}/500</p>
         </div>
 
         {submit.error && (
@@ -147,14 +147,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   });
 
   if (isLoading) {
-    return <div className="text-text-muted mx-auto max-w-3xl px-3 py-16 text-center">Loading…</div>;
+    return (
+      <div className="text-muted-foreground mx-auto max-w-3xl px-3 py-16 text-center">Loading…</div>
+    );
   }
 
   if (error || !job) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-text-muted">This job posting was not found.</p>
-        <Button asChild>
+        <p className="text-muted-foreground">This job posting was not found.</p>
+        <Button asChild className="text-foreground">
           <Link href="/jobs">Back to listings</Link>
         </Button>
       </div>
@@ -173,7 +175,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="mx-auto max-w-2xl space-y-3 p-5">
-      <Link href="/jobs" className="text-text-inverse hover:text-text">
+      <Link href="/jobs" className="text-">
         ← Back to listings
       </Link>
 
@@ -198,7 +200,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <span>🏢 </span>
           <Link
             href={`/employer/${job.employerProfile.id}`}
-            className="hover:text-text font-medium"
+            className="hover:text-light font-medium"
           >
             {job.employerProfile.companyName}
           </Link>
@@ -225,30 +227,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
           <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div>
-              <p className="text-text-muted text-sm font-medium tracking-wide uppercase">Pay</p>
-              <p className="text-text mt-1 text-sm font-medium">
+              <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
+                Pay
+              </p>
+              <p className="text-light mt-1 text-sm font-medium">
                 From ${Number(job.minHourlyRate).toFixed(2)}/hr
               </p>
-              {job.payNotes && <p className="text-text-muted mt-0.5 text-xs">{job.payNotes}</p>}
+              {job.payNotes && (
+                <p className="text-muted-foreground mt-0.5 text-xs">{job.payNotes}</p>
+              )}
             </div>
 
             {sortedDays.length > 0 && (
               <div>
-                <p className="text-text-muted text-sm font-medium tracking-wide uppercase">
+                <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                   Work days
                 </p>
-                <p className="text-text mt-1 text-sm">
+                <p className="text-light mt-1 text-sm">
                   {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                 </p>
                 {job.scheduleNotes && (
-                  <p className="text-text-muted mt-0.5 text-xs">{job.scheduleNotes}</p>
+                  <p className="text-muted-foreground mt-0.5 text-xs">{job.scheduleNotes}</p>
                 )}
               </div>
             )}
 
             {job.requiredLanguages.length > 0 && (
               <div>
-                <p className="text-text-muted text-xs font-medium tracking-wide uppercase">
+                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                   Languages
                 </p>
                 <p className="mt-1 text-sm">
@@ -311,11 +317,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <Separator />
           <div className="mt-8">
             {!isSeeker && (
-              <p className="text-text-muted text-sm">Sign in as a job seeker to apply.</p>
+              <p className="text-muted-foreground text-sm">Sign in as a job seeker to apply.</p>
             )}
 
             {noProfile && (
-              <p className="text-text-muted text-sm">
+              <p className="text-muted-foreground text-sm">
                 <Link href="/seeker/profile/new" className="text-primary underline">
                   Complete your seeker profile
                 </Link>{" "}
@@ -338,7 +344,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 >
                   {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
                 </span>
-                <Link href="/seeker/applications" className="text-text-muted text-sm underline">
+                <Link
+                  href="/seeker/applications"
+                  className="text-muted-foreground text-sm underline"
+                >
                   View my applications
                 </Link>
               </div>

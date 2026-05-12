@@ -301,7 +301,7 @@ Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo roo
 | Status | Classes |
 |---|---|
 | ACTIVE | `bg-success/15 text-success` |
-| DRAFT | `bg-surface-3 text-text-muted` |
+| DRAFT | `bg-surface-3 text-muted-foreground` |
 | PAUSED | `bg-warning/15 text-warning` |
 | FILLED | `bg-primary/15 text-primary` |
 | EXPIRED / CLOSED | `bg-danger/15 text-danger` |

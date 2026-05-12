@@ -1,50 +1,100 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────────────────
+   BASE DESIGN TOKENS
+   ──────────────────────────────────────────────────────────── */
 :root {
-  --background: rgb(124, 163, 170);
+  /* Surfaces & backgrounds — all glass (semi-transparent light blue) */
+  --background: rgba(25, 64, 112, 0.288);
+  --border-col: rgba(228, 165, 72, 0.466);
+  --surface-2: rgba(155, 200, 255, 0.15);
+  --surface-3: rgba(155, 200, 255, 0.25);
 
-  --surface-1: rgb(26, 34, 46, 0.9);
-  --surface-2: rgb(32, 42, 56, 0.9);
-  --surface-3: rgba(40, 52, 68, 0.9);
+  /* Text colours */
+  --light: rgba(191, 212, 235);
+  --light-muted: rgb(220, 238, 255);
+  --dark: rgb(20, 35, 55);
+  --dark-muted: rgba(155, 200, 255, 0.2);
 
-  --text: rgb(235, 242, 248);
-  --text-muted: rgba(212, 232, 252, 0.877);
-  --text-inverse: rgb(18, 24, 34);
+  /* Primary & secondary */
+  --primary: rgb(143, 184, 246);
+  --primary-muted: rgba(114, 124, 128, 0.966);
 
-  --primary: rgb(129, 200, 241);
-  --primary-muted: rgb(192, 184, 176);
-  --primary-muted-2: rgb(107, 166, 201);
-  --secondary: rgb(100, 133, 133);
-
+  /* Feedback */
   --success: rgb(135, 219, 135);
-  --warning: rgb(238, 188, 97);
+  --warning: rgb(221, 139, 44);
   --danger: rgb(255, 70, 70);
 
   /* Radius */
   --radius: 0.5rem;
+  --ring: var(--primary-muted);
 }
 
-/* ─── Wire shadcn tokens into Tailwind v4 utilities ─── */
-@theme inline {
-  --color-background: var(--background);
+/* ────────────────────────────────────────────────────────────
+   SHADCN/UI COMPATIBLE VARIABLES
+   ──────────────────────────────────────────────────────────── */
+:root {
+  --card: rgba(155, 200, 255, 0.18);
+  --card-foreground: var(--light);
+  --popover: rgba(140, 190, 255, 0.35);
+  --popover-foreground: var(--light);
+  --primary-foreground: var(--dark);
+  --secondary-foreground: var(--light-muted);
+  --muted: rgba(155, 200, 255, 0.2);
+  --muted-foreground: var(--light-muted);
+  --accent: var(--warning);
+  --accent-foreground: var(--light);
+  --destructive: var(--danger);
+  --destructive-foreground: var(--light);
+  --border: var(--border-col);
+  --input: rgba(155, 200, 255, 0.22);
+  --ring: var(--primary-muted);
+}
 
-  --color-surface-1: var(--surface-1);
+/* ────────────────────────────────────────────────────────────
+   TAILWIND V4 THEME MAPPING
+   ──────────────────────────────────────────────────────────── */
+@theme inline {
+  /* Backgrounds & surfaces */
+  --color-background: var(--background);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
 
-  --color-text: var(--text);
-  --color-text-muted: var(--text-muted);
-  --color-text-inverse: var(--text-inverse);
+  /* Text colours */
+  --color-light: var(--light);
+  --color-light-muted: var(--light-muted);
+  --color-dark: var(--dark);
+  --color-dark-muted: var(--dark-muted);
 
+  /* Theme colours */
   --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
   --color-primary-muted: var(--primary-muted);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
 
+  /* Feedback */
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
 
-  /* Radius scale */
+  /* shadcn/ui aliases */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border-col);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Radius scale — --radius is the default so "rounded" === "rounded-md" */
+  --radius: 0.5rem;
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
@@ -52,31 +102,62 @@
   --radius-full: 9999px;
 }
 
-/* ─── Base resets ─── */
-* {
-  border-color: var(--text-muted);
+/* ────────────────────────────────────────────────────────────
+   GLOBAL RESETS & BASE STYLES
+   ──────────────────────────────────────────────────────────── */
+.border {
+  border-color: var(--border-col);
+  border-width: 0.1px;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--text);
+  position: relative;
+  background: transparent;
+  color: var(--dark);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  color: var(--text);
 }
-h2 {
-  font-size: 1.1rem;
-  margin-bottom: 10px;
-  font-weight: 500;
+
+/* Blurred background image — sits behind everything */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -5%;
+  z-index: -1;
+  background-image: url("/israeli-flag.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px);
 }
-.gradient-top {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), transparent);
+
+/* ────────────────────────────────────────────────────────────
+   GLOBAL GLASS EFFECT
+   ──────────────────────────────────────────────────────────── */
+
+/* Heavy blur for major surfaces */
+header,
+[data-slot="card"],
+[data-slot="dialog-content"],
+[data-slot="dropdown-menu-content"],
+[data-slot="select-content"],
+[data-slot="popover-content"],
+[data-slot="command"] {
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
 }
-.gradient-bottom {
-  background: linear-gradient(to top, var(--surface-3), transparent);
+
+/* Lighter blur for inline controls */
+[data-slot="input"],
+[data-slot="textarea"],
+[data-slot="button"] {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
-/* ─── Scrollbar ─── */
+
+/* ────────────────────────────────────────────────────────────
+   SCROLLBAR
+   ──────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -94,6 +175,6 @@ h2 {
 
 /* ─── Focus ring ─── */
 :focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline: 0px solid var(--ring);
+  outline-offset: 0px;
 }
