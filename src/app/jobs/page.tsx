@@ -370,7 +370,7 @@ function JobsContent() {
           <SlidersHorizontalIcon className="size-3.5" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary/30 ml-0.5 rounded-full px-1.5 text-xs">
+            <span className="bg-primary/30 ml-0.5 rounded-full px-1.5 text-sm">
               {activeFilterCount}
             </span>
           )}
@@ -392,12 +392,12 @@ function JobsContent() {
 
         <div className="ml-auto flex items-center gap-2">
           {!isLoading && displayJobs !== undefined && (
-            <span className="text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-sm">
               {displayJobs.length} job{displayJobs.length === 1 ? "" : "s"}
             </span>
           )}
           {session?.user?.role === "EMPLOYER" && (
-            <Button asChild size="sm" className="h-7 px-2 text-xs">
+            <Button asChild size="sm" className="h-7 px-2 text-sm">
               <Link href="/employer/jobs/new">Post job</Link>
             </Button>
           )}
@@ -412,10 +412,10 @@ function JobsContent() {
           </DialogHeader>
 
           {/* Search */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <p className="px-1 font-medium">Search</p>
             <div className="relative">
-              <SearchIcon className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+              <SearchIcon className="text-popover-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2" />
               <Input
                 placeholder="Search jobs…"
                 value={searchQuery}
@@ -426,7 +426,7 @@ function JobsContent() {
                 <button
                   type="button"
                   onClick={clearSearch}
-                  className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-100"
+                  className="text-popover-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-100"
                 >
                   <XIcon className="size-3.5" />
                 </button>
@@ -435,7 +435,7 @@ function JobsContent() {
           </div>
 
           {/* Location */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <p className="px-1 font-medium">Location</p>
             <Select value={stateAbbr || undefined} onValueChange={setStateAbbr}>
               <SelectTrigger className="w-full">
@@ -479,7 +479,7 @@ function JobsContent() {
           </div>
 
           {/* Job type */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <p className="px-1 font-medium">Job type</p>
             <Select value={jobType} onValueChange={setJobType}>
               <SelectTrigger className="w-full">
@@ -491,87 +491,87 @@ function JobsContent() {
                 <SelectItem value="PART_TIME">Part-time</SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          {/* Arrangement */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <FilterTrigger
-                className="bg-gray-light-1/40 w-full justify-between font-normal"
-                activeCount={arrangements.length}
-              >
-                Arrangement
-              </FilterTrigger>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {ARRANGEMENT_OPTIONS.map((opt) => (
-                <DropdownMenuCheckboxItem
-                  key={opt.value}
-                  checked={arrangements.includes(opt.value)}
-                  onCheckedChange={() => setArrangements(toggleItem(arrangements, opt.value))}
-                >
-                  {opt.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Work days */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <FilterTrigger
-                className="bg-gray-light-1/40 w-full justify-between font-normal"
-                activeCount={workDays.length}
-              >
-                Days
-              </FilterTrigger>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {DAY_OPTIONS.map((day) => (
-                <DropdownMenuCheckboxItem
-                  key={day.value}
-                  checked={workDays.includes(day.value)}
-                  onCheckedChange={() => setWorkDays(toggleItem(workDays, day.value))}
-                >
-                  {day.label}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Skills */}
-          {skillGroups && Object.keys(skillGroups).length > 0 && (
+            {/* Arrangement */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger
                   className="bg-gray-light-1/40 w-full justify-between font-normal"
-                  activeCount={skillIds.length}
+                  activeCount={arrangements.length}
                 >
-                  Skills
+                  Arrangement
                 </FilterTrigger>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
-                {Object.entries(skillGroups).map(([category, skills], i) => (
-                  <div key={category}>
-                    {i > 0 && <DropdownMenuSeparator />}
-                    <DropdownMenuLabel>{category}</DropdownMenuLabel>
-                    {skills.map((skill) => (
-                      <DropdownMenuCheckboxItem
-                        key={skill.id}
-                        checked={skillIds.includes(skill.id)}
-                        onCheckedChange={() => setSkillIds(toggleItem(skillIds, skill.id))}
-                      >
-                        {skill.name}
-                      </DropdownMenuCheckboxItem>
-                    ))}
-                  </div>
+              <DropdownMenuContent align="end">
+                {ARRANGEMENT_OPTIONS.map((opt) => (
+                  <DropdownMenuCheckboxItem
+                    key={opt.value}
+                    checked={arrangements.includes(opt.value)}
+                    onCheckedChange={() => setArrangements(toggleItem(arrangements, opt.value))}
+                  >
+                    {opt.label}
+                  </DropdownMenuCheckboxItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+
+            {/* Work days */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <FilterTrigger
+                  className="bg-gray-light-1/40 w-full justify-between font-normal"
+                  activeCount={workDays.length}
+                >
+                  Days
+                </FilterTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {DAY_OPTIONS.map((day) => (
+                  <DropdownMenuCheckboxItem
+                    key={day.value}
+                    checked={workDays.includes(day.value)}
+                    onCheckedChange={() => setWorkDays(toggleItem(workDays, day.value))}
+                  >
+                    {day.label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Skills */}
+            {skillGroups && Object.keys(skillGroups).length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <FilterTrigger
+                    className="bg-gray-light-1/40 w-full justify-between font-normal"
+                    activeCount={skillIds.length}
+                  >
+                    Skills
+                  </FilterTrigger>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
+                  {Object.entries(skillGroups).map(([category, skills], i) => (
+                    <div key={category}>
+                      {i > 0 && <DropdownMenuSeparator />}
+                      <DropdownMenuLabel>{category}</DropdownMenuLabel>
+                      {skills.map((skill) => (
+                        <DropdownMenuCheckboxItem
+                          key={skill.id}
+                          checked={skillIds.includes(skill.id)}
+                          onCheckedChange={() => setSkillIds(toggleItem(skillIds, skill.id))}
+                        >
+                          {skill.name}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </div>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
 
           {/* Sort */}
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <p className="px-1 font-medium">Sort by</p>
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
               <SelectTrigger className="w-full">
@@ -588,7 +588,7 @@ function JobsContent() {
 
           <DialogFooter className="flex-row items-center">
             {hasFilters && (
-              <Button variant="ghost" onClick={clearFilters} className="mr-auto">
+              <Button onClick={clearFilters} className="mr-auto">
                 Clear all
               </Button>
             )}
@@ -636,10 +636,10 @@ function JobsContent() {
           {/* Location */}
           <div>
             <div className="flex justify-between">
-              <p className="mb-1.5 px-1 text-xs font-medium">Location</p>
-              {countText && <p className="mb-3 hidden text-xs md:block">{countText}</p>}
+              <p className="mb-1.5 px-1 text-sm font-medium">Location</p>
+              {countText && <p className="mb-3 hidden text-sm md:block">{countText}</p>}
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <FilterTrigger className="w-full justify-between">
@@ -703,8 +703,8 @@ function JobsContent() {
 
           {/* Filters */}
           <div>
-            <p className="mb-1.5 px-1 text-xs font-medium">Filters</p>
-            <div className="space-y-1.5">
+            <p className="mb-1.5 px-1 text-sm font-medium">Filters</p>
+            <div className="space-y-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <FilterTrigger className="w-full justify-between">
@@ -796,7 +796,7 @@ function JobsContent() {
 
           {/* Sort */}
           <div>
-            <p className="mb-1.5 px-1 text-xs font-medium">Sort by</p>
+            <p className="mb-1.5 px-1 text-sm font-medium">Sort by</p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger className="w-full justify-between">
@@ -818,7 +818,7 @@ function JobsContent() {
           </div>
 
           {hasFilters && (
-            <Button variant="ghost" onClick={clearFilters} className="w-full">
+            <Button onClick={clearFilters} className="w-full">
               Clear filters
             </Button>
           )}

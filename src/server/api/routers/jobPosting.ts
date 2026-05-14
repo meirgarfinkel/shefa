@@ -71,25 +71,27 @@ export const jobPostingRouter = createTRPCRouter({
         : undefined
       : { in: ["ACTIVE" as const] };
 
-    // PostGIS radius search: geocode the reference city/state and find jobs within radius.
+    // Haversine radius search: find jobs within radiusMiles of the reference city.
     // Always ORDER BY distance so geoIds are distance-sorted for "closest" sort.
     let geoIds: string[] | undefined;
     if (input.radiusMiles && input.city && input.state) {
       const coords = await lookupCityCoords(ctx.prisma, input.city, input.state);
       if (coords) {
-        const radiusMeters = input.radiusMiles * 1609.344;
         const rows = await ctx.prisma.$queryRaw<{ id: string }[]>`
-          SELECT id FROM "JobPosting"
-          WHERE lat IS NOT NULL AND lon IS NOT NULL
-          AND ST_DWithin(
-            ST_MakePoint(lon, lat)::geography,
-            ST_MakePoint(${coords.lon}, ${coords.lat})::geography,
-            ${radiusMeters}
-          )
-          ORDER BY ST_Distance(
-            ST_MakePoint(lon, lat)::geography,
-            ST_MakePoint(${coords.lon}, ${coords.lat})::geography
-          )
+          SELECT id FROM (
+            SELECT id,
+              3959 * acos(
+                LEAST(1.0, GREATEST(-1.0,
+                  sin(radians(${coords.lat})) * sin(radians(lat)) +
+                  cos(radians(${coords.lat})) * cos(radians(lat)) *
+                  cos(radians(lon) - radians(${coords.lon}))
+                ))
+              ) AS dist
+            FROM "JobPosting"
+            WHERE lat IS NOT NULL AND lon IS NOT NULL
+          ) _sub
+          WHERE dist <= ${input.radiusMiles}
+          ORDER BY dist
         `;
         geoIds = rows.map((r) => r.id);
       }

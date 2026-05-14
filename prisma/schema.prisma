@@ -21,7 +21,6 @@ enum ProfileStatus {
 }
 
 enum JobStatus {
-  DRAFT
   ACTIVE
   PAUSED
   EXPIRED
@@ -160,6 +159,8 @@ model User {
   sentMessages           Message[]
   verificationPings      VerificationPing[]
   reports                Report[]
+
+  @@index([role])
 }
 
 model SeekerProfile {
@@ -196,6 +197,8 @@ model SeekerProfile {
   languages         SeekerLanguage[]
   applications      Application[]
   verificationPings VerificationPing[] @relation("SeekerPings")
+
+  @@index([status])
 }
 
 model EmployerProfile {
@@ -230,6 +233,8 @@ model EmployerProfile {
   updatedAt               DateTime      @updatedAt
 
   jobPostings JobPosting[]
+
+  @@index([status])
 }
 
 model JobPosting {
@@ -256,18 +261,23 @@ model JobPosting {
   whatWereLookingFor String?         @db.VarChar(1000)
 
   // System
-  status           JobStatus @default(ACTIVE)
-  viewCount        Int       @default(0)
-  applicationCount Int       @default(0)
-  lastVerifiedAt   DateTime  @default(now())
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  status         JobStatus @default(ACTIVE)
+  lastVerifiedAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   preferredSkills   JobSkill[]
   requiredLanguages JobLanguage[]
   applications      Application[]
   conversations     Conversation[]
   verificationPings VerificationPing[] @relation("JobPings")
+
+  @@index([status])
+  @@index([status, jobType])
+  @@index([status, workArrangement])
+  @@index([status, createdAt])
+  @@index([employerProfileId])
+  @@index([lat, lon])
 }
 
 model Application {
@@ -284,6 +294,9 @@ model Application {
   updatedAt       DateTime          @updatedAt
 
   @@unique([seekerId, jobId])
+  @@index([jobId])
+  @@index([seekerProfileId])
+  @@index([status])
 }
 
 model Conversation {
@@ -302,8 +315,13 @@ model Conversation {
   aBlockedB          Boolean   @default(false)
   bBlockedA          Boolean   @default(false)
   createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   messages Message[]
+
+  @@index([participantAId])
+  @@index([participantBId])
+  @@index([lastMessageAt])
 }
 
 model Message {
@@ -315,6 +333,9 @@ model Message {
   body           String       @db.VarChar(5000)
   readAt         DateTime?
   createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([senderId, readAt])
 }
 
 // ─── Freshness / Verification ─────────────────────────────────────────────────
@@ -326,7 +347,6 @@ model VerificationPing {
   respondedAt DateTime?
   response    PingResponse?
 
-  // Either userId (seeker ping) or jobId (job ping) is set — not both
   userId          String?
   user            User?          @relation(fields: [userId], references: [id])
   seekerProfileId String?
@@ -335,6 +355,9 @@ model VerificationPing {
   job             JobPosting?    @relation("JobPings", fields: [jobId], references: [id])
 
   freshnessTokens FreshnessToken[]
+
+  @@index([userId])
+  @@index([jobId])
 }
 
 model FreshnessToken {
@@ -347,7 +370,9 @@ model FreshnessToken {
   ping       VerificationPing? @relation(fields: [pingId], references: [id])
   expiresAt  DateTime
   usedAt     DateTime?
-  createdAt  DateTime     @default(now())
+
+  @@index([targetType, targetId])
+  @@index([expiresAt])
 }
 
 // ─── Auth.js ──────────────────────────────────────────────────────────────────
@@ -368,6 +393,7 @@ model Account {
   session_state     String?
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -376,6 +402,8 @@ model Session {
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expires      DateTime
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -390,8 +418,8 @@ model VerificationToken {
 
 model State {
   id   String @id @default(cuid())
-  name String @unique // "New York"
-  abbr String @unique // "NY"
+  name String @unique
+  abbr String @unique
   lat  Float
   lon  Float
 
@@ -413,19 +441,17 @@ model City {
 // ─── Taxonomy ─────────────────────────────────────────────────────────────────
 
 model Skill {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  category  String?
-  createdAt DateTime @default(now())
+  id       String  @id @default(cuid())
+  name     String  @unique
+  category String?
 
   seekerSkills SeekerSkill[]
   jobSkills    JobSkill[]
 }
 
 model Language {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
+  id   String @id @default(cuid())
+  name String @unique
 
   seekerLanguages SeekerLanguage[]
   jobLanguages    JobLanguage[]
@@ -476,7 +502,6 @@ model NotificationPreferences {
 
   messageNotifications     NotificationFrequency @default(PER_MESSAGE)
   applicationNotifications NotificationFrequency @default(PER_MESSAGE)
-  createdAt                DateTime              @default(now())
   updatedAt                DateTime              @updatedAt
 }
 
@@ -489,4 +514,7 @@ model Report {
   reason     String
   status     ReportStatus     @default(OPEN)
   createdAt  DateTime         @default(now())
+
+  @@index([status])
+  @@index([targetType, targetId])
 }

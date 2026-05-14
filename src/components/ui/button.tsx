@@ -1,14 +1,14 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Slot } from "radix-ui";
+import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary hover:bg-success",
+        default: "bg-primary hover:bg-popover/5",
         secondary:
           "bg-popover text-popover-foreground hover:bg-popover-foreground hover:text-popover",
         ghost: "bg-dark/30 hover:bg-dark/20",
@@ -37,7 +37,7 @@ export interface ButtonProps
 }
 
 function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
-  const Comp = asChild ? Slot.Root : "button";
+  const Comp = asChild ? Slot : "button";
   return (
     <Comp
       data-slot="button"

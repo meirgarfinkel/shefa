@@ -163,7 +163,7 @@ describe("submit", () => {
     });
   });
 
-  it.each(["DRAFT", "PAUSED", "EXPIRED", "FILLED", "CLOSED"])(
+  it.each(["PAUSED", "EXPIRED", "FILLED", "CLOSED"])(
     "job status %s → FORBIDDEN",
     async (status) => {
       const caller = createCaller(makeCtx("SEEKER", mockPrisma));

@@ -23,91 +23,65 @@
 
 ## What was completed this session
 
-### Google OAuth + design system alignment (Phase 8 polish)
+### Production infrastructure prep (Phase 8)
 
-**Google OAuth** (`src/auth.ts`, `src/app/sign-in/page.tsx`):
-- Added `Google` provider from `next-auth/providers/google` to `auth.ts` alongside existing Resend provider
-- Sign-in page now has a "Continue with Google" button above the magic link form with an "or continue with email" divider
-- Reads `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from environment; added both to `.env.example`
-- `middleware.ts` unchanged — still only imports from `auth.config.ts` (Edge-safe)
-- No schema migration needed — Prisma adapter handles OAuth account linking automatically
+**PostGIS removed** — replaced with Haversine math:
+- `src/server/api/routers/jobPosting.ts`: replaced `ST_DWithin` / `ST_Distance` raw SQL with a Haversine subquery (`3959 * acos(LEAST(1, GREATEST(-1, ...)))` in miles)
+- `docker-compose.yml`: image changed from `postgis/postgis:16-3.5-alpine` → `postgres:16-alpine`
+- All 10 old migrations deleted; replaced with a single `prisma/migrations/0_init/migration.sql` (no PostGIS anywhere)
 
-**⚠️ You must add to `.env.local` before Google sign-in works:**
-```
-GOOGLE_CLIENT_ID=<your-google-client-id>
-GOOGLE_CLIENT_SECRET=<your-google-client-secret>
-```
-Steps:
-1. Go to [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
-2. Create OAuth 2.0 Client ID (Web application)
-3. Add `http://localhost:3000/api/auth/callback/google` as an Authorized redirect URI
-4. Copy Client ID and Client Secret into `.env.local`
+**New files:**
+- `env.production.example` — production env vars with comments (Neon, Upstash, Resend, Google, Railway)
+- `vercel.json` — overrides Vercel build command: `prisma generate && prisma migrate deploy && next build --turbopack`
+- `README.md` — full project README for GitHub
 
-**`DESIGN_SYSTEM.md`** — full rewrite to match actual glassmorphism implementation:
-- Documents the blurred-photo background + semi-transparent glass surfaces
-- Corrects token names (`bg-card`, `text-dark`, `bg-blue-dark-2`, `bg-blue-dark-3`, `bg-popover`, etc.)
-- Documents global `backdrop-filter` blur applied via CSS selectors (no per-component setup needed)
-- Updates component patterns (job card, filter trigger, sign-in page)
-- Removes references to obsolete "dark ocean" solid-color tokens
+**Docs updated:**
+- `PROJECT_SPEC.md` — "Hosting (later)" → confirmed targets (Vercel + Neon + Upstash + Railway + Resend)
+- `CLAUDE.md` — project summary updated to include deployment targets and correct Docker image
+- `HANDOFF.md` — this file
+
+**Nothing changed:**
+- `src/server/jobs/redis.ts` — already reads `REDIS_URL ?? "redis://localhost:6379"` ✅
+- `src/server/jobs/worker.ts` — already imports `dotenv/config` and has no hard-coded URLs ✅
+- `prisma/schema.prisma` — datasource already uses `env("DATABASE_URL")` with no `directUrl` ✅
+- `package.json` — `npm run worker` script already exists ✅
 
 ---
 
-### Geography / location system (Phase 8 polish)
+## ⚠️ Commands to run before resuming development
 
-**New DB models** (`prisma/schema.prisma`):
-- `State` — 50 US states with `abbr` (2-letter), `name`, `lat`, `lon` (center point)
-- `City` — major cities per state with `lat`, `lon`; indexed on `stateId`
-
-**Removed `zip` field everywhere:**
-- `SeekerProfile`, `EmployerProfile`, `JobPosting` — `zip` column dropped
-- Zod schemas: `CreateSeekerProfileSchema`, `UpdateSeekerProfileSchema`, `CreateEmployerProfileSchema`, `UpdateEmployerProfileSchema`, `CreateJobPostingSchema`, `UpdateJobPostingSchema`
-- All 6 form pages (new + edit for seeker profile, employer profile, job posting)
-- Tests updated to remove zip fixtures
-
-**New tRPC router** (`src/server/api/routers/location.ts`):
-- `location.states` — returns all 50 states ordered by name
-- `location.citiesByState({ stateAbbr })` — returns cities for a state, ordered by name
-
-**New reusable component** (`src/components/ui/location-picker.tsx`):
-- Uses `useFormContext()` — works inside any react-hook-form `<Form>` wrapper
-- State Select (50 states); City Select (filtered by selected state, loaded via tRPC)
-- When state changes, city is cleared automatically
-- City dropdown disabled until state is chosen
-
-**Geocoding removed:**
-- `src/lib/geocode.ts` deleted
-- `jobPosting.create` and `jobPosting.update` now look up city lat/lon from the `City` DB table instead of calling Nominatim API
-- `jobPosting.list` radius search also uses DB lookup
-- `lat`/`lon` fields remain on `JobPosting` for fast PostGIS queries
-
-**Jobs search page** (`src/app/jobs/page.tsx`):
-- City/state text inputs replaced with State Select + City Select dropdowns
-- Debounce for location removed (no longer needed — dropdowns are immediate)
-- Auto-fill from user profile still works
-
-**Seed data** (`prisma/seed.ts`):
-- All 50 states with approximate center lat/lon
-- ~10–30 major cities per state with lat/lon (~600 cities total)
-
----
-
-## ⚠️ Commands to run before resuming
-
-The Prisma schema was changed. You MUST run these commands in order:
+The migrations were flattened — the local DB is now out of sync. Run these in order:
 
 ```bash
-npx prisma migrate dev --name add-state-city-tables-remove-zip
-```
+# 1. Tear down the old PostGIS container and its volume
+docker-compose down -v
 
-This drops `zip` from 3 tables and adds `State` + `City` tables. Any existing zip data will be lost (dev environment only — expected).
+# 2. Start fresh with the standard postgres:16-alpine image
+docker-compose up -d
 
-```bash
+# 3. Apply the single flattened migration
+npx prisma migrate dev --name init
+
+# 4. Re-seed geography data
 npx prisma db seed
 ```
 
-Seeds all 50 states + ~600 cities.
+After these four commands, `npm run dev` and `npm run worker` should work normally.
 
-After both commands complete, `npm run check` should pass with zero errors.
+To verify search still works: start the app, go to `/jobs`, type a keyword — results should appear. Try the radius filter to verify Haversine distance works.
+
+---
+
+## Deployment checklist (before going live)
+
+- [ ] Create Neon project, get pooled `DATABASE_URL`
+- [ ] Create Upstash Redis database, get `REDIS_URL`
+- [ ] Verify Resend sender domain (`noreply@shefa.jobs`) — must be DNS-verified
+- [ ] Create Google OAuth credentials with production redirect URI
+- [ ] Set all vars from `env.production.example` in Vercel project settings
+- [ ] Create Railway worker service, set `npm run worker` as start command, add same env vars
+- [ ] Push to GitHub → Vercel auto-deploys, Railway auto-deploys
+- [ ] After first Vercel deploy: `prisma db seed` via Railway or a one-off script to seed states/cities
 
 ---
 
@@ -126,7 +100,7 @@ After both commands complete, `npm run check` should pass with zero errors.
 
 ## Open questions / blockers
 
-1. **Resend domain**: `noreply@shefa.jobs` must be verified before production emails work.
-2. **Worker process management in prod**: Vercel doesn't support long-lived processes. Use Render / Railway / Fly.io background worker for BullMQ. Decide before Phase 8 ship.
-3. **Rate limiting not implemented**: 25 applications/day for seekers, 50 cold DMs/day for employers — should be added in Phase 8.
-4. **Profile completion gate**: Users with a role can reach `/jobs` without a complete profile — enforce in Phase 8.
+1. **Resend domain**: `noreply@shefa.jobs` must be DNS-verified before production emails work.
+2. **Seed in production**: States/cities seed must run once after first deploy. Recommend a Railway one-off command or a protected tRPC admin procedure.
+3. **Rate limiting**: 25 applications/day for seekers, 50 cold DMs/day for employers — not yet implemented.
+4. **Profile completion gate**: Users with a role can reach `/jobs` without a complete profile.

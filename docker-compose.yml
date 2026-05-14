@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgis/postgis:16-3.5-alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_USER: shefa
       POSTGRES_PASSWORD: shefa

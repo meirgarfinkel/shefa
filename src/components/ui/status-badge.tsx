@@ -2,7 +2,6 @@ import { cn } from "@/lib/utils";
 import type { JobStatus } from "@prisma/client";
 
 export const STATUS_LABELS: Record<JobStatus, string> = {
-  DRAFT: "Draft",
   ACTIVE: "Active",
   PAUSED: "Paused",
   FILLED: "Filled",
@@ -12,7 +11,6 @@ export const STATUS_LABELS: Record<JobStatus, string> = {
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   ACTIVE: "bg-success/15 text-success",
-  DRAFT: "bg-blue-dark-3 text-muted-foreground",
   PAUSED: "bg-warning/15 text-warning",
   FILLED: "bg-primary/15 text-primary",
   EXPIRED: "bg-danger/15 text-danger",

@@ -19,9 +19,14 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **Linting/formatting**: ESLint (next config) + Prettier with Tailwind plugin. Husky + lint-staged for pre-commit hooks.
 - **Mobile (later, not now)**: React Native, sharing the same tRPC API
 
-## Hosting (later)
+## Hosting
 
-Vercel (Next.js) + Neon or Supabase (Postgres) + Upstash (Redis) — chosen for nonprofit-friendly pricing.
+- **Web app**: Vercel (Next.js)
+- **Database**: Neon (PostgreSQL, serverless) — uses standard `postgres:16-alpine` locally via Docker Compose
+- **Redis / queues**: Upstash (serverless Redis, ioredis-compatible)
+- **BullMQ worker**: Railway (persistent background process — Vercel cannot host long-lived processes)
+- **Email**: Resend
+- Chosen for nonprofit-friendly pricing and generous free tiers.
 
 ---
 

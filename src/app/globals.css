@@ -44,7 +44,7 @@
   /* Interactive */
   --primary: rgb(var(--blue-light-1));
   --secondary: rgb(var(--blue-light-2));
-  --accent: rgb(var(--orange));
+  --accent: var(--color-green-300);
 
   /* States */
   --success: rgb(var(--green));
@@ -170,29 +170,15 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image: url("/israeli-flag.jpg");
+  background-image: url("/bg-image.jpg");
   background-size: cover;
   background-position: center;
-  filter: blur(3px);
+  filter: blur(70px);
 }
 
-/* ─────────────────────────────────────────────
-   FOCUS STATES
-   ───────────────────────────────────────────── */
-:focus-visible {
-  outline: none;
-
-  box-shadow:
-    0 0 0 1px var(--ring),
-    0 0 0 4px rgb(var(--blue-light-2) / 0.15);
-
-  border-radius: var(--radius-sm);
-}
-
-/* ─────────────────────────────────────────────
-   SELECTION
-   ───────────────────────────────────────────── */
-::selection {
-  background: rgb(var(--blue-light-2) / 0.3);
-  color: rgb(var(--gray-light-1));
+/* Remove browser/radix focus rings */
+*:focus,
+*:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }

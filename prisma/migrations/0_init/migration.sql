@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('SEEKER', 'EMPLOYER', 'ADMIN');
 
@@ -5,7 +8,7 @@ CREATE TYPE "Role" AS ENUM ('SEEKER', 'EMPLOYER', 'ADMIN');
 CREATE TYPE "ProfileStatus" AS ENUM ('ACTIVE', 'PAUSED');
 
 -- CreateEnum
-CREATE TYPE "JobStatus" AS ENUM ('DRAFT', 'ACTIVE', 'PAUSED', 'EXPIRED', 'FILLED', 'CLOSED');
+CREATE TYPE "JobStatus" AS ENUM ('ACTIVE', 'PAUSED', 'EXPIRED', 'FILLED', 'CLOSED');
 
 -- CreateEnum
 CREATE TYPE "ApplicationStatus" AS ENUM ('SUBMITTED', 'VIEWED', 'RESPONDED', 'CLOSED');
@@ -38,7 +41,7 @@ CREATE TYPE "CompanySize" AS ENUM ('SIZE_1_10', 'SIZE_11_50', 'SIZE_51_200', 'SI
 CREATE TYPE "EducationLevel" AS ENUM ('NONE', 'SOME_HIGH_SCHOOL', 'HIGH_SCHOOL', 'SOME_COLLEGE', 'ASSOCIATE', 'BACHELOR', 'GRADUATE');
 
 -- CreateEnum
-CREATE TYPE "Industry" AS ENUM ('FOOD_SERVICE', 'RETAIL', 'HOSPITALITY', 'HEALTHCARE_SUPPORT', 'TRADES_CONSTRUCTION', 'MANUFACTURING', 'OFFICE_ADMIN', 'TRANSPORTATION_DELIVERY', 'EDUCATION_CHILDCARE', 'PERSONAL_SERVICES', 'NONPROFIT_COMMUNITY', 'OTHER');
+CREATE TYPE "Industry" AS ENUM ('FOOD_SERVICE', 'RETAIL', 'HOSPITALITY', 'HEALTHCARE', 'TRADES', 'MANUFACTURING', 'OFFICE_ADMIN', 'TRANSPORTATION', 'EDUCATION', 'PERSONAL_SERVICES', 'TECHNOLOGY', 'BUSINESS', 'FINANCE', 'MARKETING', 'MEDIA', 'REAL_ESTATE', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "DayOfWeek" AS ENUM ('SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT');
@@ -46,9 +49,13 @@ CREATE TYPE "DayOfWeek" AS ENUM ('SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
+    "name" TEXT,
     "email" TEXT NOT NULL,
+    "emailVerified" TIMESTAMP(3),
+    "image" TEXT,
     "phone" TEXT,
-    "role" "Role" NOT NULL,
+    "role" "Role",
+    "isAdult" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "lastLoginAt" TIMESTAMP(3),
@@ -64,7 +71,6 @@ CREATE TABLE "SeekerProfile" (
     "lastName" TEXT NOT NULL,
     "city" TEXT NOT NULL,
     "state" TEXT NOT NULL,
-    "zip" TEXT NOT NULL,
     "workAuthorization" BOOLEAN NOT NULL,
     "availableDays" "DayOfWeek"[],
     "jobSeekText" VARCHAR(1000) NOT NULL,
@@ -94,7 +100,6 @@ CREATE TABLE "EmployerProfile" (
     "companySize" "CompanySize" NOT NULL,
     "city" TEXT NOT NULL,
     "state" TEXT NOT NULL,
-    "zip" TEXT NOT NULL,
     "roleAtCompany" TEXT,
     "industry" "Industry",
     "website" TEXT,
@@ -102,8 +107,10 @@ CREATE TABLE "EmployerProfile" (
     "missionText" VARCHAR(1000),
     "status" "ProfileStatus" NOT NULL DEFAULT 'ACTIVE',
     "isResponsive" BOOLEAN NOT NULL DEFAULT false,
+    "responsivenessScore" DOUBLE PRECISION,
     "responseRate" DOUBLE PRECISION,
     "medianResponseHours" DOUBLE PRECISION,
+    "responsivenessUpdatedAt" TIMESTAMP(3),
     "lastVerifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -122,7 +129,8 @@ CREATE TABLE "JobPosting" (
     "workArrangement" "WorkArrangement" NOT NULL,
     "city" TEXT NOT NULL,
     "state" TEXT NOT NULL,
-    "zip" TEXT NOT NULL,
+    "lat" DOUBLE PRECISION,
+    "lon" DOUBLE PRECISION,
     "minHourlyRate" DECIMAL(8,2) NOT NULL,
     "payNotes" TEXT,
     "workDays" "DayOfWeek"[],
@@ -130,9 +138,7 @@ CREATE TABLE "JobPosting" (
     "workAuthRequired" BOOLEAN NOT NULL,
     "whatWeTeach" VARCHAR(1000),
     "whatWereLookingFor" VARCHAR(1000),
-    "status" "JobStatus" NOT NULL DEFAULT 'DRAFT',
-    "viewCount" INTEGER NOT NULL DEFAULT 0,
-    "applicationCount" INTEGER NOT NULL DEFAULT 0,
+    "status" "JobStatus" NOT NULL DEFAULT 'ACTIVE',
     "lastVerifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -166,6 +172,7 @@ CREATE TABLE "Conversation" (
     "aBlockedB" BOOLEAN NOT NULL DEFAULT false,
     "bBlockedA" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Conversation_pkey" PRIMARY KEY ("id")
 );
@@ -197,16 +204,74 @@ CREATE TABLE "VerificationPing" (
 );
 
 -- CreateTable
-CREATE TABLE "VerificationToken" (
+CREATE TABLE "FreshnessToken" (
     "id" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "targetType" TEXT NOT NULL,
     "targetId" TEXT NOT NULL,
+    "action" "PingResponse" NOT NULL,
+    "pingId" TEXT,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "usedAt" TIMESTAMP(3),
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT "VerificationToken_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "FreshnessToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Account" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "type" TEXT NOT NULL,
+    "provider" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
+    "refresh_token" TEXT,
+    "access_token" TEXT,
+    "expires_at" INTEGER,
+    "token_type" TEXT,
+    "scope" TEXT,
+    "id_token" TEXT,
+    "session_state" TEXT,
+
+    CONSTRAINT "Account_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Session" (
+    "id" TEXT NOT NULL,
+    "sessionToken" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "VerificationToken" (
+    "identifier" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "expires" TIMESTAMP(3) NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "State" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "abbr" TEXT NOT NULL,
+    "lat" DOUBLE PRECISION NOT NULL,
+    "lon" DOUBLE PRECISION NOT NULL,
+
+    CONSTRAINT "State_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "City" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "stateId" TEXT NOT NULL,
+    "lat" DOUBLE PRECISION NOT NULL,
+    "lon" DOUBLE PRECISION NOT NULL,
+
+    CONSTRAINT "City_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -214,7 +279,6 @@ CREATE TABLE "Skill" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "category" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Skill_pkey" PRIMARY KEY ("id")
 );
@@ -223,7 +287,6 @@ CREATE TABLE "Skill" (
 CREATE TABLE "Language" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Language_pkey" PRIMARY KEY ("id")
 );
@@ -266,7 +329,6 @@ CREATE TABLE "NotificationPreferences" (
     "userId" TEXT NOT NULL,
     "messageNotifications" "NotificationFrequency" NOT NULL DEFAULT 'PER_MESSAGE',
     "applicationNotifications" "NotificationFrequency" NOT NULL DEFAULT 'PER_MESSAGE',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "NotificationPreferences_pkey" PRIMARY KEY ("id")
@@ -289,16 +351,109 @@ CREATE TABLE "Report" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
+CREATE INDEX "User_role_idx" ON "User"("role");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "SeekerProfile_userId_key" ON "SeekerProfile"("userId");
+
+-- CreateIndex
+CREATE INDEX "SeekerProfile_status_idx" ON "SeekerProfile"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "EmployerProfile_userId_key" ON "EmployerProfile"("userId");
 
 -- CreateIndex
+CREATE INDEX "EmployerProfile_status_idx" ON "EmployerProfile"("status");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_status_idx" ON "JobPosting"("status");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_status_jobType_idx" ON "JobPosting"("status", "jobType");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_status_workArrangement_idx" ON "JobPosting"("status", "workArrangement");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_status_createdAt_idx" ON "JobPosting"("status", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_employerProfileId_idx" ON "JobPosting"("employerProfileId");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_lat_lon_idx" ON "JobPosting"("lat", "lon");
+
+-- CreateIndex
+CREATE INDEX "Application_jobId_idx" ON "Application"("jobId");
+
+-- CreateIndex
+CREATE INDEX "Application_seekerProfileId_idx" ON "Application"("seekerProfileId");
+
+-- CreateIndex
+CREATE INDEX "Application_status_idx" ON "Application"("status");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Application_seekerId_jobId_key" ON "Application"("seekerId", "jobId");
 
 -- CreateIndex
+CREATE INDEX "Conversation_participantAId_idx" ON "Conversation"("participantAId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_participantBId_idx" ON "Conversation"("participantBId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_lastMessageAt_idx" ON "Conversation"("lastMessageAt");
+
+-- CreateIndex
+CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
+
+-- CreateIndex
+CREATE INDEX "Message_senderId_readAt_idx" ON "Message"("senderId", "readAt");
+
+-- CreateIndex
+CREATE INDEX "VerificationPing_userId_idx" ON "VerificationPing"("userId");
+
+-- CreateIndex
+CREATE INDEX "VerificationPing_jobId_idx" ON "VerificationPing"("jobId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "FreshnessToken_token_key" ON "FreshnessToken"("token");
+
+-- CreateIndex
+CREATE INDEX "FreshnessToken_targetType_targetId_idx" ON "FreshnessToken"("targetType", "targetId");
+
+-- CreateIndex
+CREATE INDEX "FreshnessToken_expiresAt_idx" ON "FreshnessToken"("expiresAt");
+
+-- CreateIndex
+CREATE INDEX "Account_userId_idx" ON "Account"("userId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
+
+-- CreateIndex
+CREATE INDEX "Session_userId_idx" ON "Session"("userId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "VerificationToken_token_key" ON "VerificationToken"("token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationToken"("identifier", "token");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "State_name_key" ON "State"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "State_abbr_key" ON "State"("abbr");
+
+-- CreateIndex
+CREATE INDEX "City_stateId_idx" ON "City"("stateId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "City_name_stateId_key" ON "City"("name", "stateId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Skill_name_key" ON "Skill"("name");
@@ -308,6 +463,12 @@ CREATE UNIQUE INDEX "Language_name_key" ON "Language"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "NotificationPreferences_userId_key" ON "NotificationPreferences"("userId");
+
+-- CreateIndex
+CREATE INDEX "Report_status_idx" ON "Report"("status");
+
+-- CreateIndex
+CREATE INDEX "Report_targetType_targetId_idx" ON "Report"("targetType", "targetId");
 
 -- AddForeignKey
 ALTER TABLE "SeekerProfile" ADD CONSTRAINT "SeekerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -358,6 +519,18 @@ ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_seekerProfileId_
 ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "FreshnessToken" ADD CONSTRAINT "FreshnessToken_pingId_fkey" FOREIGN KEY ("pingId") REFERENCES "VerificationPing"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Account" ADD CONSTRAINT "Account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "City" ADD CONSTRAINT "City_stateId_fkey" FOREIGN KEY ("stateId") REFERENCES "State"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "SeekerSkill" ADD CONSTRAINT "SeekerSkill_seekerProfileId_fkey" FOREIGN KEY ("seekerProfileId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -386,3 +559,8 @@ ALTER TABLE "NotificationPreferences" ADD CONSTRAINT "NotificationPreferences_us
 
 -- AddForeignKey
 ALTER TABLE "Report" ADD CONSTRAINT "Report_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- Trigram indexes for search
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX "JobPosting_title_gin_idx" ON "JobPosting" USING GIN (title gin_trgm_ops);
+CREATE INDEX "JobPosting_description_gin_idx" ON "JobPosting" USING GIN (COALESCE(description, '') gin_trgm_ops);

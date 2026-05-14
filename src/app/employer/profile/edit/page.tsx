@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/ui/page-header";
 import { LocationPicker } from "@/components/ui/location-picker";
+import Link from "next/link";
 
 const COMPANY_SIZES = [
   { value: "SIZE_1_10", label: "1–10 employees" },
@@ -124,7 +125,10 @@ export default function EmployerProfileEditPage() {
   if (!profile) {
     return (
       <div className="text-muted-foreground px-4 py-16 text-center text-sm">
-        No profile found. Please complete your profile first.
+        <p>No profile found. Please complete your profile first. </p>
+        <Button asChild>
+          <Link href="/employer/profile/new">Create new profile</Link>
+        </Button>
       </div>
     );
   }

@@ -55,7 +55,7 @@ const JOB_ID = "job-1";
 
 const MOCK_EMPLOYER_PROFILE = { id: EMPLOYER_PROFILE_ID, userId: EMPLOYER_USER_ID };
 
-const MOCK_JOB_DRAFT = {
+const MOCK_JOB = {
   id: JOB_ID,
   employerProfileId: EMPLOYER_PROFILE_ID,
   postedById: EMPLOYER_USER_ID,
@@ -72,8 +72,7 @@ const MOCK_JOB_DRAFT = {
   workAuthRequired: false,
   whatWeTeach: null,
   whatWereLookingFor: null,
-  status: "DRAFT",
-  viewCount: 0,
+  status: "ACTIVE",
   applicationCount: 0,
   lastVerifiedAt: new Date(),
   createdAt: new Date(),
@@ -82,18 +81,16 @@ const MOCK_JOB_DRAFT = {
   requiredLanguages: [],
 };
 
-const MOCK_JOB_ACTIVE = { ...MOCK_JOB_DRAFT, status: "ACTIVE" };
-
 // Shape returned by search's findMany (includes employerProfile + _count)
 const MOCK_JOB_SEARCH_RESULT = {
-  ...MOCK_JOB_ACTIVE,
+  ...MOCK_JOB,
   lat: 40.65,
   lon: -73.95,
   requiredLanguages: [],
   employerProfile: { companyName: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
   _count: { applications: 0 },
 };
-const MOCK_JOB_CLOSED = { ...MOCK_JOB_DRAFT, status: "CLOSED" };
+const MOCK_JOB_CLOSED = { ...MOCK_JOB, status: "CLOSED" };
 
 const VALID_CREATE_INPUT = {
   title: "Line Cook",
@@ -114,7 +111,7 @@ describe("jobPosting.create", () => {
   beforeEach(() => {
     db = makeMockPrisma();
     db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
-    db.jobPosting.create.mockResolvedValue(MOCK_JOB_DRAFT);
+    db.jobPosting.create.mockResolvedValue(MOCK_JOB);
   });
 
   // ── Happy path ──
@@ -139,10 +136,10 @@ describe("jobPosting.create", () => {
     expect(data.postedById).toBe(EMPLOYER_USER_ID);
   });
 
-  it("new posting defaults to DRAFT status", async () => {
+  it("new posting defaults to ACTIVE status", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await caller.create(VALID_CREATE_INPUT);
-    // status is not set explicitly — Prisma schema default is DRAFT
+    // status is not set explicitly — Prisma schema default is ACTIVE
     const data = db.jobPosting.create.mock.calls[0][0].data;
     expect(data.status).toBeUndefined();
   });
@@ -272,7 +269,7 @@ describe("jobPosting.list", () => {
   });
 
   it("returns postings from findMany", async () => {
-    db.jobPosting.findMany.mockResolvedValue([MOCK_JOB_ACTIVE]);
+    db.jobPosting.findMany.mockResolvedValue([MOCK_JOB]);
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.list({});
     expect(result).toHaveLength(1);
@@ -316,15 +313,7 @@ describe("jobPosting.list", () => {
   it("EMPLOYER can filter own postings to a specific status", async () => {
     db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ employerProfileId: EMPLOYER_PROFILE_ID, status: ["DRAFT"] });
-    const where = db.jobPosting.findMany.mock.calls[0][0].where;
-    expect(where.status).toEqual({ in: ["DRAFT"] });
-  });
-
-  it("non-owner status filter is ignored — only ACTIVE returned", async () => {
-    const caller = createCaller(makeCtx("SEEKER", db));
-    // SEEKER tries to request DRAFT postings
-    await caller.list({ status: ["DRAFT"] });
+    await caller.list({ employerProfileId: EMPLOYER_PROFILE_ID, status: ["ACTIVE"] });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["ACTIVE"] });
   });
@@ -437,25 +426,25 @@ describe("jobPosting.getById", () => {
   // ── Happy path ──
 
   it("returns an ACTIVE posting to any caller", async () => {
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_ACTIVE);
+    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB);
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getById({ id: JOB_ID });
     expect(result).toMatchObject({ id: JOB_ID, status: "ACTIVE" });
   });
 
   it("returns an ACTIVE posting to an authenticated SEEKER", async () => {
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_ACTIVE);
+    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB);
     const caller = createCaller(makeCtx("SEEKER", db));
     const result = await caller.getById({ id: JOB_ID });
     expect(result).toMatchObject({ id: JOB_ID });
   });
 
-  it("owner can retrieve their own DRAFT posting", async () => {
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_DRAFT);
+  it("owner can retrieve their own PAUSED posting", async () => {
+    db.jobPosting.findUnique.mockResolvedValue({ ...MOCK_JOB, status: "PAUSED" });
     db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     const result = await caller.getById({ id: JOB_ID });
-    expect(result).toMatchObject({ id: JOB_ID, status: "DRAFT" });
+    expect(result).toMatchObject({ id: JOB_ID, status: "PAUSED" });
   });
 
   // ── Adversarial ──
@@ -468,29 +457,9 @@ describe("jobPosting.getById", () => {
     });
   });
 
-  it("throws NOT_FOUND for DRAFT posting when caller is not the owner", async () => {
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_DRAFT);
-    const caller = createCaller(makeCtx("SEEKER", db));
-    await expect(caller.getById({ id: JOB_ID })).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  });
-
   it("throws NOT_FOUND for PAUSED posting when caller is not the owner", async () => {
-    db.jobPosting.findUnique.mockResolvedValue({ ...MOCK_JOB_DRAFT, status: "PAUSED" });
+    db.jobPosting.findUnique.mockResolvedValue({ ...MOCK_JOB, status: "PAUSED" });
     const caller = createCaller(makeCtx(null, db));
-    await expect(caller.getById({ id: JOB_ID })).rejects.toMatchObject({
-      code: "NOT_FOUND",
-    });
-  });
-
-  it("throws NOT_FOUND for DRAFT posting when caller is a different employer", async () => {
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_DRAFT);
-    db.employerProfile.findUnique.mockResolvedValue({
-      id: OTHER_EMPLOYER_PROFILE_ID,
-      userId: OTHER_EMPLOYER_USER_ID,
-    });
-    const caller = createCaller(makeCtx("EMPLOYER", db, OTHER_EMPLOYER_USER_ID));
     await expect(caller.getById({ id: JOB_ID })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
@@ -504,8 +473,8 @@ describe("jobPosting.update", () => {
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_DRAFT);
-    db.jobPosting.update.mockResolvedValue({ ...MOCK_JOB_DRAFT, title: "Updated Title" });
+    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB);
+    db.jobPosting.update.mockResolvedValue({ ...MOCK_JOB, title: "Updated Title" });
   });
 
   // ── Happy path ──
@@ -557,7 +526,7 @@ describe("jobPosting.update", () => {
 
   it("throws FORBIDDEN when employer does not own the posting", async () => {
     db.jobPosting.findUnique.mockResolvedValue({
-      ...MOCK_JOB_DRAFT,
+      ...MOCK_JOB,
       postedById: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
@@ -590,7 +559,7 @@ describe("jobPosting.delete", () => {
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB_DRAFT);
+    db.jobPosting.findUnique.mockResolvedValue(MOCK_JOB);
     db.jobPosting.update.mockResolvedValue(MOCK_JOB_CLOSED);
   });
 
@@ -628,7 +597,7 @@ describe("jobPosting.delete", () => {
 
   it("throws FORBIDDEN when employer does not own the posting", async () => {
     db.jobPosting.findUnique.mockResolvedValue({
-      ...MOCK_JOB_DRAFT,
+      ...MOCK_JOB,
       postedById: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));

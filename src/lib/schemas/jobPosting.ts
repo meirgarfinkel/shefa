@@ -3,9 +3,9 @@ import { z } from "zod";
 const DayOfWeek = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
 const JobType = z.enum(["FULL_TIME", "PART_TIME", "EITHER"]);
 const WorkArrangement = z.enum(["REMOTE", "ON_SITE", "HYBRID"]);
-export const JobStatusEnum = z.enum(["DRAFT", "ACTIVE", "PAUSED", "EXPIRED", "FILLED", "CLOSED"]);
+export const JobStatusEnum = z.enum(["ACTIVE", "PAUSED", "EXPIRED", "FILLED", "CLOSED"]);
 // Status values an employer can set directly; EXPIRED and CLOSED are reserved
-const UserSettableJobStatus = z.enum(["DRAFT", "ACTIVE", "PAUSED", "FILLED"]);
+const UserSettableJobStatus = z.enum(["ACTIVE", "PAUSED", "FILLED"]);
 
 export const CreateJobPostingSchema = z.object({
   title: z.string().min(1).max(255),

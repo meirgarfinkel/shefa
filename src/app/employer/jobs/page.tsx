@@ -19,7 +19,6 @@ import type { JobStatus } from "@prisma/client";
 const STATUS_OPTIONS: { value: "all" | JobStatus; label: string }[] = [
   { value: "all", label: "All statuses" },
   { value: "ACTIVE", label: "Active" },
-  { value: "DRAFT", label: "Draft" },
   { value: "PAUSED", label: "Paused" },
   { value: "FILLED", label: "Filled" },
   { value: "EXPIRED", label: "Expired" },

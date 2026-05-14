@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
-import { CheckIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronRightIcon } from "lucide-react";
 
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-32 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-fit min-w-32 overflow-auto rounded-md p-1 shadow-md",
           className,
         )}
         {...props}
@@ -87,19 +87,15 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded p-1 text-sm outline-none select-none",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
+        "hover:bg-popover-foreground hover:text-popover",
+        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
         inset && "pl-7",
         className,
       )}
       checked={checked}
       {...props}
     >
-      <span className="absolute right-2 flex items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
   );
@@ -124,18 +120,14 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded p-1 text-sm",
-        "hover:text-popover hover:bg-popover-foreground",
+        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
+        "hover:bg-popover-foreground hover:text-popover",
+        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
         inset && "pl-7",
         className,
       )}
       {...props}
     >
-      <span className="absolute right-2 flex items-center justify-center">
-        <DropdownMenuPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
       {children}
     </DropdownMenuPrimitive.RadioItem>
   );

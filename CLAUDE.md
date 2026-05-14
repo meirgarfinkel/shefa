@@ -12,7 +12,7 @@ If any of these contradict each other, stop and ask the user before proceeding.
 
 ## Project summary
 
-Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 6 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose. Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
+Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 6 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose (`postgres:16-alpine` + `redis:7-alpine`). Production: Vercel (web) + Neon (Postgres) + Upstash (Redis) + Railway (BullMQ worker). Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
 
 ---
 

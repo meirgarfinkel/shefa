@@ -48,7 +48,6 @@ const DAYS = [
 ] as const;
 
 const USER_SETTABLE_STATUSES = [
-  { value: "DRAFT", label: "Draft" },
   { value: "ACTIVE", label: "Active" },
   { value: "PAUSED", label: "Paused" },
   { value: "FILLED", label: "Filled" },

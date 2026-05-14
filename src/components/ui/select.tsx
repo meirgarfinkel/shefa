@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Select as SelectPrimitive } from "radix-ui";
+import * as SelectPrimitive from "@radix-ui/react-select";
 
 import { cn } from "@/lib/utils";
-import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 
 function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
@@ -62,7 +62,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover text-popover-foreground relative z-50 max-h-(--radix-select-content-available-height) min-w-36 overflow-auto rounded-md shadow-md",
+          "bg-popover text-popover-foreground relative z-50 max-h-(--radix-select-content-available-height) min-w-36 overflow-auto rounded-md p-1 shadow-md",
           // Animations
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
@@ -113,17 +113,13 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-none select-none",
-        "data-disabled:pointer-events-none data-disabled:opacity-50",
+        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
+        "hover:bg-popover-foreground hover:text-popover",
+        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
         className,
       )}
       {...props}
     >
-      <span className="absolute right-2 flex size-4 items-center justify-center">
-        <SelectPrimitive.ItemIndicator>
-          <CheckIcon className="size-4" />
-        </SelectPrimitive.ItemIndicator>
-      </span>
       <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     </SelectPrimitive.Item>
   );
