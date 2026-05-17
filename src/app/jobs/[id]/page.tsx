@@ -142,9 +142,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     trpc.seeker.getMyProfile.useQuery(undefined, {
       enabled: session?.user?.role === "SEEKER",
     });
-  const { data: employerProfile } = trpc.employer.getProfile.useQuery(undefined, {
-    enabled: session?.user?.role === "EMPLOYER",
-  });
 
   if (isLoading) {
     return (
@@ -165,8 +162,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   const sortedDays = [...job.workDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
   const isSeeker = session?.user?.role === "SEEKER";
-  const isOwner =
-    session?.user?.role === "EMPLOYER" && employerProfile?.id === job.employerProfile.id;
+  const isOwner = session?.user?.role === "EMPLOYER" && session.user.id === job.employerId;
   const hasProfile =
     isSeeker && !seekerProfileLoading && seekerProfile !== null && seekerProfile !== undefined;
   const noProfile = isSeeker && !seekerProfileLoading && !seekerProfile;
@@ -193,16 +189,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </Link>
               </Button>
             )}
-            <ResponsiveBadge isResponsive={job.employerProfile.isResponsive} isNew={false} />
+            <ResponsiveBadge
+              isResponsive={job.company.owner.employerProfile?.isResponsive ?? false}
+              isNew={false}
+            />
           </div>
         </div>
         <CardDescription>
           <span>🏢 </span>
           <Link
-            href={`/employer/${job.employerProfile.id}`}
+            href={`/employer/${job.company.id}`}
             className="hover:text-popover-foreground font-medium"
           >
-            {job.employerProfile.companyName}
+            {job.company.name}
           </Link>
         </CardDescription>
         <CardContent>
@@ -290,26 +289,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 )}
               </div>
               <Separator />
-            </>
-          )}
-
-          {/* Preferred skills */}
-          {job.preferredSkills.length > 0 && (
-            <>
-              <Separator />
-              <div className="my-6">
-                <h2>🛠️ Preferred skills</h2>
-                <div className="flex flex-wrap gap-2">
-                  {job.preferredSkills.map((ps) => (
-                    <span
-                      key={ps.skill.id}
-                      className="bg-primary/15 rounded-full px-2.5 py-0.5 shadow-md"
-                    >
-                      {ps.skill.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
             </>
           )}
 

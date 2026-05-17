@@ -27,27 +27,19 @@ const INDUSTRY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default function EmployerProfilePage({
-  params,
-}: {
-  params: Promise<{ profileId: string }>;
-}) {
+export default function CompanyPublicPage({ params }: { params: Promise<{ profileId: string }> }) {
   const { profileId } = use(params);
 
-  const {
-    data: profile,
-    isLoading,
-    error,
-  } = trpc.employer.getPublicProfile.useQuery({ id: profileId });
+  const { data: company, isLoading, error } = trpc.company.getPublic.useQuery({ id: profileId });
 
   if (isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
   }
 
-  if (error || !profile) {
+  if (error || !company) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p>This employer profile was not found.</p>
+        <p>This company was not found.</p>
         <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
@@ -66,24 +58,22 @@ export default function EmployerProfilePage({
       <div className="mt-4 mb-6">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
-            <h1 className="text-xl font-medium">{profile.companyName}</h1>
+            <h1 className="text-xl font-medium">{company.companyName}</h1>
             <p className="mt-1 text-sm">
-              {profile.city}, {profile.state}
-              {profile.industry && ` · ${INDUSTRY_LABELS[profile.industry] ?? profile.industry}`}
+              {company.city}, {company.state}
+              {company.industry && ` · ${INDUSTRY_LABELS[company.industry] ?? company.industry}`}
             </p>
           </div>
-          <ResponsiveBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
+          <ResponsiveBadge isResponsive={company.isResponsive} isNew={company.isNew} />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
-            {profile._count.jobPostings === 1
-              ? "1 active job"
-              : `${profile._count.jobPostings} jobs`}
+            {company._count.jobs === 1 ? "1 active job" : `${company._count.jobs} jobs`}
           </span>
-          {profile.website && (
+          {company.website && (
             <a
-              href={profile.website}
+              href={company.website}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-blue-dark-3 hover:bg-blue-dark-3/70 rounded-full px-3 py-1 text-sm transition-colors"
@@ -97,25 +87,25 @@ export default function EmployerProfilePage({
       <Separator />
 
       {/* About */}
-      {profile.aboutCompany && (
+      {company.aboutCompany && (
         <div className="my-6">
-          <h2 className="mb-3 font-medium">About {profile.companyName}</h2>
-          <p className="text-sm whitespace-pre-wrap">{profile.aboutCompany}</p>
+          <h2 className="mb-3 font-medium">About {company.companyName}</h2>
+          <p className="text-sm whitespace-pre-wrap">{company.aboutCompany}</p>
         </div>
       )}
 
       {/* Mission */}
-      {profile.missionText && (
+      {company.missionText && (
         <>
-          {profile.aboutCompany && <Separator />}
+          {company.aboutCompany && <Separator />}
           <div className="my-6">
             <h2 className="mb-3 font-medium">Why we give people a chance</h2>
-            <p className="text-sm whitespace-pre-wrap">{profile.missionText}</p>
+            <p className="text-sm whitespace-pre-wrap">{company.missionText}</p>
           </div>
         </>
       )}
 
-      {/* CTA to job listings filtered to this employer */}
+      {/* CTA */}
       <Separator />
       <div className="mt-8">
         <Link href="/jobs">

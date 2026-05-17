@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { UpdateSeekerProfileSchema, type UpdateSeekerProfileInput } from "@/lib/schemas/seeker";
 import {
@@ -27,6 +28,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { LocationPicker } from "@/components/ui/location-picker";
 
@@ -52,14 +61,15 @@ const EDUCATION_OPTIONS = [
 
 export default function SeekerProfileEditPage() {
   const { data: session } = useSession();
+  const router = useRouter();
   const { data: profile, isLoading } = trpc.seeker.getMyFullProfile.useQuery();
-  const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const [saved, setSaved] = useState(false);
   const [emailInput, setEmailInput] = useState("");
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   const form = useForm<UpdateSeekerProfileInput>({
     resolver: zodResolver(UpdateSeekerProfileSchema),
@@ -71,7 +81,6 @@ export default function SeekerProfileEditPage() {
       workAuthorization: false,
       availableDays: [],
       jobSeekText: "",
-      skillIds: [],
       languageIds: [],
     },
   });
@@ -90,7 +99,6 @@ export default function SeekerProfileEditPage() {
       otherSkills: profile.otherSkills ?? undefined,
       otherLanguages: profile.otherLanguages ?? undefined,
       about: profile.about ?? undefined,
-      skillIds: profile.skillIds,
       languageIds: profile.languageIds,
     });
   }, [profile, form]);
@@ -107,6 +115,13 @@ export default function SeekerProfileEditPage() {
       setEmailSent(true);
       setShowEmailForm(false);
       setEmailInput("");
+    },
+  });
+
+  const deleteAccount = trpc.user.deleteAccount.useMutation({
+    onSuccess: async () => {
+      await signOut({ redirect: false });
+      router.replace("/sign-in");
     },
   });
 
@@ -317,53 +332,6 @@ export default function SeekerProfileEditPage() {
 
           <Separator />
 
-          {/* Skills */}
-          {skillGroups && Object.keys(skillGroups).length > 0 && (
-            <FormField
-              control={form.control}
-              name="skillIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Skills</FormLabel>
-                  <FormDescription>Select the skills you have or are developing.</FormDescription>
-                  <div className="mt-2 space-y-4">
-                    {Object.entries(skillGroups).map(([category, skills]) => (
-                      <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                          {category}
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {skills.map((skill) => (
-                            <label
-                              key={skill.id}
-                              className="flex cursor-pointer items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(skill.id) ?? false}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value ?? [];
-                                  field.onChange(
-                                    checked
-                                      ? [...current, skill.id]
-                                      : current.filter((id) => id !== skill.id),
-                                  );
-                                }}
-                              />
-                              <span className="text-sm">{skill.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <Separator />
-
           {/* Optional fields */}
           <div className="space-y-6">
             <h2 className="font-medium">Optional details</h2>
@@ -492,6 +460,51 @@ export default function SeekerProfileEditPage() {
           </div>
         </form>
       </Form>
+
+      <Separator className="my-10" />
+
+      <div className="space-y-3">
+        <h2 className="font-medium">Danger zone</h2>
+        <p className="text-muted-foreground text-sm">
+          Permanently delete your account and all associated data.
+        </p>
+        <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
+          Delete account
+        </Button>
+      </div>
+
+      <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete account?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete your profile and all your applications. This cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteAccount.isError && (
+            <p className="text-danger text-sm">
+              {deleteAccount.error.message ?? "Something went wrong."}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setDeleteAccountOpen(false)}
+              disabled={deleteAccount.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteAccount.mutate()}
+              disabled={deleteAccount.isPending}
+            >
+              {deleteAccount.isPending ? "Deleting…" : "Yes, delete everything"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

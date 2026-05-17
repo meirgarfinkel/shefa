@@ -31,7 +31,7 @@ export async function runDailyDigestJob(db: PrismaClient = prisma): Promise<void
             createdAt: { gte: since },
             senderId: { not: prefs.userId },
             conversation: {
-              OR: [{ participantAId: prefs.userId }, { participantBId: prefs.userId }],
+              OR: [{ seekerId: prefs.userId }, { employerId: prefs.userId }],
             },
           },
           include: {
@@ -69,7 +69,7 @@ export async function runDailyDigestJob(db: PrismaClient = prisma): Promise<void
         const applications = await db.application.findMany({
           where: {
             createdAt: { gte: since },
-            job: { postedById: prefs.userId },
+            job: { employerId: prefs.userId },
           },
           include: {
             job: { select: { id: true, title: true } },

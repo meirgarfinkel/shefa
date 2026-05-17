@@ -25,7 +25,10 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
         name="state"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>State{required ? " *" : ""}</FormLabel>
+            <FormLabel>
+              State
+              {required && <span className="ml-.5 text-danger">*</span>}
+            </FormLabel>
             <Select
               onValueChange={(val) => {
                 field.onChange(val);
@@ -38,7 +41,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
                   <SelectValue placeholder="Select state…" />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent align="start">
                 {states.map((s) => (
                   <SelectItem key={s.abbr} value={s.abbr}>
                     {s.name}
@@ -56,7 +59,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
         name="city"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>City{required ? " *" : ""}</FormLabel>
+            <FormLabel>City{required && <span className="ml-.5 text-danger">*</span>}</FormLabel>
             <Select
               onValueChange={field.onChange}
               value={field.value ?? ""}
@@ -75,7 +78,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
                   />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent>
+              <SelectContent align="end">
                 {/* Ensure the current value is always a valid option while the list
                     is loading — otherwise Radix can't match the value and shows the
                     placeholder even after cities arrive. */}

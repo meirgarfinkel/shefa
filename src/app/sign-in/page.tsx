@@ -49,13 +49,7 @@ export default function SignInPage() {
           <CardDescription>Use Google or a magic link to sign in.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <Button
-            type="button"
-            variant="ghost"
-            className="bg-blue-dark-3 hover:bg-blue-dark-2 w-full transition-colors duration-100"
-            onClick={handleGoogleSignIn}
-            disabled={googleLoading}
-          >
+          <Button type="button" onClick={handleGoogleSignIn} disabled={googleLoading}>
             {googleLoading ? "Redirecting…" : "Continue with Google"}
           </Button>
 
@@ -63,6 +57,7 @@ export default function SignInPage() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <Input
+              variant="secondary"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -70,7 +65,7 @@ export default function SignInPage() {
               required
             />
             <Button type="submit" disabled={loading}>
-              {loading ? "Sending…" : "Send magic link"}
+              {loading ? "Sending…" : "Send Email"}
             </Button>
           </form>
         </CardContent>

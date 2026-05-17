@@ -24,7 +24,7 @@ export const applicationRouter = createTRPCRouter({
 
     const job = await ctx.prisma.jobPosting.findUnique({
       where: { id: input.jobId },
-      select: { id: true, status: true, postedById: true },
+      select: { id: true, status: true, employerId: true },
     });
     if (!job) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
@@ -38,7 +38,6 @@ export const applicationRouter = createTRPCRouter({
       application = await ctx.prisma.application.create({
         data: {
           seekerId: ctx.user.id,
-          seekerProfileId: profile.id,
           jobId: input.jobId,
           message: input.message,
         },
@@ -56,7 +55,7 @@ export const applicationRouter = createTRPCRouter({
     }
 
     // Fire-and-forget — notification failure must not fail the submit
-    scheduleApplicationNotify(input.jobId, job.postedById).catch((err: unknown) => {
+    scheduleApplicationNotify(input.jobId, job.employerId).catch((err: unknown) => {
       console.error("[application.submit] Failed to schedule notification:", err);
     });
 
@@ -79,7 +78,8 @@ export const applicationRouter = createTRPCRouter({
             state: true,
             jobType: true,
             status: true,
-            employerProfile: { select: { id: true, companyName: true } },
+            employerId: true,
+            company: { select: { id: true, name: true } },
           },
         },
       },
@@ -94,27 +94,32 @@ export const applicationRouter = createTRPCRouter({
 
     const job = await ctx.prisma.jobPosting.findUnique({
       where: { id: input.jobId },
-      select: { id: true, postedById: true },
+      select: { id: true, employerId: true },
     });
     if (!job) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
     }
-    if (job.postedById !== ctx.user.id) {
+    if (job.employerId !== ctx.user.id) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
     return ctx.prisma.application.findMany({
       where: { jobId: input.jobId },
       include: {
-        seekerProfile: {
+        seeker: {
           select: {
             id: true,
-            firstName: true,
-            lastName: true,
-            city: true,
-            state: true,
-            workAuthorization: true,
-            availableDays: true,
+            seekerProfile: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                city: true,
+                state: true,
+                workAuthorization: true,
+                availableDays: true,
+              },
+            },
           },
         },
       },
@@ -131,12 +136,12 @@ export const applicationRouter = createTRPCRouter({
 
       const application = await ctx.prisma.application.findUnique({
         where: { id: input.id },
-        select: { id: true, job: { select: { postedById: true } } },
+        select: { id: true, job: { select: { employerId: true } } },
       });
       if (!application) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
-      if (application.job.postedById !== ctx.user.id) {
+      if (application.job.employerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 

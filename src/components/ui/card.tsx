@@ -12,13 +12,13 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "bg-card/90 hover:bg-card/30 flex flex-col overflow-hidden rounded-md p-5 shadow-md backdrop-blur-lg hover:shadow-lg",
+        "bg-secondary/50 hover:bg-card/30 flex flex-col overflow-hidden rounded-md p-5 shadow-lg backdrop-blur-lg hover:shadow-sm",
         className,
       )}
       {...props}
     >
       {/* Subtle top lighting gradient */}
-      <div className="pointer-events-none absolute inset-0 z-0 rounded-md bg-linear-to-b from-white/15 via-transparent to-transparent" />
+      <div className="pointer-events-none absolute inset-0 z-0 rounded-md bg-linear-to-b from-white/20 via-transparent to-transparent" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-col gap-4">{props.children}</div>
@@ -70,7 +70,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("bg-blue-dark-3 flex items-center rounded-b-md border-t p-4", className)}
+      className={cn("bg-blue-dark-3 rounded-b-md23 flex items-center border-t p-4", className)}
       {...props}
     />
   );

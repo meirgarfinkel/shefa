@@ -9,7 +9,12 @@ const PUBLIC_PATHS = ["/sign-in", "/verify-request", "/verify", "/api/auth", "/j
 
 const ROLE_SELECT_PATH = "/role-select";
 
-const EMPLOYER_ONLY_PREFIXES = ["/employer/dashboard", "/employer/jobs", "/employer/profile"];
+const EMPLOYER_ONLY_PREFIXES = [
+  "/employer/dashboard",
+  "/employer/jobs",
+  "/employer/profile",
+  "/employer/company",
+];
 
 const SEEKER_ONLY_PREFIXES = ["/seeker/applications", "/seeker/profile"];
 

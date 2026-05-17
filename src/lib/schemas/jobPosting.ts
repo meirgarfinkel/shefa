@@ -8,6 +8,7 @@ export const JobStatusEnum = z.enum(["ACTIVE", "PAUSED", "EXPIRED", "FILLED", "C
 const UserSettableJobStatus = z.enum(["ACTIVE", "PAUSED", "FILLED"]);
 
 export const CreateJobPostingSchema = z.object({
+  companyId: z.string(),
   title: z.string().min(1).max(255),
   description: z.string().min(1).max(5000),
   jobType: JobType,
@@ -24,7 +25,6 @@ export const CreateJobPostingSchema = z.object({
   workAuthRequired: z.boolean(),
   whatWeTeach: z.string().max(1000).optional(),
   whatWereLookingFor: z.string().max(1000).optional(),
-  preferredSkillIds: z.array(z.string()).default([]),
   requiredLanguageIds: z.array(z.string()).default([]),
 });
 
@@ -46,21 +46,20 @@ export const UpdateJobPostingSchema = z.object({
   workAuthRequired: z.boolean().optional(),
   whatWeTeach: z.string().max(1000).optional(),
   whatWereLookingFor: z.string().max(1000).optional(),
-  preferredSkillIds: z.array(z.string()).optional(),
   requiredLanguageIds: z.array(z.string()).optional(),
   status: UserSettableJobStatus.optional(),
 });
 
 export const ListJobPostingsSchema = z.object({
   status: z.array(JobStatusEnum).optional(),
-  employerProfileId: z.string().optional(),
+  companyId: z.string().optional(),
+  myJobs: z.boolean().optional(),
   city: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
   radiusMiles: z.number().positive().max(500).optional(),
   jobType: z.array(JobType).optional(),
   workArrangement: z.array(WorkArrangement).optional(),
   workDays: z.array(DayOfWeek).optional(),
-  skillIds: z.array(z.string()).optional(),
   sortBy: z.enum(["newest", "closest", "pay"]).default("newest"),
 });
 

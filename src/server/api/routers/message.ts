@@ -11,7 +11,7 @@ async function getConversationForParticipant(
 ) {
   return prisma.conversation.findUnique({
     where: { id: conversationId },
-    select: { participantAId: true, participantBId: true, aBlockedB: true, bBlockedA: true },
+    select: { seekerId: true, employerId: true, seekerBlocked: true, employerBlocked: true },
   });
 }
 
@@ -30,14 +30,14 @@ export const messageRouter = createTRPCRouter({
       const conv = await getConversationForParticipant(ctx.prisma, conversationId);
       if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const isA = conv.participantAId === callerId;
-      const isB = conv.participantBId === callerId;
-      if (!isA && !isB) throw new TRPCError({ code: "FORBIDDEN" });
+      const isSeeker = conv.seekerId === callerId;
+      const isEmployer = conv.employerId === callerId;
+      if (!isSeeker && !isEmployer) throw new TRPCError({ code: "FORBIDDEN" });
 
       // Either side's block prevents all messaging
-      if (conv.aBlockedB || conv.bBlockedA) throw new TRPCError({ code: "FORBIDDEN" });
+      if (conv.seekerBlocked || conv.employerBlocked) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const recipientId = isA ? conv.participantBId : conv.participantAId;
+      const recipientId = isSeeker ? conv.employerId : conv.seekerId;
 
       const now = new Date();
       const message = await ctx.prisma.message.create({
@@ -67,7 +67,7 @@ export const messageRouter = createTRPCRouter({
     const conv = await getConversationForParticipant(ctx.prisma, conversationId);
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-    if (conv.participantAId !== callerId && conv.participantBId !== callerId) {
+    if (conv.seekerId !== callerId && conv.employerId !== callerId) {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 

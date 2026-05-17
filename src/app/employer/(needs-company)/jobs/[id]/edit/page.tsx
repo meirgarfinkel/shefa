@@ -58,7 +58,6 @@ export default function JobEditPage() {
   const jobId = params.id;
 
   const { data: job, isLoading } = trpc.jobPosting.getById.useQuery({ id: jobId });
-  const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const [saved, setSaved] = useState(false);
@@ -85,7 +84,6 @@ export default function JobEditPage() {
             whatWeTeach: job.whatWeTeach ?? undefined,
             whatWereLookingFor: job.whatWereLookingFor ?? undefined,
             status: job.status as EditFormValues["status"],
-            preferredSkillIds: job.preferredSkills.map((s) => s.skillId),
             requiredLanguageIds: job.requiredLanguages.map((l) => l.languageId),
           }
         : undefined,
@@ -106,7 +104,6 @@ export default function JobEditPage() {
       workAuthRequired: false,
       whatWeTeach: "",
       whatWereLookingFor: "",
-      preferredSkillIds: [],
       requiredLanguageIds: [],
     },
     values: formValues,
@@ -463,56 +460,6 @@ export default function JobEditPage() {
               />
             )}
           </div>
-
-          <Separator />
-
-          {/* Skills */}
-          {skillGroups && Object.keys(skillGroups).length > 0 && (
-            <FormField
-              control={form.control}
-              name="preferredSkillIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred skills</FormLabel>
-                  <FormDescription>
-                    Helpful but not required — candidates are here to learn.
-                  </FormDescription>
-                  <div className="mt-2 space-y-4">
-                    {Object.entries(skillGroups).map(([category, skills]) => (
-                      <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                          {category}
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {skills.map((skill) => (
-                            <label
-                              key={skill.id}
-                              className="flex cursor-pointer items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(skill.id) ?? false}
-                                disabled={isClosed}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value ?? [];
-                                  field.onChange(
-                                    checked
-                                      ? [...current, skill.id]
-                                      : current.filter((id) => id !== skill.id),
-                                  );
-                                }}
-                              />
-                              <span className="text-sm">{skill.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
 
           <Separator />
 

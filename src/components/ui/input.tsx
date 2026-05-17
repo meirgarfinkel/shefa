@@ -7,9 +7,10 @@ const inputVariants = cva(
   {
     variants: {
       variant: {
-        default:
-          "bg-popover hover:bg-dark/85 focus:bg-popover placeholder:text-gray-light-1 text-gray-light-1",
-        light: "bg-popover hover:bg-card/40 focus:bg-card/20",
+        default: "bg-popover hover:bg-popover/80 focus:bg-popover/90 text-popover-foreground",
+        light:
+          "bg-popover-foreground hover:bg-popover-foreground/80 focus:popover-foreground/80 text-popover",
+        secondary: "bg-secondary/80 focus:bg-secondary/40 placeholder:text-popover/50",
       },
     },
     defaultVariants: {

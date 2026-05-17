@@ -8,10 +8,14 @@ interface StatCardProps {
 
 export function StatCard({ label, value, className }: StatCardProps) {
   return (
-    <div className={cn("bg-popover relative rounded-md p-4", className)}>
-      <div className="pointer-events-none absolute inset-0 rounded-md bg-linear-to-b from-white/7 via-transparent to-transparent" />
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className="text-popover-foreground mt-1 text-xl font-medium">{value}</p>
+    <div
+      className={cn(
+        "bg-primary flex items-center justify-between rounded-md border bg-linear-to-b from-white/60 via-transparent to-transparent p-4 font-medium",
+        className,
+      )}
+    >
+      <p className="text-muted-foreground">{label}</p>
+      <p className="text-popover text-xl">{value}</p>
     </div>
   );
 }

@@ -22,30 +22,26 @@ async function lookupCityCoords(
 
 export const jobPostingRouter = createTRPCRouter({
   create: protectedProcedure.input(CreateJobPostingSchema).mutation(async ({ ctx, input }) => {
-    if (ctx.user.role !== "EMPLOYER") {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
+    if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
-    const profile = await ctx.prisma.employerProfile.findUnique({
-      where: { userId: ctx.user.id },
-      select: { id: true },
+    // Verify the company belongs to the caller
+    const company = await ctx.prisma.company.findUnique({
+      where: { id: input.companyId },
+      select: { id: true, ownerId: true },
     });
-    if (!profile) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Employer profile not found" });
+    if (!company || company.ownerId !== ctx.user.id) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
     }
 
-    const { preferredSkillIds, requiredLanguageIds, ...fields } = input;
+    const { companyId, requiredLanguageIds, ...fields } = input;
     const coords = await lookupCityCoords(ctx.prisma, fields.city, fields.state);
 
     return ctx.prisma.jobPosting.create({
       data: {
         ...fields,
-        employerProfileId: profile.id,
-        postedById: ctx.user.id,
+        employerId: ctx.user.id,
+        companyId,
         ...(coords && { lat: coords.lat, lon: coords.lon }),
-        ...(preferredSkillIds.length && {
-          preferredSkills: { create: preferredSkillIds.map((skillId) => ({ skillId })) },
-        }),
         ...(requiredLanguageIds.length && {
           requiredLanguages: {
             create: requiredLanguageIds.map((languageId) => ({ languageId })),
@@ -57,12 +53,16 @@ export const jobPostingRouter = createTRPCRouter({
 
   list: publicProcedure.input(ListJobPostingsSchema).query(async ({ ctx, input }) => {
     let isOwnerQuery = false;
-    if (ctx.session?.user?.role === "EMPLOYER" && input.employerProfileId) {
-      const callerProfile = await ctx.prisma.employerProfile.findUnique({
-        where: { userId: ctx.session.user.id },
-        select: { id: true },
-      });
-      isOwnerQuery = callerProfile?.id === input.employerProfileId;
+    if (ctx.session?.user?.role === "EMPLOYER") {
+      if (input.myJobs) {
+        isOwnerQuery = true;
+      } else if (input.companyId) {
+        const company = await ctx.prisma.company.findUnique({
+          where: { id: input.companyId, ownerId: ctx.session.user.id },
+          select: { id: true },
+        });
+        isOwnerQuery = !!company;
+      }
     }
 
     const statusFilter = isOwnerQuery
@@ -71,8 +71,6 @@ export const jobPostingRouter = createTRPCRouter({
         : undefined
       : { in: ["ACTIVE" as const] };
 
-    // Haversine radius search: find jobs within radiusMiles of the reference city.
-    // Always ORDER BY distance so geoIds are distance-sorted for "closest" sort.
     let geoIds: string[] | undefined;
     if (input.radiusMiles && input.city && input.state) {
       const coords = await lookupCityCoords(ctx.prisma, input.city, input.state);
@@ -99,11 +97,9 @@ export const jobPostingRouter = createTRPCRouter({
 
     const results = await ctx.prisma.jobPosting.findMany({
       where: {
-        ...(input.employerProfileId && { employerProfileId: input.employerProfileId }),
+        ...(input.companyId && { companyId: input.companyId }),
+        ...(input.myJobs && ctx.session?.user?.id && { employerId: ctx.session.user.id }),
         ...(statusFilter !== undefined && { status: statusFilter }),
-        // When radius search succeeded, filter by geo IDs.
-        // When radius was requested but geocoding failed, fall back to text match.
-        // When no radius was requested (any distance), don't filter by location.
         ...(geoIds !== undefined
           ? { id: { in: geoIds } }
           : input.radiusMiles
@@ -115,23 +111,15 @@ export const jobPostingRouter = createTRPCRouter({
         ...(input.jobType?.length && { jobType: { in: input.jobType } }),
         ...(input.workArrangement?.length && { workArrangement: { in: input.workArrangement } }),
         ...(input.workDays?.length && { workDays: { hasSome: input.workDays } }),
-        ...(input.skillIds?.length && {
-          preferredSkills: { some: { skillId: { in: input.skillIds } } },
-        }),
       },
       include: {
-        preferredSkills: { include: { skill: true } },
         requiredLanguages: { include: { language: true } },
-        employerProfile: {
-          select: { companyName: true, city: true, state: true },
-        },
+        company: { select: { id: true, name: true, city: true, state: true } },
         _count: { select: { applications: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // When sorting by closest and we have distance-sorted geoIds, re-order in JS
-    // (Prisma's `id IN (...)` doesn't preserve array order)
     if (input.sortBy === "closest" && geoIds) {
       const byId = new Map(results.map((r) => [r.id, r]));
       return geoIds.map((id) => byId.get(id)).filter((r) => r !== undefined);
@@ -144,40 +132,26 @@ export const jobPostingRouter = createTRPCRouter({
     const posting = await ctx.prisma.jobPosting.findUnique({
       where: { id: input.id },
       include: {
-        preferredSkills: { include: { skill: true } },
         requiredLanguages: { include: { language: true } },
-        employerProfile: {
+        company: {
           select: {
             id: true,
-            companyName: true,
+            name: true,
             city: true,
             state: true,
             industry: true,
-            isResponsive: true,
+            owner: { select: { employerProfile: { select: { isResponsive: true } } } },
           },
         },
       },
     });
 
-    if (!posting) {
-      throw new TRPCError({ code: "NOT_FOUND" });
-    }
+    if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
 
-    if (posting.status === "ACTIVE") {
-      return posting;
-    }
+    if (posting.status === "ACTIVE") return posting;
 
     // Non-active: only the owning employer may view
-    let callerProfileId: string | undefined;
-    if (ctx.session?.user?.role === "EMPLOYER") {
-      const callerProfile = await ctx.prisma.employerProfile.findUnique({
-        where: { userId: ctx.session.user.id },
-        select: { id: true },
-      });
-      callerProfileId = callerProfile?.id;
-    }
-
-    if (callerProfileId !== posting.employerProfileId) {
+    if (ctx.session?.user?.id !== posting.employerId) {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
@@ -185,25 +159,17 @@ export const jobPostingRouter = createTRPCRouter({
   }),
 
   update: protectedProcedure.input(UpdateJobPostingSchema).mutation(async ({ ctx, input }) => {
-    if (ctx.user.role !== "EMPLOYER") {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
+    if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
-    const { id, preferredSkillIds, requiredLanguageIds, ...fields } = input;
+    const { id, requiredLanguageIds, ...fields } = input;
 
     const posting = await ctx.prisma.jobPosting.findUnique({
       where: { id },
-      select: { id: true, postedById: true, status: true, city: true, state: true },
+      select: { id: true, employerId: true, status: true, city: true, state: true },
     });
 
-    if (!posting) {
-      throw new TRPCError({ code: "NOT_FOUND" });
-    }
-
-    if (posting.postedById !== ctx.user.id) {
-      throw new TRPCError({ code: "FORBIDDEN" });
-    }
-
+    if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
+    if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
     if (posting.status === "CLOSED") {
       throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update a closed posting" });
     }
@@ -220,12 +186,6 @@ export const jobPostingRouter = createTRPCRouter({
       data: {
         ...fields,
         ...(coords && { lat: coords.lat, lon: coords.lon }),
-        ...(preferredSkillIds !== undefined && {
-          preferredSkills: {
-            deleteMany: {},
-            create: preferredSkillIds.map((skillId) => ({ skillId })),
-          },
-        }),
         ...(requiredLanguageIds !== undefined && {
           requiredLanguages: {
             deleteMany: {},
@@ -239,9 +199,6 @@ export const jobPostingRouter = createTRPCRouter({
   search: publicProcedure
     .input(z.object({ q: z.string().min(1).max(200).trim() }))
     .query(async ({ ctx, input }) => {
-      // <% triggers the GIN trigram index on each column branch.
-      // word_similarity() is only used in SELECT for weighted scoring (never in WHERE).
-      // Title is weighted 2x; over-fetch 100 so the client can re-sort without re-querying.
       const rows = await ctx.prisma.$queryRaw<{ id: string; rank: number }[]>`
         SELECT id,
                (
@@ -268,9 +225,8 @@ export const jobPostingRouter = createTRPCRouter({
       const jobs = await ctx.prisma.jobPosting.findMany({
         where: { id: { in: ids } },
         include: {
-          preferredSkills: { include: { skill: true } },
           requiredLanguages: { include: { language: true } },
-          employerProfile: { select: { companyName: true, city: true, state: true } },
+          company: { select: { id: true, name: true, city: true, state: true } },
           _count: { select: { applications: true } },
         },
       });
@@ -282,25 +238,77 @@ export const jobPostingRouter = createTRPCRouter({
         .map((j) => ({ ...j, rank: rankMap[j.id] ?? 0 }));
     }),
 
-  delete: protectedProcedure
+  duplicate: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "EMPLOYER") {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
+
+      const source = await ctx.prisma.jobPosting.findUnique({
+        where: { id: input.id },
+        include: { requiredLanguages: true },
+      });
+      if (!source) throw new TRPCError({ code: "NOT_FOUND" });
+      if (source.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+      return ctx.prisma.jobPosting.create({
+        data: {
+          employerId: source.employerId,
+          companyId: source.companyId,
+          title: source.title,
+          description: source.description,
+          jobType: source.jobType,
+          workArrangement: source.workArrangement,
+          city: source.city,
+          state: source.state,
+          lat: source.lat,
+          lon: source.lon,
+          minHourlyRate: source.minHourlyRate,
+          payNotes: source.payNotes,
+          workDays: source.workDays,
+          scheduleNotes: source.scheduleNotes,
+          workAuthRequired: source.workAuthRequired,
+          whatWeTeach: source.whatWeTeach,
+          whatWereLookingFor: source.whatWereLookingFor,
+          status: "PAUSED",
+          ...(source.requiredLanguages.length && {
+            requiredLanguages: {
+              create: source.requiredLanguages.map((l) => ({ languageId: l.languageId })),
+            },
+          }),
+        },
+      });
+    }),
+
+  confirmFreshness: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
       const posting = await ctx.prisma.jobPosting.findUnique({
         where: { id: input.id },
-        select: { id: true, postedById: true },
+        select: { id: true, employerId: true },
+      });
+      if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
+      if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+      return ctx.prisma.jobPosting.update({
+        where: { id: input.id },
+        data: { lastVerifiedAt: new Date() },
+      });
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
+
+      const posting = await ctx.prisma.jobPosting.findUnique({
+        where: { id: input.id },
+        select: { id: true, employerId: true },
       });
 
-      if (!posting) {
-        throw new TRPCError({ code: "NOT_FOUND" });
-      }
-
-      if (posting.postedById !== ctx.user.id) {
-        throw new TRPCError({ code: "FORBIDDEN" });
-      }
+      if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
+      if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
 
       return ctx.prisma.jobPosting.update({
         where: { id: input.id },

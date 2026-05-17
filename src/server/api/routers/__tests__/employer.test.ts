@@ -11,30 +11,17 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 function makeMockPrisma() {
   return {
     user: {
+      findUnique: vi.fn(),
       update: vi.fn().mockResolvedValue({}),
     },
     employerProfile: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
-  };
-}
-
-function makePublicProfile(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "profile-1",
-    companyName: "Acme Corp",
-    city: "New York",
-    state: "NY",
-    industry: "RETAIL",
-    website: "https://acme.com",
-    aboutCompany: "We do things.",
-    missionText: "Give people a chance.",
-    isResponsive: true,
-    responsivenessUpdatedAt: new Date("2026-01-01"),
-    status: "ACTIVE",
-    _count: { jobPostings: 3 },
-    ...overrides,
+    application: {
+      findMany: vi.fn(),
+    },
   };
 }
 
@@ -57,77 +44,144 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
 
 const createCaller = createCallerFactory(employerRouter);
 
-const VALID_INPUT = {
-  firstName: "Bob",
-  lastName: "Smith",
+const VALID_PROFILE_INPUT = {
+  firstName: "Ada",
+  lastName: "Lovelace",
   isAdult: true as const,
-  companyName: "Acme Corp",
-  companySize: "SIZE_1_10" as const,
-  city: "New York",
-  state: "NY",
 };
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+const STORED_PROFILE = {
+  id: "profile-1",
+  userId: "user-1",
+  firstName: "Ada",
+  lastName: "Lovelace",
+  roleAtCompany: null,
+  isResponsive: false,
+  responsivenessUpdatedAt: null,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+};
+
+// ── employer.getProfile ───────────────────────────────────────────────────────
+
+describe("employer.getProfile", () => {
+  let db: ReturnType<typeof makeMockPrisma>;
+
+  beforeEach(() => {
+    db = makeMockPrisma();
+  });
+
+  it("returns the employer profile when it exists", async () => {
+    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    const result = await caller.getProfile();
+    expect(result).toMatchObject({ id: "profile-1", firstName: "Ada" });
+  });
+
+  it("returns null when no profile exists yet", async () => {
+    db.employerProfile.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    const result = await caller.getProfile();
+    expect(result).toBeNull();
+  });
+
+  it("queries by userId from session, not from input", async () => {
+    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
+    await caller.getProfile();
+    expect(db.employerProfile.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-42" } }),
+    );
+  });
+
+  it("throws FORBIDDEN for a SEEKER", async () => {
+    const caller = createCaller(makeCtx("SEEKER", db));
+    await expect(caller.getProfile()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("throws UNAUTHORIZED for unauthenticated callers", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.getProfile()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+});
+
+// ── employer.createProfile ────────────────────────────────────────────────────
 
 describe("employer.createProfile", () => {
   let db: ReturnType<typeof makeMockPrisma>;
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue(null);
-    db.employerProfile.create.mockResolvedValue({ id: "profile-1", userId: "user-1" });
+    db.employerProfile.findUnique.mockResolvedValue(null); // no existing profile
+    db.user.findUnique.mockResolvedValue({ isAdult: false });
+    db.employerProfile.create.mockResolvedValue(STORED_PROFILE);
   });
 
   // ── Happy path ──
 
   it("creates a profile and returns it", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    const result = await caller.createProfile(VALID_INPUT);
-    expect(result).toMatchObject({ id: "profile-1" });
+    const result = await caller.createProfile(VALID_PROFILE_INPUT);
+    expect(result).toMatchObject({ id: "profile-1", firstName: "Ada" });
   });
 
-  it("always sets userId from session, not from input", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", db, "user-1"));
-    await caller.createProfile(VALID_INPUT);
+  it("sets userId from session, not from input", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
+    await caller.createProfile(VALID_PROFILE_INPUT);
     const data = db.employerProfile.create.mock.calls[0][0].data;
-    expect(data.userId).toBe("user-1");
+    expect(data.userId).toBe("user-42");
   });
 
-  it("stores optional fields when provided", async () => {
+  it("stores optional roleAtCompany when provided", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.createProfile({ ...VALID_INPUT, website: "https://acme.com", industry: "RETAIL" });
+    await caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "CEO" });
     const data = db.employerProfile.create.mock.calls[0][0].data;
-    expect(data.website).toBe("https://acme.com");
-    expect(data.industry).toBe("RETAIL");
+    expect(data.roleAtCompany).toBe("CEO");
+  });
+
+  it("sets isAdult on user when not already an adult", async () => {
+    db.user.findUnique.mockResolvedValue({ isAdult: false });
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await caller.createProfile(VALID_PROFILE_INPUT);
+    expect(db.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { isAdult: true } }),
+    );
+  });
+
+  it("skips isAdult update when user is already an adult", async () => {
+    db.user.findUnique.mockResolvedValue({ isAdult: true });
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await caller.createProfile(VALID_PROFILE_INPUT);
+    expect(db.user.update).not.toHaveBeenCalled();
   });
 
   // ── Boundary cases ──
 
-  it("accepts aboutCompany at exactly 2000 chars", async () => {
+  it("accepts firstName at exactly 100 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2000) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, firstName: "a".repeat(100) }),
     ).resolves.toBeDefined();
   });
 
-  it("rejects aboutCompany longer than 2000 chars", async () => {
+  it("rejects firstName longer than 100 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, aboutCompany: "a".repeat(2001) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, firstName: "a".repeat(101) }),
     ).rejects.toThrow(TRPCError);
   });
 
-  it("accepts missionText at exactly 1000 chars", async () => {
+  it("accepts roleAtCompany at exactly 200 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1000) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "a".repeat(200) }),
     ).resolves.toBeDefined();
   });
 
-  it("rejects missionText longer than 1000 chars", async () => {
+  it("rejects roleAtCompany longer than 200 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_INPUT, missionText: "a".repeat(1001) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "a".repeat(201) }),
     ).rejects.toThrow(TRPCError);
   });
 
@@ -135,171 +189,87 @@ describe("employer.createProfile", () => {
 
   it("throws UNAUTHORIZED when session is null", async () => {
     const caller = createCaller(makeCtx(null, db));
-    await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
+    await expect(caller.createProfile(VALID_PROFILE_INPUT)).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
 
   it("throws FORBIDDEN when called by a SEEKER", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
+    await expect(caller.createProfile(VALID_PROFILE_INPUT)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
   it("throws FORBIDDEN when called by an ADMIN", async () => {
     const caller = createCaller(makeCtx("ADMIN", db));
-    await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
+    await expect(caller.createProfile(VALID_PROFILE_INPUT)).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
-  // ── Duplicate ──
-
-  it("throws CONFLICT when a profile already exists", async () => {
-    db.employerProfile.findUnique.mockResolvedValue({ id: "existing" });
+  it("throws BAD_REQUEST when isAdult is missing and user is not yet adult", async () => {
+    db.user.findUnique.mockResolvedValue({ isAdult: false });
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
-      code: "CONFLICT",
+    const { isAdult: _isAdult, ...withoutAdult } = VALID_PROFILE_INPUT;
+    await expect(caller.createProfile(withoutAdult)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+  });
+
+  it("throws BAD_REQUEST when profile already exists", async () => {
+    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await expect(caller.createProfile(VALID_PROFILE_INPUT)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
     });
   });
 });
 
-describe("employer.getPublicProfile", () => {
+// ── employer.updateProfile ────────────────────────────────────────────────────
+
+describe("employer.updateProfile", () => {
   let db: ReturnType<typeof makeMockPrisma>;
 
   beforeEach(() => {
     db = makeMockPrisma();
+    db.employerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
+    db.employerProfile.update.mockResolvedValue({ ...STORED_PROFILE, firstName: "Updated" });
   });
 
-  // ── Happy path ──
+  it("updates the profile and returns it", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    const result = await caller.updateProfile({ firstName: "Updated", lastName: "Lovelace" });
+    expect(result).toMatchObject({ firstName: "Updated" });
+  });
 
-  it("returns public profile fields for a valid id", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile());
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result).toMatchObject({
-      id: "profile-1",
-      companyName: "Acme Corp",
-      city: "New York",
-      state: "NY",
-      isResponsive: true,
+  it("updates via userId from session, not profile id in input", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
+    await caller.updateProfile({ firstName: "X", lastName: "Y" });
+    expect(db.employerProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-42" } }),
+    );
+  });
+
+  it("throws NOT_FOUND when no profile exists", async () => {
+    db.employerProfile.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", db));
+    await expect(caller.updateProfile({ firstName: "X", lastName: "Y" })).rejects.toMatchObject({
+      code: "NOT_FOUND",
     });
   });
 
-  it("works for an unauthenticated caller", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile());
-    const caller = createCaller(makeCtx(null, db));
-    await expect(caller.getPublicProfile({ id: "profile-1" })).resolves.toBeDefined();
-  });
-
-  it("works for a seeker caller", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile());
+  it("throws FORBIDDEN for a SEEKER", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await expect(caller.getPublicProfile({ id: "profile-1" })).resolves.toBeDefined();
-  });
-
-  it("includes _count.jobPostings", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({ _count: { jobPostings: 5 } }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result._count.jobPostings).toBe(5);
-  });
-
-  it("returns isResponsive: false when employer has no scored conversations", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile({ isResponsive: false }));
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result.isResponsive).toBe(false);
-  });
-
-  it("does NOT expose responseRate or medianResponseHours or responsivenessScore", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({
-        responseRate: 0.9,
-        medianResponseHours: 12,
-        responsivenessScore: 0.9,
-      }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result).not.toHaveProperty("responseRate");
-    expect(result).not.toHaveProperty("medianResponseHours");
-    expect(result).not.toHaveProperty("responsivenessScore");
-    expect(result).not.toHaveProperty("responsivenessUpdatedAt");
-  });
-
-  it("sets isNew: true when responsivenessUpdatedAt is null", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({ responsivenessUpdatedAt: null }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result.isNew).toBe(true);
-  });
-
-  it("sets isNew: false when responsivenessUpdatedAt is set", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({ responsivenessUpdatedAt: new Date("2026-01-01") }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result.isNew).toBe(false);
-  });
-
-  it("returns profile even when status is PAUSED", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile({ status: "PAUSED" }));
-    const caller = createCaller(makeCtx(null, db));
-    await expect(caller.getPublicProfile({ id: "profile-1" })).resolves.toBeDefined();
-  });
-
-  // ── Boundary cases ──
-
-  it("returns null optional fields when not set", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({ industry: null, website: null, aboutCompany: null, missionText: null }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result.industry).toBeNull();
-    expect(result.website).toBeNull();
-  });
-
-  it("returns _count.jobPostings as 0 when no postings", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(
-      makePublicProfile({ _count: { jobPostings: 0 } }),
-    );
-    const caller = createCaller(makeCtx(null, db));
-    const result = await caller.getPublicProfile({ id: "profile-1" });
-    expect(result._count.jobPostings).toBe(0);
-  });
-
-  // ── Adversarial ──
-
-  it("throws NOT_FOUND for a non-existent id", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(null);
-    const caller = createCaller(makeCtx(null, db));
-    await expect(caller.getPublicProfile({ id: "does-not-exist" })).rejects.toMatchObject({
-      code: "NOT_FOUND",
+    await expect(caller.updateProfile({ firstName: "X", lastName: "Y" })).rejects.toMatchObject({
+      code: "FORBIDDEN",
     });
   });
 
-  it("throws NOT_FOUND for an empty string id", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(null);
+  it("throws UNAUTHORIZED for unauthenticated callers", async () => {
     const caller = createCaller(makeCtx(null, db));
-    await expect(caller.getPublicProfile({ id: "" })).rejects.toMatchObject({
-      code: "NOT_FOUND",
+    await expect(caller.updateProfile({ firstName: "X", lastName: "Y" })).rejects.toMatchObject({
+      code: "UNAUTHORIZED",
     });
-  });
-
-  it("queries by profile id, not userId", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(makePublicProfile());
-    const caller = createCaller(makeCtx(null, db));
-    await caller.getPublicProfile({ id: "profile-1" });
-    expect(db.employerProfile.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "profile-1" } }),
-    );
   });
 });

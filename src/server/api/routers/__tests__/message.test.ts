@@ -49,10 +49,10 @@ const SEEKER_ID = "seeker-1";
 
 const OPEN_CONV = {
   id: "conv-1",
-  participantAId: EMPLOYER_ID,
-  participantBId: SEEKER_ID,
-  aBlockedB: false,
-  bBlockedA: false,
+  seekerId: SEEKER_ID,
+  employerId: EMPLOYER_ID,
+  seekerBlocked: false,
+  employerBlocked: false,
 };
 
 const CREATED_MESSAGE = {
@@ -73,7 +73,7 @@ describe("send", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it("happy path: participantA sends message successfully", async () => {
+  it("happy path: employer sends message successfully", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
@@ -93,7 +93,7 @@ describe("send", () => {
     );
   });
 
-  it("happy path: participantB can also send", async () => {
+  it("happy path: seeker can also send", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, senderId: SEEKER_ID });
@@ -191,36 +191,36 @@ describe("send", () => {
     });
   });
 
-  it("aBlockedB = true and caller is participantA → FORBIDDEN", async () => {
+  it("employerBlocked = true → employer cannot send", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, aBlockedB: true });
+    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
-  it("bBlockedA = true and caller is participantB → FORBIDDEN", async () => {
+  it("seekerBlocked = true → seeker cannot send", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, bBlockedA: true });
+    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
-  it("participantB has blocked participantA (bBlockedA) → A cannot send either", async () => {
+  it("seekerBlocked = true → employer cannot send either", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, bBlockedA: true });
+    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
-  it("participantA has blocked participantB (aBlockedB) → B cannot send either", async () => {
+  it("employerBlocked = true → seeker cannot send either", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, aBlockedB: true });
+    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -234,7 +234,7 @@ describe("send", () => {
     });
   });
 
-  it("scheduleMessageNotify called after successful send — caller is participantA, recipient is participantB", async () => {
+  it("scheduleMessageNotify called after successful send — caller is employer, recipient is seeker", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
@@ -246,7 +246,7 @@ describe("send", () => {
     expect(vi.mocked(scheduleMessageNotify)).toHaveBeenCalledWith("conv-1", SEEKER_ID);
   });
 
-  it("scheduleMessageNotify called with recipientId = participantA when caller is participantB", async () => {
+  it("scheduleMessageNotify called with recipientId = employer when caller is seeker", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, senderId: SEEKER_ID });

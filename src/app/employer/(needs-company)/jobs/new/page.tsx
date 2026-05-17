@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect } from "react";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc/provider";
 import { CreateJobPostingSchema, type CreateJobPostingInput } from "@/lib/schemas/jobPosting";
@@ -30,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LocationPicker } from "@/components/ui/location-picker";
+import Link from "next/link";
 
 const DAYS = [
   { value: "SUN", label: "Sun" },
@@ -44,12 +46,13 @@ const DAYS = [
 export default function PostJobPage() {
   const router = useRouter();
 
-  const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
+  const { data: companies } = trpc.company.listMine.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(CreateJobPostingSchema),
     defaultValues: {
+      companyId: "",
       title: "",
       description: "",
       jobType: undefined,
@@ -62,10 +65,16 @@ export default function PostJobPage() {
       workAuthRequired: false,
       whatWeTeach: "",
       whatWereLookingFor: "",
-      preferredSkillIds: [],
       requiredLanguageIds: [],
     },
   });
+
+  // Auto-select the company when there's only one
+  useEffect(() => {
+    if (companies?.length === 1 && !form.getValues("companyId")) {
+      form.setValue("companyId", companies[0]!.id);
+    }
+  }, [companies, form]);
 
   const createPosting = trpc.jobPosting.create.useMutation({
     onSuccess: () => router.push("/employer/jobs"),
@@ -74,6 +83,9 @@ export default function PostJobPage() {
   function onSubmit(data: FormValues) {
     createPosting.mutate(data as CreateJobPostingInput);
   }
+
+  const hasNoCompanies = companies !== undefined && companies.length === 0;
+  const showCompanySelector = (companies?.length ?? 0) > 1;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -86,6 +98,52 @@ export default function PostJobPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* No companies yet — prompt to create one */}
+          {hasNoCompanies && (
+            <div className="bg-blue-dark-2 rounded-md p-4">
+              <p className="text-sm font-medium">You need a company to post jobs.</p>
+              <p className="text-muted-foreground mt-1 text-sm">
+                Create your company profile first, then come back to post a job.
+              </p>
+              <Button asChild className="mt-3">
+                <Link href="/employer/company/new">Create company</Link>
+              </Button>
+            </div>
+          )}
+
+          {/* Company selector — shown when employer has multiple companies */}
+          {showCompanySelector && (
+            <FormField
+              control={form.control}
+              name="companyId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Post under *</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a company…" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {companies?.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.companyName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button asChild type="button" variant="ghost" size="sm">
+                      <Link href="/employer/company/new">+ New</Link>
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
           {/* Basic info */}
           <div className="space-y-4">
             <h2 className="font-medium">Job details</h2>
@@ -347,56 +405,6 @@ export default function PostJobPage() {
 
           <Separator />
 
-          {/* Skills */}
-          {skillGroups && Object.keys(skillGroups).length > 0 && (
-            <FormField
-              control={form.control}
-              name="preferredSkillIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preferred skills</FormLabel>
-                  <FormDescription>
-                    Skills that would be helpful but aren&apos;t required — remember, we&apos;re
-                    giving people a chance to learn.
-                  </FormDescription>
-                  <div className="mt-2 space-y-4">
-                    {Object.entries(skillGroups).map(([category, skills]) => (
-                      <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                          {category}
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {skills.map((skill) => (
-                            <label
-                              key={skill.id}
-                              className="flex cursor-pointer items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(skill.id) ?? false}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value ?? [];
-                                  field.onChange(
-                                    checked
-                                      ? [...current, skill.id]
-                                      : current.filter((id) => id !== skill.id),
-                                  );
-                                }}
-                              />
-                              <span className="text-sm">{skill.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <Separator />
-
           {/* Opportunity */}
           <div className="space-y-6">
             <div>
@@ -460,7 +468,11 @@ export default function PostJobPage() {
             </p>
           )}
 
-          <Button type="submit" className="w-full" disabled={createPosting.isPending}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={createPosting.isPending || hasNoCompanies}
+          >
             {createPosting.isPending ? "Posting job…" : "Post job"}
           </Button>
         </form>

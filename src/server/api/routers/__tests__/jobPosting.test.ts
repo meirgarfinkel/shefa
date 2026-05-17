@@ -11,7 +11,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 function makeMockPrisma() {
   return {
     $queryRaw: vi.fn(),
-    employerProfile: {
+    company: {
       findUnique: vi.fn(),
     },
     city: {
@@ -49,16 +49,16 @@ const createCaller = createCallerFactory(jobPostingRouter);
 
 const EMPLOYER_USER_ID = "user-1";
 const OTHER_EMPLOYER_USER_ID = "user-2";
-const EMPLOYER_PROFILE_ID = "profile-1";
-const OTHER_EMPLOYER_PROFILE_ID = "profile-2";
+const COMPANY_ID = "company-1";
+const OTHER_COMPANY_ID = "company-2";
 const JOB_ID = "job-1";
 
-const MOCK_EMPLOYER_PROFILE = { id: EMPLOYER_PROFILE_ID, userId: EMPLOYER_USER_ID };
+const MOCK_COMPANY = { id: COMPANY_ID, ownerId: EMPLOYER_USER_ID };
 
 const MOCK_JOB = {
   id: JOB_ID,
-  employerProfileId: EMPLOYER_PROFILE_ID,
-  postedById: EMPLOYER_USER_ID,
+  employerId: EMPLOYER_USER_ID,
+  companyId: COMPANY_ID,
   title: "Line Cook",
   description: "Help in the kitchen.",
   jobType: "FULL_TIME",
@@ -77,17 +77,16 @@ const MOCK_JOB = {
   lastVerifiedAt: new Date(),
   createdAt: new Date(),
   updatedAt: new Date(),
-  preferredSkills: [],
   requiredLanguages: [],
 };
 
-// Shape returned by search's findMany (includes employerProfile + _count)
+// Shape returned by search's findMany (includes company + _count)
 const MOCK_JOB_SEARCH_RESULT = {
   ...MOCK_JOB,
   lat: 40.65,
   lon: -73.95,
   requiredLanguages: [],
-  employerProfile: { companyName: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
+  company: { id: COMPANY_ID, name: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
   _count: { applications: 0 },
 };
 const MOCK_JOB_CLOSED = { ...MOCK_JOB, status: "CLOSED" };
@@ -101,6 +100,7 @@ const VALID_CREATE_INPUT = {
   state: "NY",
   minHourlyRate: 15,
   workAuthRequired: false,
+  companyId: COMPANY_ID,
 };
 
 // ── jobPosting.create ─────────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ describe("jobPosting.create", () => {
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
+    db.company.findUnique.mockResolvedValue(MOCK_COMPANY);
     db.jobPosting.create.mockResolvedValue(MOCK_JOB);
   });
 
@@ -122,18 +122,18 @@ describe("jobPosting.create", () => {
     expect(result).toMatchObject({ id: JOB_ID });
   });
 
-  it("sets employerProfileId from the caller's profile, not input", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", db));
+  it("sets employerId from the session, not input", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     await caller.create(VALID_CREATE_INPUT);
     const data = db.jobPosting.create.mock.calls[0][0].data;
-    expect(data.employerProfileId).toBe(EMPLOYER_PROFILE_ID);
+    expect(data.employerId).toBe(EMPLOYER_USER_ID);
   });
 
-  it("sets postedById from the session, not input", async () => {
+  it("sets companyId from input after validating ownership", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await caller.create(VALID_CREATE_INPUT);
     const data = db.jobPosting.create.mock.calls[0][0].data;
-    expect(data.postedById).toBe(EMPLOYER_USER_ID);
+    expect(data.companyId).toBe(COMPANY_ID);
   });
 
   it("new posting defaults to ACTIVE status", async () => {
@@ -240,9 +240,17 @@ describe("jobPosting.create", () => {
     });
   });
 
-  it("throws NOT_FOUND when employer has no profile", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(null);
+  it("throws NOT_FOUND when company does not exist", async () => {
+    db.company.findUnique.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", db));
+    await expect(caller.create(VALID_CREATE_INPUT)).rejects.toMatchObject({
+      code: "NOT_FOUND",
+    });
+  });
+
+  it("throws NOT_FOUND when company belongs to a different employer", async () => {
+    db.company.findUnique.mockResolvedValue({ id: COMPANY_ID, ownerId: OTHER_EMPLOYER_USER_ID });
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     await expect(caller.create(VALID_CREATE_INPUT)).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
@@ -256,7 +264,7 @@ describe("jobPosting.list", () => {
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue(null);
+    db.company.findUnique.mockResolvedValue(null);
     db.jobPosting.findMany.mockResolvedValue([]);
   });
 
@@ -292,38 +300,37 @@ describe("jobPosting.list", () => {
     expect(where.status).toEqual({ in: ["ACTIVE"] });
   });
 
-  it("EMPLOYER querying another employer's postings only sees ACTIVE", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
+  it("EMPLOYER querying another employer's company only sees ACTIVE", async () => {
+    db.company.findUnique.mockResolvedValue(null); // other employer's company → not found for this user
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    // filter by a different employer's profile
-    await caller.list({ employerProfileId: OTHER_EMPLOYER_PROFILE_ID });
+    await caller.list({ companyId: OTHER_COMPANY_ID });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["ACTIVE"] });
   });
 
-  it("EMPLOYER querying own profile sees all statuses by default", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
+  it("EMPLOYER querying own company sees all statuses by default", async () => {
+    db.company.findUnique.mockResolvedValue(MOCK_COMPANY);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ employerProfileId: EMPLOYER_PROFILE_ID });
+    await caller.list({ companyId: COMPANY_ID });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     // status should not be restricted to ACTIVE only
     expect(where.status).not.toEqual({ in: ["ACTIVE"] });
   });
 
   it("EMPLOYER can filter own postings to a specific status", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
+    db.company.findUnique.mockResolvedValue(MOCK_COMPANY);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ employerProfileId: EMPLOYER_PROFILE_ID, status: ["ACTIVE"] });
+    await caller.list({ companyId: COMPANY_ID, status: ["ACTIVE"] });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
     expect(where.status).toEqual({ in: ["ACTIVE"] });
   });
 
-  it("applies employerProfileId filter to query when provided", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
+  it("applies companyId filter to query when provided", async () => {
+    db.company.findUnique.mockResolvedValue(MOCK_COMPANY);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ employerProfileId: EMPLOYER_PROFILE_ID });
+    await caller.list({ companyId: COMPANY_ID });
     const where = db.jobPosting.findMany.mock.calls[0][0].where;
-    expect(where.employerProfileId).toBe(EMPLOYER_PROFILE_ID);
+    expect(where.companyId).toBe(COMPANY_ID);
   });
 
   // ── New filter fields ──
@@ -387,22 +394,6 @@ describe("jobPosting.list", () => {
     expect(where.workDays).toBeUndefined();
   });
 
-  it("applies skillIds filter on preferredSkills relation when provided", async () => {
-    const caller = createCaller(makeCtx(null, db));
-    await caller.list({ skillIds: ["skill-1", "skill-2"] });
-    const where = db.jobPosting.findMany.mock.calls[0][0].where;
-    expect(where.preferredSkills).toEqual({
-      some: { skillId: { in: ["skill-1", "skill-2"] } },
-    });
-  });
-
-  it("omits preferredSkills from where when skillIds is empty", async () => {
-    const caller = createCaller(makeCtx(null, db));
-    await caller.list({ skillIds: [] });
-    const where = db.jobPosting.findMany.mock.calls[0][0].where;
-    expect(where.preferredSkills).toBeUndefined();
-  });
-
   it("non-owner still sees only ACTIVE even when other filters are applied", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
     await caller.list({ state: "NY", radiusMiles: 25, jobType: ["FULL_TIME"] });
@@ -420,7 +411,6 @@ describe("jobPosting.getById", () => {
 
   beforeEach(() => {
     db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue(null);
   });
 
   // ── Happy path ──
@@ -441,7 +431,6 @@ describe("jobPosting.getById", () => {
 
   it("owner can retrieve their own PAUSED posting", async () => {
     db.jobPosting.findUnique.mockResolvedValue({ ...MOCK_JOB, status: "PAUSED" });
-    db.employerProfile.findUnique.mockResolvedValue(MOCK_EMPLOYER_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     const result = await caller.getById({ id: JOB_ID });
     expect(result).toMatchObject({ id: JOB_ID, status: "PAUSED" });
@@ -527,7 +516,7 @@ describe("jobPosting.update", () => {
   it("throws FORBIDDEN when employer does not own the posting", async () => {
     db.jobPosting.findUnique.mockResolvedValue({
       ...MOCK_JOB,
-      postedById: OTHER_EMPLOYER_USER_ID,
+      employerId: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     await expect(caller.update({ id: JOB_ID, title: "x" })).rejects.toMatchObject({
@@ -598,7 +587,7 @@ describe("jobPosting.delete", () => {
   it("throws FORBIDDEN when employer does not own the posting", async () => {
     db.jobPosting.findUnique.mockResolvedValue({
       ...MOCK_JOB,
-      postedById: OTHER_EMPLOYER_USER_ID,
+      employerId: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     await expect(caller.delete({ id: JOB_ID })).rejects.toMatchObject({

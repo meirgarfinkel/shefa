@@ -70,7 +70,7 @@ export default function SeekerApplicationsPage() {
                     <AppStatusBadge status={app.status} />
                   </CardTitle>
                   <CardDescription>
-                    {app.job.employerProfile.companyName} · {app.job.city}, {app.job.state}
+                    {app.job.company.name} · {app.job.city}, {app.job.state}
                   </CardDescription>
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">
@@ -84,7 +84,7 @@ export default function SeekerApplicationsPage() {
                             disabled={createConversation.isPending}
                             onClick={() =>
                               createConversation.mutate({
-                                targetProfileId: app.job.employerProfile.id,
+                                targetId: app.job.employerId,
                                 jobId: app.job.id,
                               })
                             }

@@ -78,7 +78,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <ResponsiveBadge isResponsive={profile.isResponsive} isNew={profile.isNew} />
+            <ResponsiveBadge isResponsive={false} isNew={false} />
             {profile.status === "PAUSED" && (
               <span className="border-warning/25 bg-warning/15 text-warning rounded-full px-3 py-1 text-xs">
                 Not currently active
@@ -91,7 +91,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
           <div className="mt-4">
             <Button
               disabled={createConversation.isPending}
-              onClick={() => createConversation.mutate({ targetProfileId: profileId })}
+              onClick={() => createConversation.mutate({ targetId: profileId })}
             >
               {createConversation.isPending ? "Opening…" : "Message"}
             </Button>
@@ -147,26 +147,6 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
           </div>
         )}
       </div>
-
-      {/* Skills */}
-      {profile.skills.length > 0 && (
-        <>
-          <Separator />
-          <div className="my-6">
-            <h2 className="text-popover-foreground mb-3 font-medium">Skills</h2>
-            <div className="flex flex-wrap gap-2">
-              {profile.skills.map((skill) => (
-                <span key={skill} className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
-                  {skill}
-                </span>
-              ))}
-            </div>
-            {profile.otherSkills && (
-              <p className="text-muted-foreground mt-2 text-sm">Also: {profile.otherSkills}</p>
-            )}
-          </div>
-        </>
-      )}
 
       {/* Languages */}
       {profile.languages.length > 0 && (

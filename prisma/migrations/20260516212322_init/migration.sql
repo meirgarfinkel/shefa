@@ -1,6 +1,3 @@
--- CreateSchema
-CREATE SCHEMA IF NOT EXISTS "public";
-
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('SEEKER', 'EMPLOYER', 'ADMIN');
 
@@ -58,7 +55,6 @@ CREATE TABLE "User" (
     "isAdult" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "lastLoginAt" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -80,9 +76,6 @@ CREATE TABLE "SeekerProfile" (
     "about" VARCHAR(1000),
     "resumeUrl" TEXT,
     "status" "ProfileStatus" NOT NULL DEFAULT 'ACTIVE',
-    "isResponsive" BOOLEAN NOT NULL DEFAULT false,
-    "responseRate" DOUBLE PRECISION,
-    "medianResponseHours" DOUBLE PRECISION,
     "lastVerifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -96,22 +89,9 @@ CREATE TABLE "EmployerProfile" (
     "userId" TEXT NOT NULL,
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
-    "companyName" TEXT NOT NULL,
-    "companySize" "CompanySize" NOT NULL,
-    "city" TEXT NOT NULL,
-    "state" TEXT NOT NULL,
-    "roleAtCompany" TEXT,
-    "industry" "Industry",
-    "website" TEXT,
-    "aboutCompany" VARCHAR(2000),
-    "missionText" VARCHAR(1000),
-    "status" "ProfileStatus" NOT NULL DEFAULT 'ACTIVE',
+    "roleAtCompany" VARCHAR(200),
     "isResponsive" BOOLEAN NOT NULL DEFAULT false,
-    "responsivenessScore" DOUBLE PRECISION,
-    "responseRate" DOUBLE PRECISION,
-    "medianResponseHours" DOUBLE PRECISION,
     "responsivenessUpdatedAt" TIMESTAMP(3),
-    "lastVerifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -119,10 +99,26 @@ CREATE TABLE "EmployerProfile" (
 );
 
 -- CreateTable
+CREATE TABLE "Company" (
+    "id" TEXT NOT NULL,
+    "ownerId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "city" TEXT NOT NULL,
+    "state" TEXT NOT NULL,
+    "website" TEXT,
+    "industry" "Industry",
+    "companySize" "CompanySize",
+    "aboutCompany" VARCHAR(2000),
+    "missionText" VARCHAR(1000),
+
+    CONSTRAINT "Company_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "JobPosting" (
     "id" TEXT NOT NULL,
-    "employerProfileId" TEXT NOT NULL,
-    "postedById" TEXT NOT NULL,
+    "employerId" TEXT NOT NULL,
+    "companyId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" VARCHAR(5000) NOT NULL,
     "jobType" "JobType" NOT NULL,
@@ -150,7 +146,6 @@ CREATE TABLE "JobPosting" (
 CREATE TABLE "Application" (
     "id" TEXT NOT NULL,
     "seekerId" TEXT NOT NULL,
-    "seekerProfileId" TEXT NOT NULL,
     "jobId" TEXT NOT NULL,
     "message" VARCHAR(500),
     "status" "ApplicationStatus" NOT NULL DEFAULT 'SUBMITTED',
@@ -163,14 +158,13 @@ CREATE TABLE "Application" (
 -- CreateTable
 CREATE TABLE "Conversation" (
     "id" TEXT NOT NULL,
-    "participantAId" TEXT NOT NULL,
-    "participantBId" TEXT NOT NULL,
+    "seekerId" TEXT NOT NULL,
+    "employerId" TEXT NOT NULL,
     "jobId" TEXT,
-    "initiatedById" TEXT NOT NULL,
     "lastMessageAt" TIMESTAMP(3),
     "lastMessagePreview" VARCHAR(100),
-    "aBlockedB" BOOLEAN NOT NULL DEFAULT false,
-    "bBlockedA" BOOLEAN NOT NULL DEFAULT false,
+    "seekerBlocked" BOOLEAN NOT NULL DEFAULT false,
+    "employerBlocked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -275,15 +269,6 @@ CREATE TABLE "City" (
 );
 
 -- CreateTable
-CREATE TABLE "Skill" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "category" TEXT,
-
-    CONSTRAINT "Skill_pkey" PRIMARY KEY ("id")
-);
-
--- CreateTable
 CREATE TABLE "Language" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -292,27 +277,11 @@ CREATE TABLE "Language" (
 );
 
 -- CreateTable
-CREATE TABLE "SeekerSkill" (
-    "seekerProfileId" TEXT NOT NULL,
-    "skillId" TEXT NOT NULL,
-
-    CONSTRAINT "SeekerSkill_pkey" PRIMARY KEY ("seekerProfileId","skillId")
-);
-
--- CreateTable
 CREATE TABLE "SeekerLanguage" (
     "seekerProfileId" TEXT NOT NULL,
     "languageId" TEXT NOT NULL,
 
     CONSTRAINT "SeekerLanguage_pkey" PRIMARY KEY ("seekerProfileId","languageId")
-);
-
--- CreateTable
-CREATE TABLE "JobSkill" (
-    "jobId" TEXT NOT NULL,
-    "skillId" TEXT NOT NULL,
-
-    CONSTRAINT "JobSkill_pkey" PRIMARY KEY ("jobId","skillId")
 );
 
 -- CreateTable
@@ -363,7 +332,10 @@ CREATE INDEX "SeekerProfile_status_idx" ON "SeekerProfile"("status");
 CREATE UNIQUE INDEX "EmployerProfile_userId_key" ON "EmployerProfile"("userId");
 
 -- CreateIndex
-CREATE INDEX "EmployerProfile_status_idx" ON "EmployerProfile"("status");
+CREATE INDEX "Company_ownerId_idx" ON "Company"("ownerId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Company_ownerId_name_key" ON "Company"("ownerId", "name");
 
 -- CreateIndex
 CREATE INDEX "JobPosting_status_idx" ON "JobPosting"("status");
@@ -378,7 +350,10 @@ CREATE INDEX "JobPosting_status_workArrangement_idx" ON "JobPosting"("status", "
 CREATE INDEX "JobPosting_status_createdAt_idx" ON "JobPosting"("status", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "JobPosting_employerProfileId_idx" ON "JobPosting"("employerProfileId");
+CREATE INDEX "JobPosting_employerId_idx" ON "JobPosting"("employerId");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_companyId_idx" ON "JobPosting"("companyId");
 
 -- CreateIndex
 CREATE INDEX "JobPosting_lat_lon_idx" ON "JobPosting"("lat", "lon");
@@ -387,28 +362,34 @@ CREATE INDEX "JobPosting_lat_lon_idx" ON "JobPosting"("lat", "lon");
 CREATE INDEX "Application_jobId_idx" ON "Application"("jobId");
 
 -- CreateIndex
-CREATE INDEX "Application_seekerProfileId_idx" ON "Application"("seekerProfileId");
-
--- CreateIndex
 CREATE INDEX "Application_status_idx" ON "Application"("status");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Application_seekerId_jobId_key" ON "Application"("seekerId", "jobId");
 
 -- CreateIndex
-CREATE INDEX "Conversation_participantAId_idx" ON "Conversation"("participantAId");
+CREATE INDEX "Conversation_seekerId_idx" ON "Conversation"("seekerId");
 
 -- CreateIndex
-CREATE INDEX "Conversation_participantBId_idx" ON "Conversation"("participantBId");
+CREATE INDEX "Conversation_employerId_idx" ON "Conversation"("employerId");
+
+-- CreateIndex
+CREATE INDEX "Conversation_seekerId_lastMessageAt_idx" ON "Conversation"("seekerId", "lastMessageAt");
+
+-- CreateIndex
+CREATE INDEX "Conversation_employerId_lastMessageAt_idx" ON "Conversation"("employerId", "lastMessageAt");
 
 -- CreateIndex
 CREATE INDEX "Conversation_lastMessageAt_idx" ON "Conversation"("lastMessageAt");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Conversation_seekerId_employerId_jobId_key" ON "Conversation"("seekerId", "employerId", "jobId");
+
+-- CreateIndex
 CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message"("conversationId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "Message_senderId_readAt_idx" ON "Message"("senderId", "readAt");
+CREATE INDEX "Message_conversationId_readAt_idx" ON "Message"("conversationId", "readAt");
 
 -- CreateIndex
 CREATE INDEX "VerificationPing_userId_idx" ON "VerificationPing"("userId");
@@ -456,9 +437,6 @@ CREATE INDEX "City_stateId_idx" ON "City"("stateId");
 CREATE UNIQUE INDEX "City_name_stateId_key" ON "City"("name", "stateId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Skill_name_key" ON "Skill"("name");
-
--- CreateIndex
 CREATE UNIQUE INDEX "Language_name_key" ON "Language"("name");
 
 -- CreateIndex
@@ -474,34 +452,31 @@ CREATE INDEX "Report_targetType_targetId_idx" ON "Report"("targetType", "targetI
 ALTER TABLE "SeekerProfile" ADD CONSTRAINT "SeekerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "EmployerProfile" ADD CONSTRAINT "EmployerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "EmployerProfile" ADD CONSTRAINT "EmployerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "JobPosting" ADD CONSTRAINT "JobPosting_employerProfileId_fkey" FOREIGN KEY ("employerProfileId") REFERENCES "EmployerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Company" ADD CONSTRAINT "Company_ownerId_fkey" FOREIGN KEY ("ownerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "JobPosting" ADD CONSTRAINT "JobPosting_postedById_fkey" FOREIGN KEY ("postedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "JobPosting" ADD CONSTRAINT "JobPosting_employerId_fkey" FOREIGN KEY ("employerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "JobPosting" ADD CONSTRAINT "JobPosting_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Application" ADD CONSTRAINT "Application_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Application" ADD CONSTRAINT "Application_seekerProfileId_fkey" FOREIGN KEY ("seekerProfileId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "Application" ADD CONSTRAINT "Application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_participantAId_fkey" FOREIGN KEY ("participantAId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_participantBId_fkey" FOREIGN KEY ("participantBId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_employerId_fkey" FOREIGN KEY ("employerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_initiatedById_fkey" FOREIGN KEY ("initiatedById") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -531,22 +506,10 @@ ALTER TABLE "Session" ADD CONSTRAINT "Session_userId_fkey" FOREIGN KEY ("userId"
 ALTER TABLE "City" ADD CONSTRAINT "City_stateId_fkey" FOREIGN KEY ("stateId") REFERENCES "State"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "SeekerSkill" ADD CONSTRAINT "SeekerSkill_seekerProfileId_fkey" FOREIGN KEY ("seekerProfileId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "SeekerSkill" ADD CONSTRAINT "SeekerSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
 ALTER TABLE "SeekerLanguage" ADD CONSTRAINT "SeekerLanguage_seekerProfileId_fkey" FOREIGN KEY ("seekerProfileId") REFERENCES "SeekerProfile"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "SeekerLanguage" ADD CONSTRAINT "SeekerLanguage_languageId_fkey" FOREIGN KEY ("languageId") REFERENCES "Language"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "JobSkill" ADD CONSTRAINT "JobSkill_skillId_fkey" FOREIGN KEY ("skillId") REFERENCES "Skill"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "JobLanguage" ADD CONSTRAINT "JobLanguage_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -559,8 +522,3 @@ ALTER TABLE "NotificationPreferences" ADD CONSTRAINT "NotificationPreferences_us
 
 -- AddForeignKey
 ALTER TABLE "Report" ADD CONSTRAINT "Report_reporterId_fkey" FOREIGN KEY ("reporterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- Trigram indexes for search
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX "JobPosting_title_gin_idx" ON "JobPosting" USING GIN (title gin_trgm_ops);
-CREATE INDEX "JobPosting_description_gin_idx" ON "JobPosting" USING GIN (COALESCE(description, '') gin_trgm_ops);

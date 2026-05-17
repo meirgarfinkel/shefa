@@ -20,11 +20,11 @@ function displayName(
   participant: {
     id: string;
     seekerProfile: { id: string; firstName: string; lastName: string } | null;
-    employerProfile: { id: string; companyName: true | string } | null;
+    companies: { id: string; name: string }[];
   } | null,
 ): string {
   if (!participant) return "Unknown";
-  if (participant.employerProfile) return participant.employerProfile.companyName as string;
+  if (participant.companies.length > 0) return participant.companies[0]!.name;
   if (participant.seekerProfile)
     return `${participant.seekerProfile.firstName} ${participant.seekerProfile.lastName}`;
   return "Unknown";
@@ -34,12 +34,12 @@ function profileHref(
   participant: {
     id: string;
     seekerProfile: { id: string } | null;
-    employerProfile: { id: string } | null;
+    companies: { id: string }[];
   } | null,
 ): string | null {
   if (!participant) return null;
   if (participant.seekerProfile) return `/seeker/${participant.seekerProfile.id}`;
-  if (participant.employerProfile) return `/employer/${participant.employerProfile.id}`;
+  if (participant.companies.length > 0) return `/employer/${participant.companies[0]!.id}`;
   return null;
 }
 
@@ -113,11 +113,11 @@ export default function ConversationPage({
     );
   }
 
-  const isBlocked = conv.aBlockedB || conv.bBlockedA;
-  const callerIsA = conv.participantA.id === callerId;
-  const callerBlocked = callerIsA ? conv.aBlockedB : conv.bBlockedA;
+  const isBlocked = conv.seekerBlocked || conv.employerBlocked;
+  const callerIsSeeker = conv.seeker.id === callerId;
+  const callerBlocked = callerIsSeeker ? conv.seekerBlocked : conv.employerBlocked;
 
-  const other = callerIsA ? conv.participantB : conv.participantA;
+  const other = callerIsSeeker ? conv.employer : conv.seeker;
   const otherName = displayName(other);
   const otherHref = profileHref(other);
 

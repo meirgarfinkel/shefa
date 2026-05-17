@@ -28,10 +28,8 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FilterTrigger } from "@/components/ui/filter-trigger";
@@ -106,10 +104,6 @@ function JobsContent() {
     const v = searchParams.get("days");
     return v ? (v.split(",").filter(Boolean) as DayValue[]) : [];
   });
-  const [skillIds, setSkillIdsState] = useState<string[]>(() => {
-    const v = searchParams.get("skills");
-    return v ? v.split(",").filter(Boolean) : [];
-  });
   const [sortBy, setSortByState] = useState<SortValue>(() =>
     parseSortParam(searchParams.get("sortBy"), !!searchParams.get("q")),
   );
@@ -127,14 +121,13 @@ function JobsContent() {
     { enabled: !!stateAbbr },
   );
 
-  const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
-
   const { data: seekerProfile } = trpc.seeker.getMyProfile.useQuery(undefined, {
     enabled: session?.user?.role === "SEEKER",
   });
-  const { data: employerProfile } = trpc.employer.getProfile.useQuery(undefined, {
+  const { data: myCompanies } = trpc.company.listMine.useQuery(undefined, {
     enabled: session?.user?.role === "EMPLOYER",
   });
+  const employerProfile = myCompanies?.[0];
 
   const searchParamsRef = useRef(searchParams);
   searchParamsRef.current = searchParams;
@@ -186,11 +179,6 @@ function JobsContent() {
   function setWorkDays(val: DayValue[]) {
     setWorkDaysState(val);
     updateParams({ days: val });
-  }
-
-  function setSkillIds(val: string[]) {
-    setSkillIdsState(val);
-    updateParams({ skills: val });
   }
 
   function handleSearchChange(value: string) {
@@ -259,7 +247,6 @@ function JobsContent() {
     jobType: jobType !== "any" ? [jobType as "FULL_TIME" | "PART_TIME" | "EITHER"] : undefined,
     workArrangement: arrangements.length ? arrangements : undefined,
     workDays: workDays.length ? workDays : undefined,
-    skillIds: skillIds.length ? skillIds : undefined,
     sortBy: sortBy === "best" ? "newest" : sortBy,
   });
 
@@ -302,8 +289,7 @@ function JobsContent() {
     radius !== "any" ||
     jobType !== "any" ||
     arrangements.length > 0 ||
-    workDays.length > 0 ||
-    skillIds.length > 0;
+    workDays.length > 0;
 
   const activeFilterCount = [
     !!searchQuery,
@@ -312,7 +298,6 @@ function JobsContent() {
     jobType !== "any",
     arrangements.length > 0,
     workDays.length > 0,
-    skillIds.length > 0,
   ].filter(Boolean).length;
 
   function clearFilters() {
@@ -332,7 +317,6 @@ function JobsContent() {
     setJobTypeState("any");
     setArrangementsState([]);
     setWorkDaysState([]);
-    setSkillIdsState([]);
     setSortByState("newest");
     const params = new URLSearchParams();
     if (hasProfileLocation) {
@@ -537,37 +521,6 @@ function JobsContent() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-
-            {/* Skills */}
-            {skillGroups && Object.keys(skillGroups).length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <FilterTrigger
-                    className="bg-gray-light-1/40 w-full justify-between font-normal"
-                    activeCount={skillIds.length}
-                  >
-                    Skills
-                  </FilterTrigger>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-h-80 overflow-y-auto">
-                  {Object.entries(skillGroups).map(([category, skills], i) => (
-                    <div key={category}>
-                      {i > 0 && <DropdownMenuSeparator />}
-                      <DropdownMenuLabel>{category}</DropdownMenuLabel>
-                      {skills.map((skill) => (
-                        <DropdownMenuCheckboxItem
-                          key={skill.id}
-                          checked={skillIds.includes(skill.id)}
-                          onCheckedChange={() => setSkillIds(toggleItem(skillIds, skill.id))}
-                        >
-                          {skill.name}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                    </div>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
           </div>
 
           {/* Sort */}
@@ -764,33 +717,6 @@ function JobsContent() {
                   ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-
-              {skillGroups && Object.keys(skillGroups).length > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <FilterTrigger className="w-full justify-between" activeCount={skillIds.length}>
-                      Skills
-                    </FilterTrigger>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
-                    {Object.entries(skillGroups).map(([category, skills], i) => (
-                      <div key={category}>
-                        {i > 0 && <DropdownMenuSeparator />}
-                        <DropdownMenuLabel>{category}</DropdownMenuLabel>
-                        {skills.map((skill) => (
-                          <DropdownMenuCheckboxItem
-                            key={skill.id}
-                            checked={skillIds.includes(skill.id)}
-                            onCheckedChange={() => setSkillIds(toggleItem(skillIds, skill.id))}
-                          >
-                            {skill.name}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                      </div>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
             </div>
           </div>
 
@@ -864,7 +790,7 @@ function JobsContent() {
                   minHourlyRate={Number(job.minHourlyRate)}
                   status={job.status}
                   showStatus={Boolean(employerProfile)}
-                  companyName={job.employerProfile.companyName}
+                  companyName={job.company.name}
                   href={`/jobs/${job.id}`}
                   applicationCount={job._count.applications}
                 />

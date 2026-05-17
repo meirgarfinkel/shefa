@@ -9,11 +9,11 @@ function displayName(
   participant: {
     id: string;
     seekerProfile: { id: string; firstName: string; lastName: string } | null;
-    employerProfile: { id: string; companyName: string } | null;
+    companies: { id: string; name: string }[];
   } | null,
 ): string {
   if (!participant) return "Unknown";
-  if (participant.employerProfile) return participant.employerProfile.companyName;
+  if (participant.companies.length > 0) return participant.companies[0]!.name;
   if (participant.seekerProfile)
     return `${participant.seekerProfile.firstName} ${participant.seekerProfile.lastName}`;
   return "Unknown";
@@ -42,7 +42,7 @@ function formatTime(date: Date | string | null): string {
 
 export default function MessagesPage() {
   const { data: session } = useSession();
-  const callerId = session?.user?.id;
+  const role = session?.user?.role;
 
   const { data: conversations, isLoading } = trpc.conversation.list.useQuery();
 
@@ -61,7 +61,7 @@ export default function MessagesPage() {
       {!isLoading && conversations && conversations.length > 0 && (
         <div className="bg-popover overflow-hidden rounded-md border">
           {conversations.map((conv) => {
-            const other = conv.participantA.id === callerId ? conv.participantB : conv.participantA;
+            const other = role === "SEEKER" ? conv.employer : conv.seeker;
             const isUnread = conv._count.messages > 0;
             const name = displayName(other);
             const preview =

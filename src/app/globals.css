@@ -18,10 +18,10 @@
   /* Blues */
 
   /* Status */
-  --red: 250 67 98;
+  --red: 156 20 45;
   --orange: 217 119 87;
   --yellow: 255 214 79;
-  --green: 183 225 121;
+  --green: 85 180 45;
 
   /* Radius */
   --radius: 0.75rem;
@@ -37,13 +37,13 @@
   --foreground: rgb(var(--gray-dark-1));
 
   /* Component tokens */
-  --card: rgb(var(--primary));
+  --card: rgb(var(--blue-light-1));
   --popover: rgb(var(--blue-dark-1));
   --muted: rgb(var(--blue-dark-2));
 
   /* Interactive */
-  --primary: rgb(var(--blue-light-1));
-  --secondary: rgb(var(--blue-light-2));
+  --primary: rgb(var(--blue-light-2));
+  --secondary: rgb(var(--blue-light-1));
   --accent: var(--color-green-300);
 
   /* States */
@@ -52,9 +52,9 @@
   --destructive: rgb(var(--red));
 
   /* Borders / inputs */
-  --border: rgb(var(--gray-light-1) / 0.22);
-  --input: rgb(var(--blue-light-1) / 0.12);
-  --ring: rgb(var(--blue-light-2));
+  --border: rgb(var(--gray-light-1) / 0.6);
+  --input: rgb(var(--blue-dark-2));
+  --ring: rgb(var(--gray-light-1) / 0.6);
 
   /* Foregrounds */
   --card-foreground: rgb(var(--gray-light-1));
@@ -88,7 +88,7 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
 
-  --color-secondary: rgb(var(--blue-light-1));
+  --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
 
   --color-muted: var(--muted);
@@ -125,10 +125,10 @@
 
   --color-gray-dark-1: rgb(var(--gray-dark-1));
 
-  --color-danger: rgb(var(--danger));
-  --color-accent-orange: rgb(var(--accent-orange));
-  --color-warning: rgb(var(--warning));
-  --color-success: rgb(var(--success));
+  --color-danger: rgb(var(--red));
+  --color-accent-orange: rgb(var(--orange));
+  --color-warning: rgb(var(--yellow));
+  --color-success: rgb(var(--green));
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);

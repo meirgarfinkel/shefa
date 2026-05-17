@@ -140,25 +140,24 @@ model User {
   role          Role?
   isAdult       Boolean   @default(false)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  lastLoginAt   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Auth.js
   accounts Account[]
   sessions Session[]
 
-  seekerProfile          SeekerProfile?
-  employerProfile        EmployerProfile?
-  notificationPrefs      NotificationPreferences?
-  postedJobs             JobPosting[]
-  applications           Application[]
-  conversationsAsA       Conversation[]  @relation("ParticipantA")
-  conversationsAsB       Conversation[]  @relation("ParticipantB")
-  initiatedConversations Conversation[]  @relation("ConversationInitiator")
-  sentMessages           Message[]
-  verificationPings      VerificationPing[]
-  reports                Report[]
+  seekerProfile           SeekerProfile?
+  employerProfile         EmployerProfile?
+  companies               Company[]
+  notificationPrefs       NotificationPreferences?
+  jobs                    JobPosting[]
+  applications            Application[]
+  conversationsAsSeeker   Conversation[] @relation("ConversationSeeker")
+  conversationsAsEmployer Conversation[] @relation("ConversationEmployer")
+  sentMessages            Message[]
+  verificationPings       VerificationPing[]
+  reports                 Report[]
 
   @@index([role])
 }
@@ -185,17 +184,12 @@ model SeekerProfile {
   resumeUrl      String?
 
   // System
-  status              ProfileStatus @default(ACTIVE)
-  isResponsive        Boolean       @default(false)
-  responseRate        Float?
-  medianResponseHours Float?
-  lastVerifiedAt      DateTime      @default(now())
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  status         ProfileStatus @default(ACTIVE)
+  lastVerifiedAt DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  skills            SeekerSkill[]
   languages         SeekerLanguage[]
-  applications      Application[]
   verificationPings VerificationPing[] @relation("SeekerPings")
 
   @@index([status])
@@ -204,45 +198,45 @@ model SeekerProfile {
 model EmployerProfile {
   id     String @id @default(cuid())
   userId String @unique
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Required at signup
-  firstName   String
-  lastName    String
-  companyName String
-  companySize CompanySize
-  city        String
-  state       String
+  firstName     String
+  lastName      String
+  roleAtCompany String? @db.VarChar(200)
 
-  // Optional
-  roleAtCompany String?
-  industry      Industry?
-  website       String?
-  aboutCompany  String?   @db.VarChar(2000)
-  missionText   String?   @db.VarChar(1000)
-
-  // System
-  status                  ProfileStatus @default(ACTIVE)
-  isResponsive            Boolean       @default(false)
-  responsivenessScore     Float?
-  responseRate            Float?
-  medianResponseHours     Float?
+  isResponsive            Boolean   @default(false)
   responsivenessUpdatedAt DateTime?
-  lastVerifiedAt          DateTime      @default(now())
-  createdAt               DateTime      @default(now())
-  updatedAt               DateTime      @updatedAt
 
-  jobPostings JobPosting[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  @@index([status])
+model Company {
+  id      String @id @default(cuid())
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  name         String
+  city         String
+  state        String
+  website      String?
+  industry     Industry?
+  companySize  CompanySize?
+  aboutCompany String?      @db.VarChar(2000)
+  missionText  String?      @db.VarChar(1000)
+
+  jobs JobPosting[]
+
+  @@unique([ownerId, name])
+  @@index([ownerId])
 }
 
 model JobPosting {
-  id                String          @id @default(cuid())
-  employerProfileId String
-  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id])
-  postedById        String
-  postedBy          User            @relation(fields: [postedById], references: [id])
+  id         String  @id @default(cuid())
+  employerId String
+  employer   User    @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  companyId  String
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   title              String
   description        String          @db.VarChar(5000)
@@ -266,7 +260,6 @@ model JobPosting {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  preferredSkills   JobSkill[]
   requiredLanguages JobLanguage[]
   applications      Application[]
   conversations     Conversation[]
@@ -276,51 +269,52 @@ model JobPosting {
   @@index([status, jobType])
   @@index([status, workArrangement])
   @@index([status, createdAt])
-  @@index([employerProfileId])
+  @@index([employerId])
+  @@index([companyId])
   @@index([lat, lon])
 }
 
 model Application {
-  id              String            @id @default(cuid())
-  seekerId        String
-  seeker          User              @relation(fields: [seekerId], references: [id])
-  seekerProfileId String
-  seekerProfile   SeekerProfile     @relation(fields: [seekerProfileId], references: [id])
-  jobId           String
-  job             JobPosting        @relation(fields: [jobId], references: [id])
-  message         String?           @db.VarChar(500)
-  status          ApplicationStatus @default(SUBMITTED)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id       String @id @default(cuid())
+  seekerId String
+  seeker   User   @relation(fields: [seekerId], references: [id])
+  jobId    String
+  job      JobPosting @relation(fields: [jobId], references: [id])
+
+  message String?           @db.VarChar(500)
+  status  ApplicationStatus @default(SUBMITTED)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([seekerId, jobId])
   @@index([jobId])
-  @@index([seekerProfileId])
   @@index([status])
 }
 
 model Conversation {
-  id             String     @id @default(cuid())
-  participantAId String
-  participantA   User       @relation("ParticipantA", fields: [participantAId], references: [id])
-  participantBId String
-  participantB   User       @relation("ParticipantB", fields: [participantBId], references: [id])
-  jobId          String?
-  job            JobPosting? @relation(fields: [jobId], references: [id])
-  initiatedById  String
-  initiatedBy    User       @relation("ConversationInitiator", fields: [initiatedById], references: [id])
+  id         String      @id @default(cuid())
+  seekerId   String
+  seeker     User        @relation("ConversationSeeker", fields: [seekerId], references: [id])
+  employerId String
+  employer   User        @relation("ConversationEmployer", fields: [employerId], references: [id])
+  jobId      String?
+  job        JobPosting? @relation(fields: [jobId], references: [id])
 
   lastMessageAt      DateTime?
   lastMessagePreview String?   @db.VarChar(100)
-  aBlockedB          Boolean   @default(false)
-  bBlockedA          Boolean   @default(false)
+  seekerBlocked      Boolean   @default(false)
+  employerBlocked    Boolean   @default(false)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   messages Message[]
 
-  @@index([participantAId])
-  @@index([participantBId])
+  @@unique([seekerId, employerId, jobId])
+  @@index([seekerId])
+  @@index([employerId])
+  @@index([seekerId, lastMessageAt])
+  @@index([employerId, lastMessageAt])
   @@index([lastMessageAt])
 }
 
@@ -335,7 +329,7 @@ model Message {
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
-  @@index([senderId, readAt])
+  @@index([conversationId, readAt])
 }
 
 // ─── Freshness / Verification ─────────────────────────────────────────────────
@@ -361,8 +355,8 @@ model VerificationPing {
 }
 
 model FreshnessToken {
-  id         String       @id @default(cuid())
-  token      String       @unique
+  id         String            @id @default(cuid())
+  token      String            @unique
   targetType String
   targetId   String
   action     PingResponse
@@ -440,30 +434,12 @@ model City {
 
 // ─── Taxonomy ─────────────────────────────────────────────────────────────────
 
-model Skill {
-  id       String  @id @default(cuid())
-  name     String  @unique
-  category String?
-
-  seekerSkills SeekerSkill[]
-  jobSkills    JobSkill[]
-}
-
 model Language {
   id   String @id @default(cuid())
   name String @unique
 
   seekerLanguages SeekerLanguage[]
   jobLanguages    JobLanguage[]
-}
-
-model SeekerSkill {
-  seekerProfileId String
-  seekerProfile   SeekerProfile @relation(fields: [seekerProfileId], references: [id])
-  skillId         String
-  skill           Skill         @relation(fields: [skillId], references: [id])
-
-  @@id([seekerProfileId, skillId])
 }
 
 model SeekerLanguage {
@@ -473,15 +449,6 @@ model SeekerLanguage {
   language        Language      @relation(fields: [languageId], references: [id])
 
   @@id([seekerProfileId, languageId])
-}
-
-model JobSkill {
-  jobId   String
-  job     JobPosting @relation(fields: [jobId], references: [id])
-  skillId String
-  skill   Skill      @relation(fields: [skillId], references: [id])
-
-  @@id([jobId, skillId])
 }
 
 model JobLanguage {

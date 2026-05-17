@@ -10,26 +10,16 @@ export const seekerRouter = createTRPCRouter({
       const profile = await ctx.prisma.seekerProfile.findUnique({
         where: { id: input.id },
         include: {
-          skills: { include: { skill: { select: { name: true } } } },
           languages: { include: { language: { select: { name: true } } } },
         },
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const {
-        responseRate,
-        medianResponseHours,
-        userId: _userId,
-        skills,
-        languages,
-        ...publicFields
-      } = profile;
+      const { userId: _userId, languages, ...publicFields } = profile;
 
       return {
         ...publicFields,
-        skills: skills.map((s) => s.skill.name),
         languages: languages.map((l) => l.language.name),
-        isNew: responseRate === null,
       };
     }),
 
@@ -51,15 +41,13 @@ export const seekerRouter = createTRPCRouter({
     const profile = await ctx.prisma.seekerProfile.findUnique({
       where: { userId: ctx.user.id },
       include: {
-        skills: { select: { skillId: true } },
         languages: { select: { languageId: true } },
       },
     });
     if (!profile) return null;
-    const { skills, languages, ...rest } = profile;
+    const { languages, ...rest } = profile;
     return {
       ...rest,
-      skillIds: skills.map((s) => s.skillId),
       languageIds: languages.map((l) => l.languageId),
     };
   }),
@@ -76,18 +64,12 @@ export const seekerRouter = createTRPCRouter({
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const { skillIds, languageIds, ...profileFields } = input;
+      const { languageIds, ...profileFields } = input;
 
       return ctx.prisma.seekerProfile.update({
         where: { userId: ctx.user.id },
         data: {
           ...profileFields,
-          ...(skillIds !== undefined && {
-            skills: {
-              deleteMany: {},
-              create: skillIds.map((skillId) => ({ skillId })),
-            },
-          }),
           ...(languageIds !== undefined && {
             languages: {
               deleteMany: {},
@@ -112,7 +94,7 @@ export const seekerRouter = createTRPCRouter({
         throw new TRPCError({ code: "CONFLICT", message: "Profile already exists" });
       }
 
-      const { skillIds, languageIds, isAdult: _isAdult, ...profileFields } = input;
+      const { languageIds, isAdult: _isAdult, ...profileFields } = input;
 
       await ctx.prisma.user.update({
         where: { id: ctx.user.id },
@@ -123,9 +105,6 @@ export const seekerRouter = createTRPCRouter({
         data: {
           ...profileFields,
           userId: ctx.user.id,
-          ...(skillIds?.length && {
-            skills: { create: skillIds.map((skillId) => ({ skillId })) },
-          }),
           ...(languageIds?.length && {
             languages: { create: languageIds.map((languageId) => ({ languageId })) },
           }),

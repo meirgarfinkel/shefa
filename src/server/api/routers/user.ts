@@ -13,6 +13,10 @@ export const userRouter = createTRPCRouter({
       });
     }),
 
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    await ctx.prisma.user.delete({ where: { id: ctx.user.id } });
+  }),
+
   requestEmailChange: protectedProcedure
     .input(z.object({ newEmail: z.string().email() }))
     .mutation(async ({ ctx, input }) => {

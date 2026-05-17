@@ -10,7 +10,6 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 function makeMockPrisma() {
   return {
     seekerProfile: { findUnique: vi.fn() },
-    employerProfile: { findUnique: vi.fn() },
     jobPosting: { findUnique: vi.fn() },
     application: { findFirst: vi.fn() },
     conversation: {
@@ -48,23 +47,20 @@ const createCaller = createCallerFactory(conversationRouter);
 const EMPLOYER_USER_ID = "employer-1";
 const SEEKER_USER_ID = "seeker-1";
 const SEEKER_PROFILE_ID = "sp-1";
-const EMPLOYER_PROFILE_ID = "ep-1";
 
 const ACTIVE_SEEKER_PROFILE = { userId: SEEKER_USER_ID, status: "ACTIVE" };
-const EMPLOYER_PROFILE = { userId: EMPLOYER_USER_ID };
 
-const ACTIVE_JOB = { id: "job-1", postedById: EMPLOYER_USER_ID, status: "ACTIVE" };
+const ACTIVE_JOB = { id: "job-1", employerId: EMPLOYER_USER_ID, status: "ACTIVE" };
 
 const CONV = {
   id: "conv-1",
-  participantAId: EMPLOYER_USER_ID,
-  participantBId: SEEKER_USER_ID,
+  seekerId: SEEKER_USER_ID,
+  employerId: EMPLOYER_USER_ID,
   jobId: null,
-  initiatedById: EMPLOYER_USER_ID,
   lastMessageAt: null,
   lastMessagePreview: null,
-  aBlockedB: false,
-  bBlockedA: false,
+  seekerBlocked: false,
+  employerBlocked: false,
   createdAt: new Date(),
 };
 
@@ -85,7 +81,7 @@ describe("create", () => {
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
     mockPrisma.conversation.create.mockResolvedValue(CONV);
 
-    const result = await caller.create({ targetProfileId: SEEKER_PROFILE_ID });
+    const result = await caller.create({ targetId: SEEKER_PROFILE_ID });
 
     expect(result).toEqual(CONV);
     expect(mockPrisma.conversation.create).toHaveBeenCalledOnce();
@@ -98,11 +94,29 @@ describe("create", () => {
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
     mockPrisma.conversation.create.mockResolvedValue({ ...CONV, jobId: "job-1" });
 
-    const result = await caller.create({ targetProfileId: SEEKER_PROFILE_ID, jobId: "job-1" });
+    const result = await caller.create({ targetId: SEEKER_PROFILE_ID, jobId: "job-1" });
 
     expect(result).toMatchObject({ jobId: "job-1" });
     expect(mockPrisma.conversation.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ jobId: "job-1" }) }),
+    );
+  });
+
+  it("employer cold-DM sets seekerId to seeker's userId and employerId to caller", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
+    mockPrisma.seekerProfile.findUnique.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
+    mockPrisma.conversation.create.mockResolvedValue(CONV);
+
+    await caller.create({ targetId: SEEKER_PROFILE_ID });
+
+    expect(mockPrisma.conversation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          seekerId: SEEKER_USER_ID,
+          employerId: EMPLOYER_USER_ID,
+        }),
+      }),
     );
   });
 
@@ -111,7 +125,7 @@ describe("create", () => {
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
     mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
 
-    const result = await caller.create({ targetProfileId: SEEKER_PROFILE_ID });
+    const result = await caller.create({ targetId: SEEKER_PROFILE_ID });
 
     expect(result).toEqual(CONV);
     expect(mockPrisma.conversation.create).not.toHaveBeenCalled();
@@ -121,30 +135,43 @@ describe("create", () => {
 
   it("seeker creates conversation with employer after applying to their job", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(EMPLOYER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
     mockPrisma.application.findFirst.mockResolvedValue({ id: "app-1" });
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
-    mockPrisma.conversation.create.mockResolvedValue({
-      ...CONV,
-      participantAId: SEEKER_USER_ID,
-      participantBId: EMPLOYER_USER_ID,
-    });
+    mockPrisma.conversation.create.mockResolvedValue(CONV);
 
-    const result = await caller.create({ targetProfileId: EMPLOYER_PROFILE_ID, jobId: "job-1" });
+    const result = await caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" });
 
     expect(result).toBeDefined();
     expect(mockPrisma.conversation.create).toHaveBeenCalledOnce();
   });
 
+  it("seeker create sets seekerId to caller and employerId to targetId", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
+    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
+    mockPrisma.application.findFirst.mockResolvedValue({ id: "app-1" });
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
+    mockPrisma.conversation.create.mockResolvedValue(CONV);
+
+    await caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" });
+
+    expect(mockPrisma.conversation.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          seekerId: SEEKER_USER_ID,
+          employerId: EMPLOYER_USER_ID,
+        }),
+      }),
+    );
+  });
+
   it("seeker calling create again for same pair+job returns existing conversation", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(EMPLOYER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
     mockPrisma.application.findFirst.mockResolvedValue({ id: "app-1" });
     mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
 
-    const result = await caller.create({ targetProfileId: EMPLOYER_PROFILE_ID, jobId: "job-1" });
+    const result = await caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" });
 
     expect(result).toEqual(CONV);
     expect(mockPrisma.conversation.create).not.toHaveBeenCalled();
@@ -155,52 +182,40 @@ describe("create", () => {
   it("seeker without jobId → BAD_REQUEST", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
 
-    await expect(caller.create({ targetProfileId: EMPLOYER_PROFILE_ID })).rejects.toMatchObject({
+    await expect(caller.create({ targetId: EMPLOYER_USER_ID })).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
   });
 
-  it("seeker targeting non-existent employer profile → NOT_FOUND", async () => {
+  it("seeker targeting non-existent job → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(null);
+    mockPrisma.jobPosting.findUnique.mockResolvedValue(null);
 
     await expect(
-      caller.create({ targetProfileId: "ghost-profile", jobId: "job-1" }),
+      caller.create({ targetId: EMPLOYER_USER_ID, jobId: "ghost-job" }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("seeker with jobId they haven't applied to → FORBIDDEN", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(EMPLOYER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
     mockPrisma.application.findFirst.mockResolvedValue(null);
 
     await expect(
-      caller.create({ targetProfileId: EMPLOYER_PROFILE_ID, jobId: "job-1" }),
+      caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("seeker with jobId belonging to a different employer → FORBIDDEN", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(EMPLOYER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue({
       ...ACTIVE_JOB,
-      postedById: "other-employer",
+      employerId: "other-employer",
     });
 
     await expect(
-      caller.create({ targetProfileId: EMPLOYER_PROFILE_ID, jobId: "job-1" }),
+      caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
-  });
-
-  it("seeker targeting non-existent job → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.employerProfile.findUnique.mockResolvedValue(EMPLOYER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(null);
-
-    await expect(
-      caller.create({ targetProfileId: EMPLOYER_PROFILE_ID, jobId: "job-1" }),
-    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   // ── EMPLOYER adversarial ──
@@ -209,7 +224,7 @@ describe("create", () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(null);
 
-    await expect(caller.create({ targetProfileId: "ghost-profile" })).rejects.toMatchObject({
+    await expect(caller.create({ targetId: "ghost-profile" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
@@ -221,21 +236,21 @@ describe("create", () => {
       status: "PAUSED",
     });
 
-    await expect(caller.create({ targetProfileId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
+    await expect(caller.create({ targetId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
-  it("resolved profile userId matches caller → BAD_REQUEST", async () => {
+  it("resolved seekerProfile.userId matches caller → BAD_REQUEST", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    // Artificial scenario: seekerProfile.userId accidentally equals the caller's userId
+    // seekerProfile.userId accidentally equals the caller's userId
     mockPrisma.seekerProfile.findUnique.mockResolvedValue({
       userId: EMPLOYER_USER_ID,
       status: "ACTIVE",
     });
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
-    await expect(caller.create({ targetProfileId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
+    await expect(caller.create({ targetId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
   });
@@ -243,10 +258,10 @@ describe("create", () => {
   it("employer's jobId belongs to a different employer → FORBIDDEN", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ ...ACTIVE_JOB, postedById: "other" });
+    mockPrisma.jobPosting.findUnique.mockResolvedValue({ ...ACTIVE_JOB, employerId: "other" });
 
     await expect(
-      caller.create({ targetProfileId: SEEKER_PROFILE_ID, jobId: "job-1" }),
+      caller.create({ targetId: SEEKER_PROFILE_ID, jobId: "job-1" }),
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
@@ -256,7 +271,7 @@ describe("create", () => {
 
   it("unauthenticated → UNAUTHORIZED", async () => {
     const caller = createCaller(makeCtx(null, mockPrisma));
-    await expect(caller.create({ targetProfileId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
+    await expect(caller.create({ targetId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
@@ -291,7 +306,7 @@ describe("list", () => {
     expect(await caller.list()).toEqual([]);
   });
 
-  it("queries only conversations where caller is participantA or participantB", async () => {
+  it("seeker list: queries by seekerId only", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-42"));
     mockPrisma.conversation.findMany.mockResolvedValue([]);
 
@@ -299,9 +314,20 @@ describe("list", () => {
 
     expect(mockPrisma.conversation.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          OR: [{ participantAId: "user-42" }, { participantBId: "user-42" }],
-        },
+        where: { seekerId: "user-42" },
+      }),
+    );
+  });
+
+  it("employer list: queries by employerId only", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-42"));
+    mockPrisma.conversation.findMany.mockResolvedValue([]);
+
+    await caller.list();
+
+    expect(mockPrisma.conversation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { employerId: "user-42" },
       }),
     );
   });
@@ -311,7 +337,7 @@ describe("list", () => {
     await expect(caller.list()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("includes participant profiles, job info, and unread message count", async () => {
+  it("includes seeker + employer profiles, job info, and unread count", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
     mockPrisma.conversation.findMany.mockResolvedValue([]);
 
@@ -323,18 +349,18 @@ describe("list", () => {
     expect(callArg.include).toBeDefined();
 
     const inc = callArg.include as {
-      participantA: { select: Record<string, unknown> };
-      participantB: { select: Record<string, unknown> };
+      seeker: { select: Record<string, unknown> };
+      employer: { select: Record<string, unknown> };
       job: unknown;
       _count: unknown;
     };
-    expect(inc.participantA.select).toMatchObject({
+    expect(inc.seeker.select).toMatchObject({
       seekerProfile: expect.anything(),
-      employerProfile: expect.anything(),
+      companies: expect.anything(),
     });
-    expect(inc.participantB.select).toMatchObject({
+    expect(inc.employer.select).toMatchObject({
       seekerProfile: expect.anything(),
-      employerProfile: expect.anything(),
+      companies: expect.anything(),
     });
     expect(inc.job).toBeDefined();
     expect(inc._count).toBeDefined();
@@ -350,26 +376,26 @@ describe("get", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it("happy path: participant A fetches conversation with messages", async () => {
+  it("happy path: employer fetches conversation with messages", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
     const convWithMessages = { ...CONV, messages: [{ id: "msg-1", body: "hi" }] };
-    mockPrisma.conversation.findUnique.mockResolvedValue(convWithMessages);
+    mockPrisma.conversation.findFirst.mockResolvedValue(convWithMessages);
 
     const result = await caller.get({ conversationId: "conv-1" });
 
     expect(result).toEqual(convWithMessages);
   });
 
-  it("happy path: participant B can also fetch", async () => {
+  it("happy path: seeker can also fetch", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, messages: [] });
+    mockPrisma.conversation.findFirst.mockResolvedValue({ ...CONV, messages: [] });
 
     await expect(caller.get({ conversationId: "conv-1" })).resolves.toBeDefined();
   });
 
   it("conversation not found → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.get({ conversationId: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -378,8 +404,8 @@ describe("get", () => {
 
   it("caller is not a participant → NOT_FOUND (does not leak existence)", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    // findUnique scoped to caller's participation, so returns null for non-participants
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    // findFirst scoped to caller's participation returns null for non-participants
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.get({ conversationId: "conv-1" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -393,31 +419,31 @@ describe("get", () => {
     });
   });
 
-  it("includes participant profiles and job info in the query", async () => {
+  it("includes seeker + employer profiles and job info", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, messages: [] });
+    mockPrisma.conversation.findFirst.mockResolvedValue({ ...CONV, messages: [] });
 
     await caller.get({ conversationId: "conv-1" });
 
-    const callArg = mockPrisma.conversation.findUnique.mock.calls[0][0] as {
+    const callArg = mockPrisma.conversation.findFirst.mock.calls[0][0] as {
       include: Record<string, unknown>;
     };
     expect(callArg.include).toBeDefined();
 
     const inc = callArg.include as {
       messages: unknown;
-      participantA: { select: Record<string, unknown> };
-      participantB: { select: Record<string, unknown> };
+      seeker: { select: Record<string, unknown> };
+      employer: { select: Record<string, unknown> };
       job: unknown;
     };
     expect(inc.messages).toBeDefined();
-    expect(inc.participantA.select).toMatchObject({
+    expect(inc.seeker.select).toMatchObject({
       seekerProfile: expect.anything(),
-      employerProfile: expect.anything(),
+      companies: expect.anything(),
     });
-    expect(inc.participantB.select).toMatchObject({
+    expect(inc.employer.select).toMatchObject({
       seekerProfile: expect.anything(),
-      employerProfile: expect.anything(),
+      companies: expect.anything(),
     });
     expect(inc.job).toBeDefined();
   });
@@ -432,14 +458,14 @@ describe("markRead", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it("happy path: marks messages sent by the other participant as read", async () => {
+  it("happy path: employer marks seeker's messages as read", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
+    mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
     mockPrisma.message.updateMany.mockResolvedValue({ count: 3 });
 
     await caller.markRead({ conversationId: "conv-1" });
 
-    // Caller is EMPLOYER_USER_ID (participantA). Other sender = SEEKER_USER_ID (participantB).
+    // Caller is employer → otherId is seeker
     expect(mockPrisma.message.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -451,14 +477,14 @@ describe("markRead", () => {
     );
   });
 
-  it("does not mark caller's own outgoing messages as read", async () => {
+  it("seeker marks employer's messages as read", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
+    mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
     mockPrisma.message.updateMany.mockResolvedValue({ count: 1 });
 
     await caller.markRead({ conversationId: "conv-1" });
 
-    // Caller is SEEKER_USER_ID (participantB). Other sender = EMPLOYER_USER_ID (participantA).
+    // Caller is seeker → otherId is employer
     expect(mockPrisma.message.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ senderId: EMPLOYER_USER_ID }),
@@ -473,19 +499,19 @@ describe("markRead", () => {
 
   it("conversation not found → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.markRead({ conversationId: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
 
-  it("caller is not a participant → FORBIDDEN", async () => {
+  it("caller is not a participant → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.markRead({ conversationId: "conv-1" })).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "NOT_FOUND",
     });
   });
 
@@ -506,50 +532,50 @@ describe("block", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it("participantA blocks → sets aBlockedB = true", async () => {
+  it("employer blocks → sets employerBlocked = true", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
-    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, aBlockedB: true });
+    mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
+    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, employerBlocked: true });
 
     await caller.block({ conversationId: "conv-1" });
 
     expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { aBlockedB: true } }),
+      expect.objectContaining({ data: { employerBlocked: true } }),
     );
   });
 
-  it("participantB blocks → sets bBlockedA = true", async () => {
+  it("seeker blocks → sets seekerBlocked = true", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
-    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, bBlockedA: true });
+    mockPrisma.conversation.findFirst.mockResolvedValue(CONV);
+    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, seekerBlocked: true });
 
     await caller.block({ conversationId: "conv-1" });
 
     expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { bBlockedA: true } }),
+      expect.objectContaining({ data: { seekerBlocked: true } }),
     );
   });
 
   it("re-blocking an already-blocked conversation is a no-op (no error)", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, aBlockedB: true });
-    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, aBlockedB: true });
+    mockPrisma.conversation.findFirst.mockResolvedValue({ ...CONV, employerBlocked: true });
+    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, employerBlocked: true });
 
     await expect(caller.block({ conversationId: "conv-1" })).resolves.not.toThrow();
   });
 
-  it("caller not in conversation → FORBIDDEN", async () => {
+  it("caller not in conversation → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.block({ conversationId: "conv-1" })).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "NOT_FOUND",
     });
   });
 
   it("conversation not found → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.block({ conversationId: "conv-1" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -573,36 +599,36 @@ describe("unblock", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it("participantA unblocks → sets aBlockedB = false", async () => {
+  it("employer unblocks → sets employerBlocked = false", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, aBlockedB: true });
-    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, aBlockedB: false });
+    mockPrisma.conversation.findFirst.mockResolvedValue({ ...CONV, employerBlocked: true });
+    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, employerBlocked: false });
 
     await caller.unblock({ conversationId: "conv-1" });
 
     expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { aBlockedB: false } }),
+      expect.objectContaining({ data: { employerBlocked: false } }),
     );
   });
 
-  it("participantB unblocks → sets bBlockedA = false", async () => {
+  it("seeker unblocks → sets seekerBlocked = false", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_USER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...CONV, bBlockedA: true });
-    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, bBlockedA: false });
+    mockPrisma.conversation.findFirst.mockResolvedValue({ ...CONV, seekerBlocked: true });
+    mockPrisma.conversation.update.mockResolvedValue({ ...CONV, seekerBlocked: false });
 
     await caller.unblock({ conversationId: "conv-1" });
 
     expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { bBlockedA: false } }),
+      expect.objectContaining({ data: { seekerBlocked: false } }),
     );
   });
 
-  it("caller not in conversation → FORBIDDEN", async () => {
+  it("caller not in conversation → NOT_FOUND", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    mockPrisma.conversation.findUnique.mockResolvedValue(CONV);
+    mockPrisma.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.unblock({ conversationId: "conv-1" })).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "NOT_FOUND",
     });
   });
 

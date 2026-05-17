@@ -321,8 +321,10 @@ describe("computeResponsivenessScore", () => {
 
 function makeMockDb() {
   return {
-    employerProfile: {
+    user: {
       findMany: vi.fn(),
+    },
+    employerProfile: {
       update: vi.fn(),
     },
   };
@@ -332,32 +334,29 @@ function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
   return mock as unknown as PrismaClient;
 }
 
-const EMPLOYER_PROFILE_1 = {
-  id: "ep-1",
-  userId: "user-1",
-  user: {
-    conversationsAsA: [
-      {
-        messages: [
-          { senderId: "seeker-1", createdAt: hoursAgo(100) },
-          { senderId: "user-1", createdAt: hoursAgo(90) },
-        ],
-      },
-      {
-        messages: [
-          { senderId: "seeker-1", createdAt: hoursAgo(80) },
-          { senderId: "user-1", createdAt: hoursAgo(70) },
-        ],
-      },
-      {
-        messages: [
-          { senderId: "seeker-1", createdAt: hoursAgo(60) },
-          { senderId: "user-1", createdAt: hoursAgo(50) },
-        ],
-      },
-    ],
-    conversationsAsB: [],
-  },
+// Conversations are directly on the User object (no `user` wrapper)
+const EMPLOYER_1 = {
+  id: "user-1",
+  conversationsAsEmployer: [
+    {
+      messages: [
+        { senderId: "seeker-1", createdAt: hoursAgo(100) },
+        { senderId: "user-1", createdAt: hoursAgo(90) },
+      ],
+    },
+    {
+      messages: [
+        { senderId: "seeker-1", createdAt: hoursAgo(80) },
+        { senderId: "user-1", createdAt: hoursAgo(70) },
+      ],
+    },
+    {
+      messages: [
+        { senderId: "seeker-1", createdAt: hoursAgo(60) },
+        { senderId: "user-1", createdAt: hoursAgo(50) },
+      ],
+    },
+  ],
 };
 
 describe("runResponsivenessJob", () => {
@@ -371,27 +370,25 @@ describe("runResponsivenessJob", () => {
   // ── Happy path ───────────────────────────────────────────────────────────────
 
   it("employer with 3 timely-replied conversations → isResponsive true, score set", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([EMPLOYER_PROFILE_1]);
+    mockDb.user.findMany.mockResolvedValue([EMPLOYER_1]);
 
     await runResponsivenessJob(asDb(mockDb));
 
     expect(mockDb.employerProfile.update).toHaveBeenCalledOnce();
     const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      where: { id: string };
+      where: { userId: string };
       data: {
         isResponsive: boolean;
-        responsivenessScore: number | null;
         responsivenessUpdatedAt: Date;
       };
     };
-    expect(call.where.id).toBe("ep-1");
+    expect(call.where.userId).toBe("user-1");
     expect(call.data.isResponsive).toBe(true);
-    expect(call.data.responsivenessScore).toBeCloseTo(1.0);
     expect(call.data.responsivenessUpdatedAt).toBeInstanceOf(Date);
   });
 
-  it("no employer profiles → no updates, no crash", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([]);
+  it("no employers → no updates, no crash", async () => {
+    mockDb.user.findMany.mockResolvedValue([]);
 
     await expect(runResponsivenessJob(asDb(mockDb))).resolves.toBeUndefined();
 
@@ -399,31 +396,18 @@ describe("runResponsivenessJob", () => {
   });
 
   it("employer with 0 conversations → score null, isResponsive false", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([
-      {
-        id: "ep-2",
-        userId: "user-2",
-        user: { conversationsAsA: [], conversationsAsB: [] },
-      },
-    ]);
+    mockDb.user.findMany.mockResolvedValue([{ id: "user-2", conversationsAsEmployer: [] }]);
 
     await runResponsivenessJob(asDb(mockDb));
 
     const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean; responsivenessScore: number | null };
+      data: { isResponsive: boolean };
     };
     expect(call.data.isResponsive).toBe(false);
-    expect(call.data.responsivenessScore).toBeNull();
   });
 
   it("responsivenessUpdatedAt is always set, even when score is null", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([
-      {
-        id: "ep-3",
-        userId: "user-3",
-        user: { conversationsAsA: [], conversationsAsB: [] },
-      },
-    ]);
+    mockDb.user.findMany.mockResolvedValue([{ id: "user-3", conversationsAsEmployer: [] }]);
 
     const before = new Date();
     await runResponsivenessJob(asDb(mockDb));
@@ -436,35 +420,30 @@ describe("runResponsivenessJob", () => {
     expect(call.data.responsivenessUpdatedAt.getTime()).toBeLessThanOrEqual(after.getTime());
   });
 
-  it("conversations from both conversationsAsA and conversationsAsB are counted", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([
+  it("all conversationsAsEmployer are counted toward responsiveness score", async () => {
+    mockDb.user.findMany.mockResolvedValue([
       {
-        id: "ep-4",
-        userId: "user-4",
-        user: {
-          conversationsAsA: [
-            {
-              messages: [
-                { senderId: "seeker-x", createdAt: hoursAgo(100) },
-                { senderId: "user-4", createdAt: hoursAgo(90) },
-              ],
-            },
-          ],
-          conversationsAsB: [
-            {
-              messages: [
-                { senderId: "seeker-y", createdAt: hoursAgo(80) },
-                { senderId: "user-4", createdAt: hoursAgo(70) },
-              ],
-            },
-            {
-              messages: [
-                { senderId: "seeker-z", createdAt: hoursAgo(60) },
-                { senderId: "user-4", createdAt: hoursAgo(50) },
-              ],
-            },
-          ],
-        },
+        id: "user-4",
+        conversationsAsEmployer: [
+          {
+            messages: [
+              { senderId: "seeker-x", createdAt: hoursAgo(100) },
+              { senderId: "user-4", createdAt: hoursAgo(90) },
+            ],
+          },
+          {
+            messages: [
+              { senderId: "seeker-y", createdAt: hoursAgo(80) },
+              { senderId: "user-4", createdAt: hoursAgo(70) },
+            ],
+          },
+          {
+            messages: [
+              { senderId: "seeker-z", createdAt: hoursAgo(60) },
+              { senderId: "user-4", createdAt: hoursAgo(50) },
+            ],
+          },
+        ],
       },
     ]);
 
@@ -480,34 +459,30 @@ describe("runResponsivenessJob", () => {
   // ── Isolation: one failure doesn't stop others ───────────────────────────────
 
   it("update throws for first employer → second employer still updated", async () => {
-    mockDb.employerProfile.findMany.mockResolvedValue([
-      EMPLOYER_PROFILE_1,
+    mockDb.user.findMany.mockResolvedValue([
+      EMPLOYER_1,
       {
-        id: "ep-5",
-        userId: "user-5",
-        user: {
-          conversationsAsA: [
-            {
-              messages: [
-                { senderId: "seeker-a", createdAt: hoursAgo(100) },
-                { senderId: "user-5", createdAt: hoursAgo(90) },
-              ],
-            },
-            {
-              messages: [
-                { senderId: "seeker-b", createdAt: hoursAgo(80) },
-                { senderId: "user-5", createdAt: hoursAgo(70) },
-              ],
-            },
-            {
-              messages: [
-                { senderId: "seeker-c", createdAt: hoursAgo(60) },
-                { senderId: "user-5", createdAt: hoursAgo(50) },
-              ],
-            },
-          ],
-          conversationsAsB: [],
-        },
+        id: "user-5",
+        conversationsAsEmployer: [
+          {
+            messages: [
+              { senderId: "seeker-a", createdAt: hoursAgo(100) },
+              { senderId: "user-5", createdAt: hoursAgo(90) },
+            ],
+          },
+          {
+            messages: [
+              { senderId: "seeker-b", createdAt: hoursAgo(80) },
+              { senderId: "user-5", createdAt: hoursAgo(70) },
+            ],
+          },
+          {
+            messages: [
+              { senderId: "seeker-c", createdAt: hoursAgo(60) },
+              { senderId: "user-5", createdAt: hoursAgo(50) },
+            ],
+          },
+        ],
       },
     ]);
 
@@ -531,27 +506,22 @@ describe("runResponsivenessJob", () => {
       ];
       if (i < 7) {
         msgs.push({
-          senderId: "user-ep7",
+          senderId: "user-7",
           createdAt: new Date(t.getTime() + i * 3_600_000 + 60 * 60 * 1000),
         });
       }
       return { messages: msgs };
     });
 
-    mockDb.employerProfile.findMany.mockResolvedValue([
-      {
-        id: "ep-7",
-        userId: "user-ep7",
-        user: { conversationsAsA: conversations, conversationsAsB: [] },
-      },
+    mockDb.user.findMany.mockResolvedValue([
+      { id: "user-7", conversationsAsEmployer: conversations },
     ]);
 
     await runResponsivenessJob(asDb(mockDb));
 
     const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean; responsivenessScore: number };
+      data: { isResponsive: boolean };
     };
-    expect(call.data.responsivenessScore).toBeCloseTo(0.7);
     expect(call.data.isResponsive).toBe(true);
   });
 
@@ -564,19 +534,15 @@ describe("runResponsivenessJob", () => {
       ];
       if (i < 6) {
         msgs.push({
-          senderId: "user-ep8",
+          senderId: "user-8",
           createdAt: new Date(t.getTime() + i * 3_600_000 + 60 * 60 * 1000),
         });
       }
       return { messages: msgs };
     });
 
-    mockDb.employerProfile.findMany.mockResolvedValue([
-      {
-        id: "ep-8",
-        userId: "user-ep8",
-        user: { conversationsAsA: conversations, conversationsAsB: [] },
-      },
+    mockDb.user.findMany.mockResolvedValue([
+      { id: "user-8", conversationsAsEmployer: conversations },
     ]);
 
     await runResponsivenessJob(asDb(mockDb));

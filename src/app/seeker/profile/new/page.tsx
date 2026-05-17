@@ -50,7 +50,6 @@ const EDUCATION_OPTIONS = [
 
 export default function SeekerProfileNewPage() {
   const router = useRouter();
-  const { data: skillGroups } = trpc.taxonomy.skills.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const form = useForm<CreateSeekerProfileInput>({
@@ -63,7 +62,6 @@ export default function SeekerProfileNewPage() {
       workAuthorization: false,
       availableDays: [],
       jobSeekText: "",
-      skillIds: [],
       languageIds: [],
     },
   });
@@ -81,34 +79,13 @@ export default function SeekerProfileNewPage() {
       <div className="mb-8">
         <h1 className="text-xl font-medium">Create your profile</h1>
         <p className="text-muted-foreground mt-1">
-          This is how employers will find you. Required fields are marked with *.
+          This is how employers will find you. Required fields are marked with{" "}
+          <span className="text-danger">*</span>.
         </p>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Age confirmation */}
-          <FormField
-            control={form.control}
-            name="isAdult"
-            render={({ field }) => (
-              <FormItem className="bg-popover flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
-                <FormControl>
-                  <Checkbox
-                    checked={field.value === true}
-                    onCheckedChange={(checked) => field.onChange(checked ? true : undefined)}
-                  />
-                </FormControl>
-                <div className="space-y-1 leading-none">
-                  <FormLabel>I confirm I am 18+ years old *</FormLabel>
-                  <FormMessage />
-                </div>
-              </FormItem>
-            )}
-          />
-
-          <Separator />
-
           {/* Name */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium">About you</h2>
@@ -118,7 +95,9 @@ export default function SeekerProfileNewPage() {
                 name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>First name *</FormLabel>
+                    <FormLabel>
+                      First name <span className="text-danger">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -131,7 +110,9 @@ export default function SeekerProfileNewPage() {
                 name="lastName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Last name *</FormLabel>
+                    <FormLabel>
+                      Last name <span className="text-danger">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -155,33 +136,14 @@ export default function SeekerProfileNewPage() {
           {/* Work preferences */}
           <div className="space-y-4">
             <h2 className="text-lg font-medium">Work preferences</h2>
-
-            <FormField
-              control={form.control}
-              name="workAuthorization"
-              render={({ field }) => (
-                <FormItem className="bg-popover flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(!!checked)}
-                    />
-                  </FormControl>
-                  <FormLabel className="font-normal">
-                    I am authorized to work in the United States *
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
-
-            <Separator />
-
             <FormField
               control={form.control}
               name="availableDays"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-lg font-medium">Available days *</FormLabel>
+                  <FormLabel className="text-lg font-medium">
+                    Available days <span className="text-danger">*</span>
+                  </FormLabel>
                   <FormDescription>Select all days you can work.</FormDescription>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {DAYS.map((day) => (
@@ -218,53 +180,6 @@ export default function SeekerProfileNewPage() {
 
           <Separator />
 
-          {/* Skills */}
-          {skillGroups && Object.keys(skillGroups).length > 0 && (
-            <FormField
-              control={form.control}
-              name="skillIds"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg font-medium">Skills</FormLabel>
-                  <FormDescription>Select the skills you have or are developing.</FormDescription>
-                  <div className="mt-2 space-y-4">
-                    {Object.entries(skillGroups).map(([category, skills]) => (
-                      <div key={category}>
-                        <p className="text-muted-foreground mb-2 text-xs font-medium tracking-wide uppercase">
-                          {category}
-                        </p>
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {skills.map((skill) => (
-                            <label
-                              key={skill.id}
-                              className="flex cursor-pointer items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(skill.id) ?? false}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value ?? [];
-                                  field.onChange(
-                                    checked
-                                      ? [...current, skill.id]
-                                      : current.filter((id) => id !== skill.id),
-                                  );
-                                }}
-                              />
-                              <span className="text-sm">{skill.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-
-          <Separator />
-
           {/* Job seek text */}
           <FormField
             control={form.control}
@@ -272,7 +187,7 @@ export default function SeekerProfileNewPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-lg font-medium">
-                  What kind of job are you seeking? *
+                  What kind of job are you seeking? <span className="text-danger">*</span>
                 </FormLabel>
                 <FormDescription>
                   Describe the type of work you&apos;re looking for and what you want to learn on
@@ -413,6 +328,47 @@ export default function SeekerProfileNewPage() {
               )}
             />
           </div>
+
+          {/* Age confirmation */}
+          <FormField
+            control={form.control}
+            name="isAdult"
+            render={({ field }) => (
+              <FormItem className="bg-secondary flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value === true}
+                    onCheckedChange={(checked) => field.onChange(checked ? true : undefined)}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>
+                    I confirm I am 18+ years old <span className="text-danger">*</span>
+                  </FormLabel>
+                  <FormMessage />
+                </div>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="workAuthorization"
+            render={({ field }) => (
+              <FormItem className="bg-secondary flex flex-row items-center space-y-0 space-x-3 rounded-md p-3">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(!!checked)}
+                  />
+                </FormControl>
+                <FormLabel>
+                  I am authorized to work in the United States{" "}
+                  <span className="text-danger">*</span>
+                </FormLabel>
+              </FormItem>
+            )}
+          />
 
           {createProfile.isError && (
             <p className="text-danger text-sm">

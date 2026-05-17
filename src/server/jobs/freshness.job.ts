@@ -86,7 +86,6 @@ async function checkSeekerProfiles(db: PrismaClient, now: Date): Promise<void> {
       data: {
         type: "SEEKER_STILL_LOOKING",
         userId: profile.user.id,
-        seekerProfileId: profile.id,
       },
     });
 
@@ -128,7 +127,7 @@ async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
         where: { sentAt: { gte: lookbackCutoff } },
         orderBy: { sentAt: "asc" },
       },
-      postedBy: { select: { id: true, email: true } },
+      employer: { select: { id: true, email: true } },
     },
   });
 
@@ -174,11 +173,11 @@ async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
 
     const emailContent =
       action === "send-initial-ping"
-        ? buildJobInitialPingEmail(job.postedBy.email, job.title, tokenUrls)
-        : buildJobWarningEmail(job.postedBy.email, job.title, tokenUrls);
+        ? buildJobInitialPingEmail(job.employer.email, job.title, tokenUrls)
+        : buildJobWarningEmail(job.employer.email, job.title, tokenUrls);
 
     await sendEmail({
-      to: job.postedBy.email,
+      to: job.employer.email,
       subject: emailContent.subject,
       html: emailContent.html,
     });

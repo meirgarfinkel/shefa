@@ -35,13 +35,11 @@ export function computeResponsivenessScore(
       .slice()
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-    // Find the first message NOT from the employer
     const firstOtherMsg = msgs.find((m) => m.senderId !== employerUserId);
-    if (!firstOtherMsg) continue; // no scoreable opportunity
+    if (!firstOtherMsg) continue;
 
     scoreableCount++;
 
-    // Find the employer's first reply AFTER the other party's first message
     const firstReply = msgs.find(
       (m) =>
         m.senderId === employerUserId && m.createdAt.getTime() > firstOtherMsg.createdAt.getTime(),
@@ -87,22 +85,13 @@ export function computeResponsivenessScore(
 }
 
 export async function runResponsivenessJob(db: PrismaClient = prisma): Promise<void> {
-  const employers = await db.employerProfile.findMany({
+  const employers = await db.user.findMany({
+    where: { role: "EMPLOYER", employerProfile: { isNot: null } },
     select: {
       id: true,
-      userId: true,
-      user: {
+      conversationsAsEmployer: {
         select: {
-          conversationsAsA: {
-            select: {
-              messages: { select: { senderId: true, createdAt: true } },
-            },
-          },
-          conversationsAsB: {
-            select: {
-              messages: { select: { senderId: true, createdAt: true } },
-            },
-          },
+          messages: { select: { senderId: true, createdAt: true } },
         },
       },
     },
@@ -110,20 +99,12 @@ export async function runResponsivenessJob(db: PrismaClient = prisma): Promise<v
 
   for (const employer of employers) {
     try {
-      const allConversations = [
-        ...employer.user.conversationsAsA,
-        ...employer.user.conversationsAsB,
-      ];
-
-      const result = computeResponsivenessScore(employer.userId, allConversations);
+      const result = computeResponsivenessScore(employer.id, employer.conversationsAsEmployer);
 
       await db.employerProfile.update({
-        where: { id: employer.id },
+        where: { userId: employer.id },
         data: {
           isResponsive: result.isResponsive,
-          responsivenessScore: result.score,
-          responseRate: result.responseRate,
-          medianResponseHours: result.medianResponseHours,
           responsivenessUpdatedAt: new Date(),
         },
       });

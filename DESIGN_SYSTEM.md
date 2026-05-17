@@ -28,7 +28,7 @@ All token values are defined once in `:root`.
 
 ## Background
 
-The page background is a blurred photo (`/israeli-flag.jpg`) rendered via `body::before` (fixed, inset, `blur(3px)`). The `body` itself has `background: transparent`. An `rgba(25, 64, 112, 0.288)` overlay sits on top, giving the whole page a deep blue tint.
+The page background is a blurred photo (`/bg-image.jpg`) rendered via `body::before` (fixed, inset, `blur(3px)`). The `body` itself has `background: transparent`. An `rgba(25, 64, 112, 0.288)` overlay sits on top, giving the whole page a deep blue tint.
 
 Never use a solid opaque background on the `body` or `html` — it will cover the photo.
 

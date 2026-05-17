@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 8 (polish) — in progress**
+**Phase 8 (polish) — employer profile + company split complete**
 
 ---
 
@@ -12,95 +12,139 @@
 |-------|------|--------|
 | 1 | Foundation | ✅ Done |
 | 2 | Auth + base User | ✅ Done |
-| 3 | Profiles | ✅ Backend + signup UI + edit pages done |
-| 4 | Job postings | ✅ Backend + core UI + job edit page done |
-| 5 | Applications + messaging | ✅ Full backend + full messaging UI done |
+| 3 | Profiles | ✅ Done |
+| 4 | Job postings | ✅ Done |
+| 5 | Applications + messaging | ✅ Done |
 | 6 | Freshness system | ✅ Done |
 | 7 | Notifications + responsiveness | ✅ Done |
 | 8 | Polish + ship | 🔄 In progress |
 
 ---
 
-## What was completed this session
+## What was just completed
 
-### Production infrastructure prep (Phase 8)
+### React render-phase bug fix + employer layout centralization
 
-**PostGIS removed** — replaced with Haversine math:
-- `src/server/api/routers/jobPosting.ts`: replaced `ST_DWithin` / `ST_Distance` raw SQL with a Haversine subquery (`3959 * acos(LEAST(1, GREATEST(-1, ...)))` in miles)
-- `docker-compose.yml`: image changed from `postgis/postgis:16-3.5-alpine` → `postgres:16-alpine`
-- All 10 old migrations deleted; replaced with a single `prisma/migrations/0_init/migration.sql` (no PostGIS anywhere)
+**Bug fixed:**
+- `employer/jobs/page.tsx` had `router.replace()` called directly in the component body (render-phase side effect), causing `Cannot update a component while rendering a different component` errors. The destination was also wrong (`/employer/profile/new` instead of `/employer/company/new`).
 
-**New files:**
-- `env.production.example` — production env vars with comments (Neon, Upstash, Resend, Google, Railway)
-- `vercel.json` — overrides Vercel build command: `prisma generate && prisma migrate deploy && next build --turbopack`
-- `README.md` — full project README for GitHub
+**Architecture change — new route group:**
+- Created `src/app/employer/(needs-company)/layout.tsx` — a server component that checks for a completed employer profile and at least one company, and redirects to the appropriate onboarding step if either is missing.
+- Moved `employer/dashboard/` and `employer/jobs/` inside the `(needs-company)` route group. URLs are unchanged (route groups don't affect URLs).
+- Removed the now-redundant profile/company redirect checks from `employer/dashboard/page.tsx`.
+- Removed the render-phase `router.replace()` block and unused `useRouter` import from `employer/jobs/page.tsx`.
 
-**Docs updated:**
-- `PROJECT_SPEC.md` — "Hosting (later)" → confirmed targets (Vercel + Neon + Upstash + Railway + Resend)
-- `CLAUDE.md` — project summary updated to include deployment targets and correct Docker image
-- `HANDOFF.md` — this file
+**Pages that stay outside the route group** (no full-onboarding requirement):
+- `employer/profile/new` — creating the profile
+- `employer/profile/edit` — editing personal info (handles missing profile gracefully)
+- `employer/company/new` — creating a company (accessible without any company existing)
+- `employer/company/[id]/edit` — editing a company
+- `employer/[profileId]` — public company page
 
-**Nothing changed:**
-- `src/server/jobs/redis.ts` — already reads `REDIS_URL ?? "redis://localhost:6379"` ✅
-- `src/server/jobs/worker.ts` — already imports `dotenv/config` and has no hard-coded URLs ✅
-- `prisma/schema.prisma` — datasource already uses `env("DATABASE_URL")` with no `directUrl` ✅
-- `package.json` — `npm run worker` script already exists ✅
+**Result:** Zero render-phase state/navigation mutations remain. All employer onboarding guards are server-side, single-sourced in the layout.
 
 ---
 
-## ⚠️ Commands to run before resuming development
+### EmployerProfile model + Company split
 
-The migrations were flattened — the local DB is now out of sync. Run these in order:
+**Schema changes:**
+- Added `EmployerProfile` model (1:1 with User): `firstName`, `lastName`, `roleAtCompany?`, `isResponsive`, `responsivenessUpdatedAt`, timestamps
+- Removed `isResponsive` and `responsivenessUpdatedAt` from `User` — moved to `EmployerProfile`
+- Added `User.employerProfile` relation
 
-```bash
-# 1. Tear down the old PostGIS container and its volume
-docker-compose down -v
+**New tRPC router — `company` (src/server/api/routers/company.ts):**
+- `company.getPublic` — public company page (was `employer.getPublicCompany`)
+- `company.listMine` — list caller's companies (was `employer.getMyCompanies`)
+- `company.getById` — fetch by id with ownership check (was `employer.getCompany`)
+- `company.create` — create company, no longer handles isAdult
+- `company.update` — update with ownership check (was `employer.updateCompany`)
+- `company.delete` — delete with ownership check (was `employer.deleteCompany`)
 
-# 2. Start fresh with the standard postgres:16-alpine image
-docker-compose up -d
+**Updated tRPC router — `employer` (src/server/api/routers/employer.ts):**
+- `employer.getProfile` — returns caller's EmployerProfile (null if not created yet)
+- `employer.createProfile` — creates EmployerProfile + handles isAdult confirmation
+- `employer.updateProfile` — updates personal info
+- `employer.getRecentApplications` — unchanged
+- All company-related procedures removed (moved to `company` router)
 
-# 3. Apply the single flattened migration
-npx prisma migrate dev --name init
+**New routes:**
+- `/employer/company/new` — create a company
+- `/employer/company/[id]/edit` — edit a specific company (with delete)
 
-# 4. Re-seed geography data
-npx prisma db seed
+**Updated routes:**
+- `/employer/profile/new` — now creates `EmployerProfile` (firstName, lastName, roleAtCompany, isAdult)
+- `/employer/profile/edit` — now edits `EmployerProfile` + email change + delete account (company management moved out)
+- `/employer/dashboard` — updated signup redirect flow, "Your Companies" section with per-company edit links, shows `Hi, {firstName}`
+
+**Signup flow (enforced by dashboard redirect logic):**
+```
+Sign in → role select → EMPLOYER
+  → /employer/profile/new    (firstName, lastName, roleAtCompany, isAdult)
+  → /employer/company/new    (company name, location, size, industry, about, mission)
+  → /employer/dashboard
 ```
 
-After these four commands, `npm run dev` and `npm run worker` should work normally.
+**Middleware:** Added `/employer/company` to `EMPLOYER_ONLY_PREFIXES`.
 
-To verify search still works: start the app, go to `/jobs`, type a keyword — results should appear. Try the radius filter to verify Haversine distance works.
+**Responsiveness job:** Now writes to `employerProfile.update({ where: { userId } })` instead of `user.update`. Skips employers with no `EmployerProfile`.
 
----
+**Pages updated for new tRPC calls:**
+- `employer/jobs/new` — uses `trpc.company.listMine`, removed `CreateCompanyDialog`, "+ New" links to `/employer/company/new`
+- `employer/jobs/page.tsx` — uses `trpc.company.listMine`
+- `employer/[profileId]/page.tsx` — uses `trpc.company.getPublic`
+- `jobs/page.tsx` — uses `trpc.company.listMine`
+- `jobs/[id]/page.tsx` — reads `isResponsive` from `owner.employerProfile`
 
-## Deployment checklist (before going live)
-
-- [ ] Create Neon project, get pooled `DATABASE_URL`
-- [ ] Create Upstash Redis database, get `REDIS_URL`
-- [ ] Verify Resend sender domain (`noreply@shefa.jobs`) — must be DNS-verified
-- [ ] Create Google OAuth credentials with production redirect URI
-- [ ] Set all vars from `env.production.example` in Vercel project settings
-- [ ] Create Railway worker service, set `npm run worker` as start command, add same env vars
-- [ ] Push to GitHub → Vercel auto-deploys, Railway auto-deploys
-- [ ] After first Vercel deploy: `prisma db seed` via Railway or a one-off script to seed states/cities
+**Test results:** 373 tests across 18 files, all passing.
 
 ---
 
-## Known UI gaps (still open)
+## Commands the user MUST run before testing
 
-| Gap | Notes |
-|-----|-------|
-| Application status controls (employer side) | Only basic buttons — no seeker profile link |
-| Notification preferences UI | Procedures exist; no settings page |
-| Admin profile / admin tools | No admin-facing pages at all |
-| Seeker profile view link from employer applications page | Application cards don't link to seeker's public profile |
-| Rate limiting | 25 applications/day / 50 cold DMs/day — deferred to Phase 8 |
-| Profile completion gate | Users with a role can reach `/jobs` without completing a profile |
+The database schema has changed. Run these to apply the migration:
+
+```bash
+npx prisma migrate dev --name add_employer_profile
+```
+
+This will:
+1. Create a new migration that adds `EmployerProfile` and removes `isResponsive`/`responsivenessUpdatedAt` from `User`
+2. Apply it to your local database
+
+> **Note for existing test data:** Any existing employer users will have no `EmployerProfile`. On next login they will be redirected to `/employer/profile/new` to complete onboarding. This is the correct behavior.
 
 ---
 
 ## Open questions / blockers
 
-1. **Resend domain**: `noreply@shefa.jobs` must be DNS-verified before production emails work.
-2. **Seed in production**: States/cities seed must run once after first deploy. Recommend a Railway one-off command or a protected tRPC admin procedure.
-3. **Rate limiting**: 25 applications/day for seekers, 50 cold DMs/day for employers — not yet implemented.
-4. **Profile completion gate**: Users with a role can reach `/jobs` without a complete profile.
+None.
+
+---
+
+## What's next
+
+1. **Production deploy checklist** — verify all env vars on Vercel + Neon + Upstash + Railway
+2. **Email templates** — verify magic link and notification emails render correctly in prod
+3. **BullMQ worker** — ensure Railway worker process is running `npm run worker`
+4. **Final QA pass** — test full employer + seeker flows end-to-end in production
+
+---
+
+## Uncommitted changes
+
+All files modified since last commit. Suggested commit message:
+
+```
+Add EmployerProfile model; split company routes from profile routes
+
+- Add EmployerProfile (firstName, lastName, roleAtCompany, isResponsive, responsivenessUpdatedAt)
+- Move isResponsive/responsivenessUpdatedAt from User to EmployerProfile
+- New companyRouter: getPublic, listMine, getById, create, update, delete
+- New employer procedures: getProfile, createProfile, updateProfile
+- New pages: /employer/company/new, /employer/company/[id]/edit
+- Rewrite /employer/profile/new (personal info) and /employer/profile/edit
+- Update dashboard: signup redirect flow, Hi {firstName}, per-company edit links
+- Update responsiveness job to write to EmployerProfile
+- Update all pages to use trpc.company.* instead of trpc.employer.company*
+- 373 tests passing
+```

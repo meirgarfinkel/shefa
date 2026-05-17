@@ -45,11 +45,10 @@ const createCaller = createCallerFactory(applicationRouter);
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
 const SEEKER_PROFILE = { id: "seeker-profile-1" };
-const ACTIVE_JOB = { id: "job-1", status: "ACTIVE", postedById: "employer-1" };
+const ACTIVE_JOB = { id: "job-1", status: "ACTIVE", employerId: "employer-1" };
 const CREATED_APPLICATION = {
   id: "app-1",
   seekerId: "user-1",
-  seekerProfileId: "seeker-profile-1",
   jobId: "job-1",
   message: null,
   status: "SUBMITTED",
@@ -79,7 +78,6 @@ describe("submit", () => {
       expect.objectContaining({
         data: expect.objectContaining({
           seekerId: "user-1",
-          seekerProfileId: "seeker-profile-1",
           jobId: "job-1",
           message: "I'm interested!",
         }),
@@ -181,7 +179,7 @@ describe("submit", () => {
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  it("scheduleApplicationNotify called with jobId and postedById after successful submit", async () => {
+  it("scheduleApplicationNotify called with jobId and employerId after successful submit", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma));
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
@@ -271,7 +269,7 @@ describe("listForJob", () => {
 
   it("happy path: employer gets applications for own job", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, postedById: "user-1" });
+    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, employerId: "user-1" });
     const apps = [{ id: "app-1", status: "SUBMITTED" }];
     mockPrisma.application.findMany.mockResolvedValue(apps);
 
@@ -293,7 +291,7 @@ describe("listForJob", () => {
 
   it("job belongs to different employer → FORBIDDEN", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, postedById: "user-2" });
+    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, employerId: "user-2" });
 
     await expect(caller.listForJob({ jobId: JOB_ID })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
@@ -323,7 +321,7 @@ describe("updateStatus", () => {
       const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
       mockPrisma.application.findUnique.mockResolvedValue({
         id: "app-1",
-        job: { postedById: "user-1" },
+        job: { employerId: "user-1" },
       });
       mockPrisma.application.update.mockResolvedValue({ id: "app-1", status });
 
@@ -350,7 +348,7 @@ describe("updateStatus", () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
     mockPrisma.application.findUnique.mockResolvedValue({
       id: "app-1",
-      job: { postedById: "user-2" },
+      job: { employerId: "user-2" },
     });
     await expect(caller.updateStatus({ id: "app-1", status: "VIEWED" })).rejects.toMatchObject({
       code: "FORBIDDEN",

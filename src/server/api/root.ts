@@ -2,6 +2,7 @@ import { createTRPCRouter } from "@/server/api/trpc";
 import { userRouter } from "@/server/api/routers/user";
 import { seekerRouter } from "@/server/api/routers/seeker";
 import { employerRouter } from "@/server/api/routers/employer";
+import { companyRouter } from "@/server/api/routers/company";
 import { taxonomyRouter } from "@/server/api/routers/taxonomy";
 import { jobPostingRouter } from "@/server/api/routers/jobPosting";
 import { applicationRouter } from "@/server/api/routers/application";
@@ -15,6 +16,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   seeker: seekerRouter,
   employer: employerRouter,
+  company: companyRouter,
   taxonomy: taxonomyRouter,
   jobPosting: jobPostingRouter,
   application: applicationRouter,
