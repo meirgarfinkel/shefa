@@ -788,7 +788,7 @@ function JobsContent() {
                   jobType={job.jobType}
                   workArrangement={job.workArrangement}
                   minHourlyRate={Number(job.minHourlyRate)}
-                  status={job.status}
+                  status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
                   showStatus={Boolean(employerProfile)}
                   companyName={job.company.name}
                   href={`/jobs/${job.id}`}

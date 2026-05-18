@@ -161,15 +161,12 @@ describe("submit", () => {
     });
   });
 
-  it.each(["PAUSED", "EXPIRED", "FILLED", "CLOSED"])(
-    "job status %s → FORBIDDEN",
-    async (status) => {
-      const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-      mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-      mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: "job-1", status });
-      await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
-    },
-  );
+  it.each(["PAUSED", "CLOSED"])("job status %s → FORBIDDEN", async (status) => {
+    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
+    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: "job-1", status });
+    await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 
   it("duplicate application → CONFLICT", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma));
@@ -315,7 +312,7 @@ describe("updateStatus", () => {
     mockPrisma = makeMockPrisma();
   });
 
-  it.each(["VIEWED", "RESPONDED", "CLOSED"] as const)(
+  it.each(["VIEWED", "REJECTED", "CLOSED"] as const)(
     "happy path: employer sets status to %s",
     async (status) => {
       const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
@@ -329,6 +326,44 @@ describe("updateStatus", () => {
       expect(result).toMatchObject({ status });
     },
   );
+
+  it("CLOSED transition sets closedAt", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
+    mockPrisma.application.findUnique.mockResolvedValue({
+      id: "app-1",
+      job: { employerId: "user-1" },
+    });
+    mockPrisma.application.update.mockResolvedValue({
+      id: "app-1",
+      status: "CLOSED",
+      closedAt: new Date(),
+    });
+
+    await caller.updateStatus({ id: "app-1", status: "CLOSED" });
+
+    expect(mockPrisma.application.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ closedAt: expect.any(Date) }),
+      }),
+    );
+  });
+
+  it("REJECTED transition does not set closedAt", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
+    mockPrisma.application.findUnique.mockResolvedValue({
+      id: "app-1",
+      job: { employerId: "user-1" },
+    });
+    mockPrisma.application.update.mockResolvedValue({ id: "app-1", status: "REJECTED" });
+
+    await caller.updateStatus({ id: "app-1", status: "REJECTED" });
+
+    expect(mockPrisma.application.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.not.objectContaining({ closedAt: expect.anything() }),
+      }),
+    );
+  });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
     const caller = createCaller(makeCtx(null, mockPrisma));
@@ -367,5 +402,11 @@ describe("updateStatus", () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
     // @ts-expect-error intentionally invalid status
     await expect(caller.updateStatus({ id: "app-1", status: "SUBMITTED" })).rejects.toThrow();
+  });
+
+  it("status RESPONDED rejected by Zod (removed from schema)", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
+    // @ts-expect-error intentionally invalid status
+    await expect(caller.updateStatus({ id: "app-1", status: "RESPONDED" })).rejects.toThrow();
   });
 });

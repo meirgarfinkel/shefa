@@ -59,7 +59,7 @@ export default function MessagesPage() {
       )}
 
       {!isLoading && conversations && conversations.length > 0 && (
-        <div className="bg-popover overflow-hidden rounded-md border">
+        <div className="bg-secondary overflow-hidden rounded-md border">
           {conversations.map((conv) => {
             const other = role === "SEEKER" ? conv.employer : conv.seeker;
             const isUnread = conv._count.messages > 0;

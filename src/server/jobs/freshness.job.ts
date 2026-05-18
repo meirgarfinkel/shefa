@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
+import { JobStatus, type PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/server/emails";
 import {
   buildSeekerInitialPingEmail,
@@ -121,7 +121,7 @@ async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
   const lookbackCutoff = new Date(now.getTime() - 35 * DAY_MS);
 
   const jobs = await db.jobPosting.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: JobStatus.ACTIVE },
     include: {
       verificationPings: {
         where: { sentAt: { gte: lookbackCutoff } },
@@ -140,7 +140,7 @@ async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
     if (action === "auto-pause") {
       await db.jobPosting.update({
         where: { id: job.id },
-        data: { status: "PAUSED" },
+        data: { status: JobStatus.PAUSED },
       });
       if (pingsInCycle.length > 0) {
         const latestPing = pingsInCycle[pingsInCycle.length - 1]!;

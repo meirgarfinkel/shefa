@@ -108,7 +108,12 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 - seekerId, jobId
 - Application message (optional, max 500 chars)
-- Status (SUBMITTED / VIEWED / RESPONDED / CLOSED)
+- Status (SUBMITTED / VIEWED / REJECTED / CLOSED)
+  - SUBMITTED: default; employer has not opened/reviewed
+  - VIEWED: employer opened the application
+  - REJECTED: explicit employer rejection (terminal)
+  - CLOSED: terminal non-rejection — seeker withdrew, job closed/paused/filled
+- closedAt (DateTime, nullable — set when status transitions to CLOSED)
 - createdAt, updatedAt
 
 ### Conversation

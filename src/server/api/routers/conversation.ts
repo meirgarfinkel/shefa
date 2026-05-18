@@ -7,7 +7,8 @@ const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 // Participant shape returned by list/get: first company name for employers, profile name for seekers
 const participantSelect = {
   id: true,
-  seekerProfile: { select: { id: true, firstName: true, lastName: true } },
+  seekerProfile: { select: { id: true, firstName: true, lastName: true, status: true } },
+  employerProfile: { select: { status: true } },
   companies: {
     take: 1,
     orderBy: { name: "asc" as const },
@@ -136,11 +137,54 @@ export const conversationRouter = createTRPCRouter({
         messages: { orderBy: { createdAt: "asc" } },
         seeker: { select: participantSelect },
         employer: { select: participantSelect },
-        job: { select: { id: true, title: true } },
+        job: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            city: true,
+            state: true,
+            jobType: true,
+            workArrangement: true,
+            workAuthRequired: true,
+            minHourlyRate: true,
+            payNotes: true,
+            workDays: true,
+            scheduleNotes: true,
+            description: true,
+            whatWeTeach: true,
+            whatWereLookingFor: true,
+            company: {
+              select: {
+                id: true,
+                name: true,
+                owner: {
+                  select: {
+                    employerProfile: { select: { isResponsive: true } },
+                  },
+                },
+              },
+            },
+            requiredLanguages: {
+              select: { language: { select: { name: true } } },
+            },
+          },
+        },
       },
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
-    return conv;
+
+    // Fetch the linked application status so the client can gate messaging
+    const applicationStatus = conv.jobId
+      ? await ctx.prisma.application
+          .findFirst({
+            where: { seekerId: conv.seekerId, jobId: conv.jobId },
+            select: { status: true },
+          })
+          .then((a) => a?.status ?? null)
+      : null;
+
+    return { ...conv, applicationStatus };
   }),
 
   markRead: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {

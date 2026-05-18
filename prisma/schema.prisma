@@ -18,20 +18,27 @@ enum Role {
 enum ProfileStatus {
   ACTIVE
   PAUSED
+  SUSPENDED
 }
 
 enum JobStatus {
   ACTIVE
   PAUSED
-  EXPIRED
-  FILLED
   CLOSED
+}
+
+enum JobClosureReason {
+  FILLED_ON_SHEFA
+  FILLED_ELSEWHERE
+  HIRING_FROZEN
+  CANCELLED
+  OTHER
 }
 
 enum ApplicationStatus {
   SUBMITTED
   VIEWED
-  RESPONDED
+  REJECTED
   CLOSED
 }
 
@@ -203,12 +210,15 @@ model EmployerProfile {
   firstName     String
   lastName      String
   roleAtCompany String? @db.VarChar(200)
+  status         ProfileStatus @default(ACTIVE)
 
   isResponsive            Boolean   @default(false)
   responsivenessUpdatedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status])
 }
 
 model Company {
@@ -244,8 +254,8 @@ model JobPosting {
   workArrangement    WorkArrangement
   city               String
   state              String
-  lat                Float?
-  lon                Float?
+  lat                Float
+  lon                Float
   minHourlyRate      Decimal         @db.Decimal(8, 2)
   payNotes           String?
   workDays           DayOfWeek[]
@@ -255,10 +265,12 @@ model JobPosting {
   whatWereLookingFor String?         @db.VarChar(1000)
 
   // System
-  status         JobStatus @default(ACTIVE)
-  lastVerifiedAt DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  status         JobStatus        @default(ACTIVE)
+  closureReason  JobClosureReason?
+  closedAt       DateTime?
+  lastVerifiedAt DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   requiredLanguages JobLanguage[]
   applications      Application[]
@@ -266,12 +278,14 @@ model JobPosting {
   verificationPings VerificationPing[] @relation("JobPings")
 
   @@index([status])
+  @@index([employerId, status, createdAt])
   @@index([status, jobType])
   @@index([status, workArrangement])
   @@index([status, createdAt])
   @@index([employerId])
   @@index([companyId])
   @@index([lat, lon])
+  @@index([closedAt])
 }
 
 model Application {
@@ -281,13 +295,15 @@ model Application {
   jobId    String
   job      JobPosting @relation(fields: [jobId], references: [id])
 
-  message String?           @db.VarChar(500)
-  status  ApplicationStatus @default(SUBMITTED)
+  message  String?           @db.VarChar(500)
+  status   ApplicationStatus @default(SUBMITTED)
+  closedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([seekerId, jobId])
+  @@index([jobId, createdAt])
   @@index([jobId])
   @@index([status])
 }
@@ -295,14 +311,14 @@ model Application {
 model Conversation {
   id         String      @id @default(cuid())
   seekerId   String
-  seeker     User        @relation("ConversationSeeker", fields: [seekerId], references: [id])
+  seeker     User        @relation("ConversationSeeker", fields: [seekerId], references: [id], onDelete: Cascade)
   employerId String
-  employer   User        @relation("ConversationEmployer", fields: [employerId], references: [id])
+  employer   User        @relation("ConversationEmployer", fields: [employerId], references: [id], onDelete: Cascade)
   jobId      String?
   job        JobPosting? @relation(fields: [jobId], references: [id])
 
   lastMessageAt      DateTime?
-  lastMessagePreview String?   @db.VarChar(100)
+  lastMessagePreview String?   @db.VarChar(80)
   seekerBlocked      Boolean   @default(false)
   employerBlocked    Boolean   @default(false)
   createdAt          DateTime  @default(now())
@@ -321,9 +337,9 @@ model Conversation {
 model Message {
   id             String       @id @default(cuid())
   conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   senderId       String
-  sender         User         @relation(fields: [senderId], references: [id])
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
   body           String       @db.VarChar(5000)
   readAt         DateTime?
   createdAt      DateTime     @default(now())

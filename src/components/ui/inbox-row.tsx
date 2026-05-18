@@ -31,12 +31,12 @@ export function InboxRow({
         )}
       >
         {/* Unread indicator */}
-        <div className="flex w-2 flex-shrink-0 justify-center">
+        <div className="flex w-2 shrink-0 justify-center">
           {isUnread && <span className="bg-primary size-2 rounded-full" />}
         </div>
 
         {/* Avatar */}
-        <div className="bg-blue-dark-3 flex size-9 flex-shrink-0 items-center justify-center rounded-full border">
+        <div className="bg-blue-dark-3 flex size-9 shrink-0 items-center justify-center rounded-full border">
           <span className="text-primary text-xs font-medium">{initials}</span>
         </div>
 
@@ -47,7 +47,7 @@ export function InboxRow({
         </div>
 
         {/* Time */}
-        <span className="text-muted-foreground flex-shrink-0 text-xs">{timeAgo}</span>
+        <span className="text-muted-foreground shrink-0 text-xs">{timeAgo}</span>
       </div>
     </Link>
   );

@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-fit min-w-32 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-fit min-w-32 space-y-1 overflow-auto rounded-md p-1 shadow-md",
           className,
         )}
         {...props}
@@ -120,7 +120,7 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
+        "relative flex cursor-default items-center space-y-1 rounded-md px-2 py-1 text-sm",
         "hover:bg-popover-foreground hover:text-popover",
         "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
         inset && "pl-7",

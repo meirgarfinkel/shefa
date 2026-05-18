@@ -33,6 +33,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { LocationPicker } from "@/components/ui/location-picker";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
+import { JobStatus } from "@prisma/client";
 
 // Edit form only carries the fields the employer can change; id is injected before submission
 type EditFormValues = z.input<typeof UpdateJobPostingSchema>;
@@ -50,7 +51,6 @@ const DAYS = [
 const USER_SETTABLE_STATUSES = [
   { value: "ACTIVE", label: "Active" },
   { value: "PAUSED", label: "Paused" },
-  { value: "FILLED", label: "Filled" },
 ] as const;
 
 export default function JobEditPage() {
@@ -131,7 +131,7 @@ export default function JobEditPage() {
     );
   }
 
-  const isClosed = job.status === "CLOSED" || job.status === "EXPIRED";
+  const isClosed = job.status === JobStatus.CLOSED;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">
@@ -146,7 +146,7 @@ export default function JobEditPage() {
       <PageHeader
         title="Edit job posting"
         description={job.title}
-        actions={<StatusBadge status={job.status} />}
+        actions={<StatusBadge status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"} />}
       />
 
       {isClosed && (

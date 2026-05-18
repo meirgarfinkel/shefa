@@ -19,6 +19,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Pill } from "@/components/ui/pill";
+import { ApplicationStatus } from "@prisma/client";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   FULL_TIME: "Full-time",
@@ -47,14 +48,14 @@ const DAY_ORDER = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const APPLICATION_STATUS_LABELS: Record<string, string> = {
   SUBMITTED: "Applied",
   VIEWED: "Viewed",
-  RESPONDED: "Responded",
+  REJECTED: "Not selected",
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
   SUBMITTED: "bg-blue-dark-3 text-muted-foreground",
   VIEWED: "bg-warning/15 text-warning",
-  RESPONDED: "bg-success/15 text-success",
-  CLOSED: "bg-danger/15 text-danger",
+  REJECTED: "bg-danger/15 text-danger",
+  CLOSED: "bg-blue-dark-3 text-muted-foreground",
 };
 
 function ApplyDialog({
@@ -166,7 +167,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const hasProfile =
     isSeeker && !seekerProfileLoading && seekerProfile !== null && seekerProfile !== undefined;
   const noProfile = isSeeker && !seekerProfileLoading && !seekerProfile;
-  const hasApplied = submitted || (myStatus && myStatus.status !== "CLOSED");
+  const hasApplied = submitted || (myStatus && myStatus.status !== ApplicationStatus.CLOSED);
   const currentStatus = myStatus?.status;
 
   return (
@@ -308,20 +309,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               </p>
             )}
 
-            {hasProfile && !hasApplied && myStatus?.status !== "CLOSED" && (
+            {hasProfile && !hasApplied && myStatus?.status !== ApplicationStatus.CLOSED && (
               <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
                 Apply for this job
               </Button>
             )}
 
-            {hasProfile && hasApplied && currentStatus !== "CLOSED" && (
+            {hasProfile && hasApplied && currentStatus !== ApplicationStatus.CLOSED && (
               <div className="flex flex-wrap items-center gap-3">
                 <span
                   className={`rounded-full px-3 py-1 text-sm font-medium ${
-                    APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]
+                    APPLICATION_STATUS_STYLES[currentStatus ?? ApplicationStatus.SUBMITTED]
                   }`}
                 >
-                  {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
+                  {APPLICATION_STATUS_LABELS[currentStatus ?? ApplicationStatus.SUBMITTED]}
                 </span>
                 <Link
                   href="/seeker/applications"
@@ -332,15 +333,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               </div>
             )}
 
-            {hasProfile && (myStatus?.status === "CLOSED" || (!myStatus && submitted)) && (
-              <div className="space-y-2">
-                {submitted && (
-                  <p className="text-success text-sm">
-                    Application submitted! The employer will be in touch.
-                  </p>
-                )}
-              </div>
-            )}
+            {hasProfile &&
+              (myStatus?.status === ApplicationStatus.CLOSED || (!myStatus && submitted)) && (
+                <div className="space-y-2">
+                  {submitted && (
+                    <p className="text-success text-sm">
+                      Application submitted! The employer will be in touch.
+                    </p>
+                  )}
+                </div>
+              )}
           </div>
 
           {hasProfile && (

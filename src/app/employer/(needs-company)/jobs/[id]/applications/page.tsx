@@ -6,21 +6,20 @@ import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-
-type ApplicationStatus = "SUBMITTED" | "VIEWED" | "RESPONDED" | "CLOSED";
+import { ApplicationStatus } from "@prisma/client";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "New",
   VIEWED: "Viewed",
-  RESPONDED: "Responded",
+  REJECTED: "Rejected",
   CLOSED: "Closed",
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
   SUBMITTED: "bg-primary/15 text-primary",
   VIEWED: "bg-warning/15 text-warning",
-  RESPONDED: "bg-success/15 text-success",
-  CLOSED: "bg-danger/15 text-danger",
+  REJECTED: "bg-danger/15 text-danger",
+  CLOSED: "bg-blue-dark-3 text-muted-foreground",
 };
 
 const DAY_LABELS: Record<string, string> = {
@@ -147,41 +146,55 @@ export default function EmployerJobApplicationsPage({
                         Message
                       </Button>
                     )}
-                    {app.status !== "CLOSED" && (
-                      <>
-                        {app.status === "SUBMITTED" && (
+                    {app.status !== ApplicationStatus.CLOSED &&
+                      app.status !== ApplicationStatus.REJECTED && (
+                        <>
+                          {app.status === ApplicationStatus.SUBMITTED && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs"
+                              disabled={updateStatus.isPending}
+                              onClick={() =>
+                                updateStatus.mutate({
+                                  id: app.id,
+                                  status: ApplicationStatus.VIEWED,
+                                })
+                              }
+                            >
+                              Mark viewed
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 text-xs"
+                            className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
                             disabled={updateStatus.isPending}
-                            onClick={() => updateStatus.mutate({ id: app.id, status: "VIEWED" })}
+                            onClick={() =>
+                              updateStatus.mutate({
+                                id: app.id,
+                                status: ApplicationStatus.REJECTED,
+                              })
+                            }
                           >
-                            Mark viewed
+                            Reject
                           </Button>
-                        )}
-                        {(app.status === "SUBMITTED" || app.status === "VIEWED") && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 text-xs"
+                            className="text-muted-foreground hover:bg-blue-dark-3 h-7 text-xs transition-colors duration-100"
                             disabled={updateStatus.isPending}
-                            onClick={() => updateStatus.mutate({ id: app.id, status: "RESPONDED" })}
+                            onClick={() =>
+                              updateStatus.mutate({
+                                id: app.id,
+                                status: ApplicationStatus.CLOSED,
+                              })
+                            }
                           >
-                            Mark responded
+                            Close
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
-                          disabled={updateStatus.isPending}
-                          onClick={() => updateStatus.mutate({ id: app.id, status: "CLOSED" })}
-                        >
-                          Close
-                        </Button>
-                      </>
-                    )}
+                        </>
+                      )}
                   </div>
                 </div>
               </li>

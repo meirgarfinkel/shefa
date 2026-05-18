@@ -6,21 +6,20 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
-
-type ApplicationStatus = "SUBMITTED" | "VIEWED" | "RESPONDED" | "CLOSED";
+import { ApplicationStatus } from "@prisma/client";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "Applied",
   VIEWED: "Viewed by employer",
-  RESPONDED: "Responded",
+  REJECTED: "Not selected",
   CLOSED: "Closed",
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
   SUBMITTED: "bg-blue-dark-3 text-success",
-  VIEWED: "bg-popover text-success",
-  RESPONDED: "bg-popover text-popover-foreground",
-  CLOSED: "bg-blue-dark-3 text-danger",
+  VIEWED: "bg-warning/15 text-warning",
+  REJECTED: "bg-danger/15 text-danger",
+  CLOSED: "bg-blue-dark-3 text-muted-foreground",
 };
 
 function AppStatusBadge({ status }: { status: string }) {

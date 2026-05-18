@@ -2,13 +2,16 @@
 CREATE TYPE "Role" AS ENUM ('SEEKER', 'EMPLOYER', 'ADMIN');
 
 -- CreateEnum
-CREATE TYPE "ProfileStatus" AS ENUM ('ACTIVE', 'PAUSED');
+CREATE TYPE "ProfileStatus" AS ENUM ('ACTIVE', 'PAUSED', 'SUSPENDED');
 
 -- CreateEnum
-CREATE TYPE "JobStatus" AS ENUM ('ACTIVE', 'PAUSED', 'EXPIRED', 'FILLED', 'CLOSED');
+CREATE TYPE "JobStatus" AS ENUM ('ACTIVE', 'PAUSED', 'CLOSED');
 
 -- CreateEnum
-CREATE TYPE "ApplicationStatus" AS ENUM ('SUBMITTED', 'VIEWED', 'RESPONDED', 'CLOSED');
+CREATE TYPE "JobClosureReason" AS ENUM ('FILLED_ON_SHEFA', 'FILLED_ELSEWHERE', 'HIRING_FROZEN', 'CANCELLED', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ApplicationStatus" AS ENUM ('SUBMITTED', 'VIEWED', 'REJECTED', 'CLOSED');
 
 -- CreateEnum
 CREATE TYPE "PingType" AS ENUM ('SEEKER_STILL_LOOKING', 'JOB_STILL_OPEN');
@@ -90,6 +93,7 @@ CREATE TABLE "EmployerProfile" (
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "roleAtCompany" VARCHAR(200),
+    "status" "ProfileStatus" NOT NULL DEFAULT 'ACTIVE',
     "isResponsive" BOOLEAN NOT NULL DEFAULT false,
     "responsivenessUpdatedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -125,8 +129,8 @@ CREATE TABLE "JobPosting" (
     "workArrangement" "WorkArrangement" NOT NULL,
     "city" TEXT NOT NULL,
     "state" TEXT NOT NULL,
-    "lat" DOUBLE PRECISION,
-    "lon" DOUBLE PRECISION,
+    "lat" DOUBLE PRECISION NOT NULL,
+    "lon" DOUBLE PRECISION NOT NULL,
     "minHourlyRate" DECIMAL(8,2) NOT NULL,
     "payNotes" TEXT,
     "workDays" "DayOfWeek"[],
@@ -135,6 +139,8 @@ CREATE TABLE "JobPosting" (
     "whatWeTeach" VARCHAR(1000),
     "whatWereLookingFor" VARCHAR(1000),
     "status" "JobStatus" NOT NULL DEFAULT 'ACTIVE',
+    "closureReason" "JobClosureReason",
+    "closedAt" TIMESTAMP(3),
     "lastVerifiedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -149,6 +155,7 @@ CREATE TABLE "Application" (
     "jobId" TEXT NOT NULL,
     "message" VARCHAR(500),
     "status" "ApplicationStatus" NOT NULL DEFAULT 'SUBMITTED',
+    "closedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -162,7 +169,7 @@ CREATE TABLE "Conversation" (
     "employerId" TEXT NOT NULL,
     "jobId" TEXT,
     "lastMessageAt" TIMESTAMP(3),
-    "lastMessagePreview" VARCHAR(100),
+    "lastMessagePreview" VARCHAR(80),
     "seekerBlocked" BOOLEAN NOT NULL DEFAULT false,
     "employerBlocked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -332,6 +339,9 @@ CREATE INDEX "SeekerProfile_status_idx" ON "SeekerProfile"("status");
 CREATE UNIQUE INDEX "EmployerProfile_userId_key" ON "EmployerProfile"("userId");
 
 -- CreateIndex
+CREATE INDEX "EmployerProfile_status_idx" ON "EmployerProfile"("status");
+
+-- CreateIndex
 CREATE INDEX "Company_ownerId_idx" ON "Company"("ownerId");
 
 -- CreateIndex
@@ -339,6 +349,9 @@ CREATE UNIQUE INDEX "Company_ownerId_name_key" ON "Company"("ownerId", "name");
 
 -- CreateIndex
 CREATE INDEX "JobPosting_status_idx" ON "JobPosting"("status");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_employerId_status_createdAt_idx" ON "JobPosting"("employerId", "status", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "JobPosting_status_jobType_idx" ON "JobPosting"("status", "jobType");
@@ -357,6 +370,12 @@ CREATE INDEX "JobPosting_companyId_idx" ON "JobPosting"("companyId");
 
 -- CreateIndex
 CREATE INDEX "JobPosting_lat_lon_idx" ON "JobPosting"("lat", "lon");
+
+-- CreateIndex
+CREATE INDEX "JobPosting_closedAt_idx" ON "JobPosting"("closedAt");
+
+-- CreateIndex
+CREATE INDEX "Application_jobId_createdAt_idx" ON "Application"("jobId", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "Application_jobId_idx" ON "Application"("jobId");
@@ -470,19 +489,19 @@ ALTER TABLE "Application" ADD CONSTRAINT "Application_seekerId_fkey" FOREIGN KEY
 ALTER TABLE "Application" ADD CONSTRAINT "Application_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_seekerId_fkey" FOREIGN KEY ("seekerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_employerId_fkey" FOREIGN KEY ("employerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_employerId_fkey" FOREIGN KEY ("employerId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_jobId_fkey" FOREIGN KEY ("jobId") REFERENCES "JobPosting"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_fkey" FOREIGN KEY ("conversationId") REFERENCES "Conversation"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;

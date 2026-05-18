@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 8 (polish) — employer profile + company split complete**
+**Phase 8 (polish) — application status schema refined**
 
 ---
 
@@ -23,95 +23,94 @@
 
 ## What was just completed
 
-### React render-phase bug fix + employer layout centralization
-
-**Bug fixed:**
-- `employer/jobs/page.tsx` had `router.replace()` called directly in the component body (render-phase side effect), causing `Cannot update a component while rendering a different component` errors. The destination was also wrong (`/employer/profile/new` instead of `/employer/company/new`).
-
-**Architecture change — new route group:**
-- Created `src/app/employer/(needs-company)/layout.tsx` — a server component that checks for a completed employer profile and at least one company, and redirects to the appropriate onboarding step if either is missing.
-- Moved `employer/dashboard/` and `employer/jobs/` inside the `(needs-company)` route group. URLs are unchanged (route groups don't affect URLs).
-- Removed the now-redundant profile/company redirect checks from `employer/dashboard/page.tsx`.
-- Removed the render-phase `router.replace()` block and unused `useRouter` import from `employer/jobs/page.tsx`.
-
-**Pages that stay outside the route group** (no full-onboarding requirement):
-- `employer/profile/new` — creating the profile
-- `employer/profile/edit` — editing personal info (handles missing profile gracefully)
-- `employer/company/new` — creating a company (accessible without any company existing)
-- `employer/company/[id]/edit` — editing a company
-- `employer/[profileId]` — public company page
-
-**Result:** Zero render-phase state/navigation mutations remain. All employer onboarding guards are server-side, single-sourced in the layout.
-
----
-
-### EmployerProfile model + Company split
+### Application status schema refinement
 
 **Schema changes:**
-- Added `EmployerProfile` model (1:1 with User): `firstName`, `lastName`, `roleAtCompany?`, `isResponsive`, `responsivenessUpdatedAt`, timestamps
-- Removed `isResponsive` and `responsivenessUpdatedAt` from `User` — moved to `EmployerProfile`
-- Added `User.employerProfile` relation
+- `ApplicationStatus` enum: removed `RESPONDED`, added `REJECTED`
+  - `SUBMITTED` — default; employer hasn't opened/reviewed
+  - `VIEWED` — employer opened the application
+  - `REJECTED` — explicit employer rejection (terminal)
+  - `CLOSED` — terminal non-rejection (seeker withdrew, job closed/paused/filled)
+- `Application` model gains `closedAt DateTime?` — set when status transitions to `CLOSED`
 
-**New tRPC router — `company` (src/server/api/routers/company.ts):**
-- `company.getPublic` — public company page (was `employer.getPublicCompany`)
-- `company.listMine` — list caller's companies (was `employer.getMyCompanies`)
-- `company.getById` — fetch by id with ownership check (was `employer.getCompany`)
-- `company.create` — create company, no longer handles isAdult
-- `company.update` — update with ownership check (was `employer.updateCompany`)
-- `company.delete` — delete with ownership check (was `employer.deleteCompany`)
+**Backend:**
+- `UpdateApplicationStatusSchema` (Zod): `z.enum(["VIEWED", "REJECTED", "CLOSED"])` (replaced `RESPONDED` with `REJECTED`)
+- `application.updateStatus` tRPC procedure: sets `closedAt: new Date()` when transitioning to `CLOSED`; `REJECTED` does not set `closedAt`
+- Temporary `as any` casts in `application.ts` — will resolve after migration
 
-**Updated tRPC router — `employer` (src/server/api/routers/employer.ts):**
-- `employer.getProfile` — returns caller's EmployerProfile (null if not created yet)
-- `employer.createProfile` — creates EmployerProfile + handles isAdult confirmation
-- `employer.updateProfile` — updates personal info
-- `employer.getRecentApplications` — unchanged
-- All company-related procedures removed (moved to `company` router)
+**UI:**
+- Employer applications page (`/employer/jobs/[id]/applications`): replaced "Mark responded" button with "Reject" button; buttons hidden once REJECTED or CLOSED (both terminal)
+- Status badge colors updated: REJECTED → danger, CLOSED → muted (neutral)
+- Seeker applications page (`/seeker/applications`): REJECTED label = "Not selected"
+- Job detail page (`/jobs/[id]`): updated status labels/styles for new enum
 
-**New routes:**
-- `/employer/company/new` — create a company
-- `/employer/company/[id]/edit` — edit a specific company (with delete)
+**Tests:**
+- 36/36 passing in `application.test.ts`
+- New tests: CLOSED sets `closedAt`, REJECTED does NOT set `closedAt`, RESPONDED rejected by Zod
 
-**Updated routes:**
-- `/employer/profile/new` — now creates `EmployerProfile` (firstName, lastName, roleAtCompany, isAdult)
-- `/employer/profile/edit` — now edits `EmployerProfile` + email change + delete account (company management moved out)
-- `/employer/dashboard` — updated signup redirect flow, "Your Companies" section with per-company edit links, shows `Hi, {firstName}`
-
-**Signup flow (enforced by dashboard redirect logic):**
-```
-Sign in → role select → EMPLOYER
-  → /employer/profile/new    (firstName, lastName, roleAtCompany, isAdult)
-  → /employer/company/new    (company name, location, size, industry, about, mission)
-  → /employer/dashboard
-```
-
-**Middleware:** Added `/employer/company` to `EMPLOYER_ONLY_PREFIXES`.
-
-**Responsiveness job:** Now writes to `employerProfile.update({ where: { userId } })` instead of `user.update`. Skips employers with no `EmployerProfile`.
-
-**Pages updated for new tRPC calls:**
-- `employer/jobs/new` — uses `trpc.company.listMine`, removed `CreateCompanyDialog`, "+ New" links to `/employer/company/new`
-- `employer/jobs/page.tsx` — uses `trpc.company.listMine`
-- `employer/[profileId]/page.tsx` — uses `trpc.company.getPublic`
-- `jobs/page.tsx` — uses `trpc.company.listMine`
-- `jobs/[id]/page.tsx` — reads `isResponsive` from `owner.employerProfile`
-
-**Test results:** 373 tests across 18 files, all passing.
+**⚠️ TypeScript type casts:** Two `as any` casts in `src/server/api/routers/application.ts` (line ~148) — `status` and `closedAt` field on the update — will resolve automatically after migration.
 
 ---
 
 ## Commands the user MUST run before testing
 
-The database schema has changed. Run these to apply the migration:
+**Run the migration (required for both jobs and applications schema changes):**
 
 ```bash
-npx prisma migrate dev --name add_employer_profile
+npx prisma migrate dev --create-only --name application_status_refine
 ```
 
-This will:
-1. Create a new migration that adds `EmployerProfile` and removes `isResponsive`/`responsivenessUpdatedAt` from `User`
-2. Apply it to your local database
+Then **edit the generated migration file** to add a data migration BEFORE the enum alteration. Insert this SQL:
 
-> **Note for existing test data:** Any existing employer users will have no `EmployerProfile`. On next login they will be redirected to `/employer/profile/new` to complete onboarding. This is the correct behavior.
+```sql
+-- Data migration: convert legacy RESPONDED applications to VIEWED
+UPDATE "Application" SET status = 'VIEWED'::"ApplicationStatus" WHERE status = 'RESPONDED';
+```
+
+Then apply and regenerate:
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+After `prisma generate`, the `as any` casts in these files can be removed:
+- `src/server/api/routers/application.ts` (line ~148)
+
+---
+
+## Previous pending migration (job closure reason — still needed if not yet run)
+
+If you haven't yet run the job closure reason migration from the previous session, run it first:
+
+```bash
+npx prisma migrate dev --create-only --name job_closure_reason
+```
+
+Edit the generated file to add before the enum alteration:
+
+```sql
+-- Data migration: convert legacy FILLED jobs to CLOSED with closure reason
+UPDATE "JobPosting" SET "closureReason" = 'FILLED_ON_SHEFA'::"JobClosureReason", "closedAt" = NOW() WHERE status = 'FILLED';
+
+-- Data migration: convert legacy EXPIRED jobs to CLOSED
+UPDATE "JobPosting" SET "closedAt" = NOW() WHERE status = 'EXPIRED';
+```
+
+Then:
+```bash
+npx prisma migrate dev
+npx prisma generate
+```
+
+After `prisma generate`, the `as any` casts can be removed from:
+- `src/server/api/routers/jobPosting.ts`
+- `src/server/jobs/redeem.ts`
+- `src/app/employer/(needs-company)/jobs/page.tsx`
+- `src/app/employer/(needs-company)/jobs/[id]/edit/page.tsx`
+- `src/app/jobs/page.tsx`
+- `src/components/ui/job-card.tsx`
+- `src/components/ui/status-badge.tsx`
+- `src/app/employer/(needs-company)/dashboard/_client.tsx`
 
 ---
 
@@ -123,10 +122,12 @@ None.
 
 ## What's next
 
-1. **Production deploy checklist** — verify all env vars on Vercel + Neon + Upstash + Railway
-2. **Email templates** — verify magic link and notification emails render correctly in prod
-3. **BullMQ worker** — ensure Railway worker process is running `npm run worker`
-4. **Final QA pass** — test full employer + seeker flows end-to-end in production
+1. **Run migrations** (above commands)
+2. **Remove `as any` casts** post-`prisma generate`
+3. **Production deploy checklist** — verify all env vars on Vercel + Neon + Upstash + Railway
+4. **Email templates** — verify magic link and notification emails render correctly in prod
+5. **BullMQ worker** — ensure Railway worker process is running `npm run worker`
+6. **Final QA pass** — test full employer + seeker flows end-to-end in production
 
 ---
 
@@ -135,16 +136,13 @@ None.
 All files modified since last commit. Suggested commit message:
 
 ```
-Add EmployerProfile model; split company routes from profile routes
+Refine ApplicationStatus: replace RESPONDED with REJECTED, add closedAt
 
-- Add EmployerProfile (firstName, lastName, roleAtCompany, isResponsive, responsivenessUpdatedAt)
-- Move isResponsive/responsivenessUpdatedAt from User to EmployerProfile
-- New companyRouter: getPublic, listMine, getById, create, update, delete
-- New employer procedures: getProfile, createProfile, updateProfile
-- New pages: /employer/company/new, /employer/company/[id]/edit
-- Rewrite /employer/profile/new (personal info) and /employer/profile/edit
-- Update dashboard: signup redirect flow, Hi {firstName}, per-company edit links
-- Update responsiveness job to write to EmployerProfile
-- Update all pages to use trpc.company.* instead of trpc.employer.company*
-- 373 tests passing
+- ApplicationStatus enum: SUBMITTED | VIEWED | REJECTED | CLOSED
+- REJECTED = explicit employer rejection (terminal, no closedAt)
+- CLOSED = terminal non-rejection (seeker withdrew, job closed); sets closedAt
+- updateStatus procedure sets closedAt when transitioning to CLOSED
+- Employer UI: "Reject" replaces "Mark responded"; both terminal states hide action buttons
+- Seeker UI: REJECTED shows "Not selected"
+- 36 tests passing
 ```

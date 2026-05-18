@@ -1,12 +1,126 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { BriefcaseIcon, MessageSquareIcon, PlusIcon } from "lucide-react";
+import { BriefcaseIcon, BuildingIcon, MessageSquareIcon, PlusIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { StatCard } from "@/components/ui/stat-card";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { PageHeader } from "@/components/ui/page-header";
+import { FilterTrigger } from "@/components/ui/filter-trigger";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import type { z } from "zod";
+import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
+
+type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
+
+const CLOSURE_OPTIONS: { value: JobClosureReason; label: string }[] = [
+  { value: "FILLED_ON_SHEFA", label: "Position filled from Shefa" },
+  { value: "FILLED_ELSEWHERE", label: "Position filled from somewhere else" },
+  { value: "HIRING_FROZEN", label: "Hiring paused/frozen" },
+  { value: "CANCELLED", label: "Role cancelled" },
+  { value: "OTHER", label: "Other" },
+];
+
+function CloseJobModal({
+  jobId,
+  jobTitle,
+  disabled,
+}: {
+  jobId: string;
+  jobTitle: string;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState<JobClosureReason | null>(null);
+  const utils = trpc.useUtils();
+
+  const closeJob = trpc.jobPosting.close.useMutation({
+    onSuccess: () => {
+      void utils.jobPosting.list.invalidate();
+      setReason(null);
+      setOpen(false);
+    },
+  });
+
+  function handleOpenChange(v: boolean) {
+    if (!v) setReason(null);
+    setOpen(v);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogTrigger asChild>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+          disabled={disabled}
+        >
+          Close listing
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Close &ldquo;{jobTitle}&rdquo;?</DialogTitle>
+        </DialogHeader>
+
+        <p className="text-muted-foreground text-sm">Why are you closing this listing?</p>
+
+        <div className="space-y-2">
+          {CLOSURE_OPTIONS.map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors duration-100 ${
+                reason === opt.value ? "bg-blue-dark-2" : "hover:bg-blue-dark-3"
+              }`}
+            >
+              <input
+                type="radio"
+                name={`closureReason-${jobId}`}
+                value={opt.value}
+                checked={reason === opt.value}
+                onChange={() => setReason(opt.value)}
+                className="accent-primary"
+              />
+              <span className="text-sm">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="ghost"
+            onClick={() => handleOpenChange(false)}
+            disabled={closeJob.isPending}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="bg-danger/15 text-danger hover:bg-danger/25 transition-colors duration-100"
+            disabled={!reason || closeJob.isPending}
+            onClick={() => reason && closeJob.mutate({ id: jobId, reason })}
+          >
+            {closeJob.isPending ? "Closing…" : "Close listing"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function timeAgo(date: Date | string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -40,7 +154,11 @@ export function EmployerDashboardClient({
   profile: Profile;
   companies: Company[];
 }) {
-  const { data: jobs } = trpc.jobPosting.list.useQuery({ myJobs: true, status: ["ACTIVE"] });
+  const { data: jobs } = trpc.jobPosting.list.useQuery({
+    myJobs: true,
+    status: ["ACTIVE"],
+    sortBy: "newest",
+  });
   const { data: recentApps } = trpc.employer.getRecentApplications.useQuery();
 
   const utils = trpc.useUtils();
@@ -48,23 +166,58 @@ export function EmployerDashboardClient({
     onSuccess: () => void utils.jobPosting.list.invalidate(),
   });
 
+  // All companies selected by default; unchecking narrows the active jobs list.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set(companies.map((c) => c.id)),
+  );
+
   const activeJobs = jobs ?? [];
   const appFeed = recentApps ?? [];
-  const totalActiveJobs = companies.reduce((sum, c) => sum + c.activeJobsCount, 0);
   const multiCompany = companies.length > 1;
+  const allSelected = selectedIds.size === companies.length;
+
+  const filteredJobs = allSelected
+    ? activeJobs
+    : activeJobs.filter((job) => selectedIds.has(job.company.id));
+
+  function toggleCompany(id: string) {
+    setSelectedIds((prev) => {
+      // Prevent deselecting the last company.
+      if (prev.has(id) && prev.size === 1) return prev;
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   return (
-    <div
-      className="mx-auto flex max-w-6xl flex-col px-4 pt-8 pb-8"
-      style={{ height: "calc(100vh - 64px)" }}
-    >
-      <PageHeader
-        title={`Hi, ${profile.firstName}`}
-        description="Manage your jobs and applicants."
-      />
+    <div className="mx-auto flex max-w-6xl flex-col px-4 pt-8 pb-8 lg:h-[calc(100vh-64px)]">
+      <div className="mb-6 flex items-center">
+        <h1 className="text-popover text-2xl font-semibold">Hi, {profile.firstName}</h1>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="ml-2 rounded-full p-1.5">
+                {profile.isResponsive ? (
+                  <span className="border-success bg-success/50 border-2" />
+                ) : (
+                  <p className="text-xs">
+                    {profile.responsivenessUpdatedAt != null ? "Not yet responsive" : ""}
+                  </p>
+                )}
+              </div>
+            </TooltipTrigger>
+
+            <TooltipContent>
+              <p>Responsiveness Rating</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
 
       {/* Quick actions */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 flex flex-wrap items-center gap-2">
         <Button asChild>
           <Link href="/employer/jobs/new">
             <BriefcaseIcon className="mr-1 size-4" />
@@ -83,55 +236,79 @@ export function EmployerDashboardClient({
             Add company
           </Link>
         </Button>
-      </div>
 
-      {/* Your Companies */}
-      <div className="mb-6">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-medium">Your Companies</h2>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          {companies.map((c) => (
-            <div key={c.id} className="bg-blue-dark-2 flex items-center gap-3 rounded-md px-4 py-3">
-              <div>
-                <p className="text-sm font-medium">{c.companyName}</p>
-                <p className="text-muted-foreground text-xs">
-                  {c.city}, {c.state} · {c.activeJobsCount} active job
-                  {c.activeJobsCount !== 1 ? "s" : ""}
-                </p>
-              </div>
-              <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-                <Link href={`/employer/company/${c.id}/edit`}>Edit</Link>
-              </Button>
+        {/* My companies modal */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="ghost">
+              <BuildingIcon className="mr-1 size-4" />
+              My companies
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>My companies</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-2">
+              {companies.map((c) => (
+                <div
+                  key={c.id}
+                  className="bg-blue-dark-2 flex items-center justify-between gap-3 rounded-md px-4 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{c.companyName}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {c.city}, {c.state} · {c.activeJobsCount} active job
+                      {c.activeJobsCount !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 text-xs">
+                    <Link href={`/employer/company/${c.id}/edit`}>Edit</Link>
+                  </Button>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Stats row */}
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <StatCard label="Active jobs" value={totalActiveJobs} />
-
-        <div className="bg-primary flex items-center justify-between rounded-md border bg-linear-to-b from-white/60 via-transparent to-transparent p-4 font-medium">
-          <p className="text-muted-foreground">Responsiveness</p>
-          {profile.isResponsive ? (
-            <span className="bg-success/15 text-success rounded-full px-2.5 py-0.5 text-xs font-semibold">
-              Responsive
-            </span>
-          ) : (
-            <p className="text-muted-foreground text-xs">
-              {profile.responsivenessUpdatedAt != null ? "Not yet responsive" : "No data yet"}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Two-column scrollable section */}
-      <div className="grid min-h-0 flex-1 gap-6 lg:grid-cols-2">
-        {/* Left — Active jobs */}
-        <div className="flex min-h-0 flex-col">
+      {/* Two-column section — stacks on mobile, side-by-side with independent scroll on desktop */}
+      <div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
+        {/* Active jobs */}
+        <div className="flex flex-col lg:min-h-0">
           <div className="mb-3 flex shrink-0 items-center justify-between">
-            <h2 className="font-medium">Active jobs</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-medium">
+                Active jobs{" "}
+                <span className="bg-primary/30 text-popover rounded-full p-2">
+                  {filteredJobs.length}
+                </span>
+              </h2>
+
+              {multiCompany && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
+                      Companies
+                    </FilterTrigger>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuLabel>Filter by company</DropdownMenuLabel>
+                    {companies.map((c) => (
+                      <DropdownMenuCheckboxItem
+                        key={c.id}
+                        checked={selectedIds.has(c.id)}
+                        onCheckedChange={() => toggleCompany(c.id)}
+                        onSelect={(e) => e.preventDefault()}
+                      >
+                        {c.companyName}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
+
             <Link
               href="/employer/jobs"
               className="text-muted-foreground hover:text-popover-foreground text-xs transition-colors duration-100"
@@ -140,8 +317,8 @@ export function EmployerDashboardClient({
             </Link>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
-            {activeJobs.length === 0 ? (
+          <div className="pr-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+            {filteredJobs.length === 0 ? (
               <div className="rounded-lg p-6 text-center">
                 <p className="text-muted-foreground text-sm">No active jobs.</p>
                 <Button asChild className="mt-3" size="sm">
@@ -150,7 +327,7 @@ export function EmployerDashboardClient({
               </div>
             ) : (
               <div className="space-y-3 pb-4">
-                {activeJobs.map((job) => (
+                {filteredJobs.map((job) => (
                   <div
                     key={job.id}
                     className="bg-primary/30 hover:bg-primary/10 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-4 transition-colors duration-100"
@@ -158,7 +335,6 @@ export function EmployerDashboardClient({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="truncate font-medium">{job.title}</p>
-                        <StatusBadge status={job.status} />
                       </div>
                       <p className="text-muted-foreground mt-0.5 text-xs">
                         {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr ·{" "}
@@ -185,6 +361,11 @@ export function EmployerDashboardClient({
                       <Button asChild size="sm" variant="ghost">
                         <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
                       </Button>
+                      <CloseJobModal
+                        jobId={job.id}
+                        jobTitle={job.title}
+                        disabled={updateJob.isPending}
+                      />
                     </div>
                   </div>
                 ))}
@@ -193,11 +374,11 @@ export function EmployerDashboardClient({
           </div>
         </div>
 
-        {/* Right — New applicants */}
-        <div className="flex min-h-0 flex-col">
+        {/* New applicants */}
+        <div className="flex flex-col lg:min-h-0">
           <h2 className="mb-3 shrink-0 font-medium">New applicants</h2>
 
-          <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {appFeed.length === 0 ? (
               <div className="bg-primary rounded-lg border bg-linear-to-b from-white/60 via-transparent to-transparent p-4">
                 <p className="text-muted-foreground text-sm">No applicants yet.</p>

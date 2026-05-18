@@ -11,7 +11,13 @@ async function getConversationForParticipant(
 ) {
   return prisma.conversation.findUnique({
     where: { id: conversationId },
-    select: { seekerId: true, employerId: true, seekerBlocked: true, employerBlocked: true },
+    select: {
+      seekerId: true,
+      employerId: true,
+      seekerBlocked: true,
+      employerBlocked: true,
+      jobId: true,
+    },
   });
 }
 
@@ -36,6 +42,43 @@ export const messageRouter = createTRPCRouter({
 
       // Either side's block prevents all messaging
       if (conv.seekerBlocked || conv.employerBlocked) throw new TRPCError({ code: "FORBIDDEN" });
+
+      // Run all remaining eligibility checks in parallel
+      const [job, application, seekerProfile, employerProfile] = await Promise.all([
+        conv.jobId
+          ? ctx.prisma.jobPosting.findUnique({
+              where: { id: conv.jobId },
+              select: { status: true },
+            })
+          : null,
+        conv.jobId
+          ? ctx.prisma.application.findFirst({
+              where: { seekerId: conv.seekerId, jobId: conv.jobId },
+              select: { status: true },
+            })
+          : null,
+        ctx.prisma.seekerProfile.findUnique({
+          where: { userId: conv.seekerId },
+          select: { status: true },
+        }),
+        ctx.prisma.employerProfile.findUnique({
+          where: { userId: conv.employerId },
+          select: { status: true },
+        }),
+      ]);
+
+      if (job && job.status !== "ACTIVE") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "This job is no longer active" });
+      }
+      if (application && (application.status === "REJECTED" || application.status === "CLOSED")) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "This application is no longer active" });
+      }
+      if (seekerProfile && seekerProfile.status !== "ACTIVE") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Seeker profile is not active" });
+      }
+      if (employerProfile && employerProfile.status !== "ACTIVE") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Employer profile is not active" });
+      }
 
       const recipientId = isSeeker ? conv.employerId : conv.seekerId;
 

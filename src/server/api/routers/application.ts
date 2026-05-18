@@ -7,6 +7,7 @@ import {
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
 import { scheduleApplicationNotify } from "@/server/jobs/schedule-application-notify";
+import { ApplicationStatus } from "@prisma/client";
 
 export const applicationRouter = createTRPCRouter({
   submit: protectedProcedure.input(ApplySchema).mutation(async ({ ctx, input }) => {
@@ -147,7 +148,12 @@ export const applicationRouter = createTRPCRouter({
 
       return ctx.prisma.application.update({
         where: { id: input.id },
-        data: { status: input.status },
+        data: {
+          status: input.status,
+          ...(input.status === ApplicationStatus.CLOSED && {
+            closedAt: new Date(),
+          }),
+        },
       });
     }),
 

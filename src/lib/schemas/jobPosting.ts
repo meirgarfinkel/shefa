@@ -3,9 +3,16 @@ import { z } from "zod";
 const DayOfWeek = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
 const JobType = z.enum(["FULL_TIME", "PART_TIME", "EITHER"]);
 const WorkArrangement = z.enum(["REMOTE", "ON_SITE", "HYBRID"]);
-export const JobStatusEnum = z.enum(["ACTIVE", "PAUSED", "EXPIRED", "FILLED", "CLOSED"]);
-// Status values an employer can set directly; EXPIRED and CLOSED are reserved
-const UserSettableJobStatus = z.enum(["ACTIVE", "PAUSED", "FILLED"]);
+export const JobStatusEnum = z.enum(["ACTIVE", "PAUSED", "CLOSED"]);
+// Status values an employer can set directly via the update procedure; CLOSED is handled by close procedure
+const UserSettableJobStatus = z.enum(["ACTIVE", "PAUSED"]);
+export const JobClosureReasonEnum = z.enum([
+  "FILLED_ON_SHEFA",
+  "FILLED_ELSEWHERE",
+  "HIRING_FROZEN",
+  "CANCELLED",
+  "OTHER",
+]);
 
 export const CreateJobPostingSchema = z.object({
   companyId: z.string(),
@@ -63,6 +70,12 @@ export const ListJobPostingsSchema = z.object({
   sortBy: z.enum(["newest", "closest", "pay"]).default("newest"),
 });
 
+export const CloseJobSchema = z.object({
+  id: z.string(),
+  reason: JobClosureReasonEnum,
+});
+
 export type CreateJobPostingInput = z.infer<typeof CreateJobPostingSchema>;
 export type UpdateJobPostingInput = z.infer<typeof UpdateJobPostingSchema>;
 export type ListJobPostingsInput = z.infer<typeof ListJobPostingsSchema>;
+export type CloseJobInput = z.infer<typeof CloseJobSchema>;

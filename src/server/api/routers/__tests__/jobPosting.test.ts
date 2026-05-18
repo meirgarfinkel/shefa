@@ -105,12 +105,15 @@ const VALID_CREATE_INPUT = {
 
 // ── jobPosting.create ─────────────────────────────────────────────────────────
 
+const MOCK_CITY_COORDS = { lat: 40.65, lon: -73.95 };
+
 describe("jobPosting.create", () => {
   let db: ReturnType<typeof makeMockPrisma>;
 
   beforeEach(() => {
     db = makeMockPrisma();
     db.company.findUnique.mockResolvedValue(MOCK_COMPANY);
+    db.city.findFirst.mockResolvedValue(MOCK_CITY_COORDS);
     db.jobPosting.create.mockResolvedValue(MOCK_JOB);
   });
 
@@ -481,19 +484,11 @@ describe("jobPosting.update", () => {
     expect(data.status).toBe("ACTIVE");
   });
 
-  it("cannot set status to CLOSED via update — use delete instead", async () => {
+  it("cannot set status to CLOSED via update — use close procedure instead", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
     await expect(
       // @ts-expect-error testing invalid input
       caller.update({ id: JOB_ID, status: "CLOSED" }),
-    ).rejects.toThrow(TRPCError);
-  });
-
-  it("cannot set status to EXPIRED via update — system-managed", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
-    await expect(
-      // @ts-expect-error testing invalid input
-      caller.update({ id: JOB_ID, status: "EXPIRED" }),
     ).rejects.toThrow(TRPCError);
   });
 
@@ -541,9 +536,9 @@ describe("jobPosting.update", () => {
   });
 });
 
-// ── jobPosting.delete ─────────────────────────────────────────────────────────
+// ── jobPosting.close ─────────────────────────────────────────────────────────
 
-describe("jobPosting.delete", () => {
+describe("jobPosting.close", () => {
   let db: ReturnType<typeof makeMockPrisma>;
 
   beforeEach(() => {
@@ -554,32 +549,42 @@ describe("jobPosting.delete", () => {
 
   // ── Happy path ──
 
-  it("sets status to CLOSED instead of hard-deleting", async () => {
+  it("sets status to CLOSED with closure reason", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
-    await caller.delete({ id: JOB_ID });
+    await caller.close({ id: JOB_ID, reason: "FILLED_ON_SHEFA" });
     const call = db.jobPosting.update.mock.calls[0][0];
     expect(call.where.id).toBe(JOB_ID);
     expect(call.data.status).toBe("CLOSED");
+    expect(call.data.closureReason).toBe("FILLED_ON_SHEFA");
+    expect(call.data.closedAt).toBeInstanceOf(Date);
   });
 
   it("returns the updated (closed) posting", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
-    const result = await caller.delete({ id: JOB_ID });
+    const result = await caller.close({ id: JOB_ID, reason: "CANCELLED" });
     expect(result).toMatchObject({ status: "CLOSED" });
   });
+
+  it.each(["FILLED_ON_SHEFA", "FILLED_ELSEWHERE", "HIRING_FROZEN", "CANCELLED", "OTHER"] as const)(
+    "accepts closure reason %s",
+    async (reason) => {
+      const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+      await expect(caller.close({ id: JOB_ID, reason })).resolves.toBeDefined();
+    },
+  );
 
   // ── Adversarial ──
 
   it("throws UNAUTHORIZED when no session", async () => {
     const caller = createCaller(makeCtx(null, db));
-    await expect(caller.delete({ id: JOB_ID })).rejects.toMatchObject({
+    await expect(caller.close({ id: JOB_ID, reason: "OTHER" })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
 
   it("throws FORBIDDEN when called by a SEEKER", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await expect(caller.delete({ id: JOB_ID })).rejects.toMatchObject({
+    await expect(caller.close({ id: JOB_ID, reason: "OTHER" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
@@ -590,7 +595,7 @@ describe("jobPosting.delete", () => {
       employerId: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
-    await expect(caller.delete({ id: JOB_ID })).rejects.toMatchObject({
+    await expect(caller.close({ id: JOB_ID, reason: "OTHER" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
@@ -598,7 +603,7 @@ describe("jobPosting.delete", () => {
   it("throws NOT_FOUND when job does not exist", async () => {
     db.jobPosting.findUnique.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
-    await expect(caller.delete({ id: "no-such-job" })).rejects.toMatchObject({
+    await expect(caller.close({ id: "no-such-job", reason: "OTHER" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });

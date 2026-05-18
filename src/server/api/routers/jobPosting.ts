@@ -2,11 +2,12 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import {
+  CloseJobSchema,
   CreateJobPostingSchema,
-  UpdateJobPostingSchema,
   ListJobPostingsSchema,
+  UpdateJobPostingSchema,
 } from "@/lib/schemas/jobPosting";
-import type { PrismaClient } from "@prisma/client";
+import { JobStatus, type PrismaClient } from "@prisma/client";
 
 async function lookupCityCoords(
   prisma: PrismaClient,
@@ -36,12 +37,20 @@ export const jobPostingRouter = createTRPCRouter({
     const { companyId, requiredLanguageIds, ...fields } = input;
     const coords = await lookupCityCoords(ctx.prisma, fields.city, fields.state);
 
+    if (!coords) {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Invalid city/state",
+      });
+    }
+
     return ctx.prisma.jobPosting.create({
       data: {
         ...fields,
         employerId: ctx.user.id,
         companyId,
-        ...(coords && { lat: coords.lat, lon: coords.lon }),
+        lat: coords.lat,
+        lon: coords.lon,
         ...(requiredLanguageIds.length && {
           requiredLanguages: {
             create: requiredLanguageIds.map((languageId) => ({ languageId })),
@@ -171,7 +180,7 @@ export const jobPostingRouter = createTRPCRouter({
     if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
     if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
     if (posting.status === "CLOSED") {
-      throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update a closed posting" });
+      throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot update a closed listing" });
     }
 
     let coords: { lat: number; lon: number } | null = null;
@@ -179,6 +188,13 @@ export const jobPostingRouter = createTRPCRouter({
       const city = fields.city ?? posting.city;
       const state = fields.state ?? posting.state;
       coords = await lookupCityCoords(ctx.prisma, city, state);
+
+      if (!coords) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid city/state",
+        });
+      }
     }
 
     return ctx.prisma.jobPosting.update({
@@ -297,22 +313,30 @@ export const jobPostingRouter = createTRPCRouter({
       });
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
+  close: protectedProcedure.input(CloseJobSchema).mutation(async ({ ctx, input }) => {
+    if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
-      const posting = await ctx.prisma.jobPosting.findUnique({
+    const posting = await ctx.prisma.jobPosting.findUnique({
+      where: { id: input.id },
+      select: { id: true, employerId: true },
+    });
+
+    if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
+    if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+    try {
+      const result = await ctx.prisma.jobPosting.update({
         where: { id: input.id },
-        select: { id: true, employerId: true },
+        data: {
+          status: JobStatus.CLOSED,
+          closureReason: input.reason,
+          closedAt: new Date(),
+        },
       });
-
-      if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
-      if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-
-      return ctx.prisma.jobPosting.update({
-        where: { id: input.id },
-        data: { status: "CLOSED" },
-      });
-    }),
+      return { id: result.id, status: result.status };
+    } catch (e) {
+      console.error("[jobPosting.close] DB update failed:", e);
+      throw e;
+    }
+  }),
 });

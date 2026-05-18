@@ -120,7 +120,7 @@ describe("redeemToken", () => {
     );
   });
 
-  it("JOB_POSTING + FILLED → sets job status FILLED", async () => {
+  it("JOB_POSTING + FILLED → sets job status CLOSED with closureReason FILLED_ON_SHEFA", async () => {
     mockDb.freshnessToken.findUnique.mockResolvedValue(
       makeToken({ targetType: "JOB_POSTING", targetId: "job-1", action: "FILLED" }),
     );
@@ -131,7 +131,11 @@ describe("redeemToken", () => {
     expect(mockDb.jobPosting.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "job-1" },
-        data: expect.objectContaining({ status: "FILLED" }),
+        data: expect.objectContaining({
+          status: "CLOSED",
+          closureReason: "FILLED_ON_SHEFA",
+          closedAt: expect.any(Date),
+        }),
       }),
     );
   });
