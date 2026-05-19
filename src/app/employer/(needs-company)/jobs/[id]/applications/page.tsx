@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { ApplicationStatus } from "@prisma/client";
+import type { ApplicationStatus } from "@/db/schema";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "New",
@@ -146,55 +146,54 @@ export default function EmployerJobApplicationsPage({
                         Message
                       </Button>
                     )}
-                    {app.status !== ApplicationStatus.CLOSED &&
-                      app.status !== ApplicationStatus.REJECTED && (
-                        <>
-                          {app.status === ApplicationStatus.SUBMITTED && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs"
-                              disabled={updateStatus.isPending}
-                              onClick={() =>
-                                updateStatus.mutate({
-                                  id: app.id,
-                                  status: ApplicationStatus.VIEWED,
-                                })
-                              }
-                            >
-                              Mark viewed
-                            </Button>
-                          )}
+                    {app.status !== "CLOSED" && app.status !== "REJECTED" && (
+                      <>
+                        {app.status === "SUBMITTED" && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+                            className="h-7 text-xs"
                             disabled={updateStatus.isPending}
                             onClick={() =>
                               updateStatus.mutate({
                                 id: app.id,
-                                status: ApplicationStatus.REJECTED,
+                                status: "VIEWED",
                               })
                             }
                           >
-                            Reject
+                            Mark viewed
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-muted-foreground hover:bg-blue-dark-3 h-7 text-xs transition-colors duration-100"
-                            disabled={updateStatus.isPending}
-                            onClick={() =>
-                              updateStatus.mutate({
-                                id: app.id,
-                                status: ApplicationStatus.CLOSED,
-                              })
-                            }
-                          >
-                            Close
-                          </Button>
-                        </>
-                      )}
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+                          disabled={updateStatus.isPending}
+                          onClick={() =>
+                            updateStatus.mutate({
+                              id: app.id,
+                              status: "REJECTED",
+                            })
+                          }
+                        >
+                          Reject
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-muted-foreground hover:bg-blue-dark-3 h-7 text-xs transition-colors duration-100"
+                          disabled={updateStatus.isPending}
+                          onClick={() =>
+                            updateStatus.mutate({
+                              id: app.id,
+                              status: "CLOSED",
+                            })
+                          }
+                        >
+                          Close
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </li>

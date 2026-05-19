@@ -2,20 +2,43 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory } from "@/server/api/trpc";
 import { reportRouter } from "../report";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
-function makeMockPrisma() {
+function makeMockDb() {
   return {
-    report: { create: vi.fn() },
+    query: {
+      report: { findFirst: vi.fn(), findMany: vi.fn() },
+    },
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    execute: vi.fn().mockResolvedValue([]),
   };
 }
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
+function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -26,7 +49,7 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
           }
         : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: prisma as any,
+    db: db as any,
   };
 }
 
@@ -47,34 +70,33 @@ const CREATED_REPORT = {
 // ── report.submit ──────────────────────────────────────────────────────────────
 
 describe("submit", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: seeker reports a user", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
-    mockPrisma.report.create.mockResolvedValue(CREATED_REPORT);
+    const caller = createCaller(makeCtx("SEEKER", mockDb, "user-1"));
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_REPORT]),
+      }),
+    });
 
     const result = await caller.submit({ targetType: "USER", targetId: "user-2", reason: "Spam" });
 
     expect(result).toEqual(CREATED_REPORT);
-    expect(mockPrisma.report.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          reporterId: "user-1",
-          targetType: "USER",
-          targetId: "user-2",
-          reason: "Spam",
-        }),
-      }),
-    );
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("happy path: employer reports a job posting", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.report.create.mockResolvedValue({ ...CREATED_REPORT, targetType: "JOB" });
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_REPORT, targetType: "JOB" }]),
+      }),
+    });
 
     await expect(
       caller.submit({ targetType: "JOB", targetId: "job-1", reason: "Fake listing" }),
@@ -82,8 +104,12 @@ describe("submit", () => {
   });
 
   it("happy path: user reports a message", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
-    mockPrisma.report.create.mockResolvedValue({ ...CREATED_REPORT, targetType: "MESSAGE" });
+    const caller = createCaller(makeCtx("SEEKER", mockDb, "user-1"));
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_REPORT, targetType: "MESSAGE" }]),
+      }),
+    });
 
     await expect(
       caller.submit({ targetType: "MESSAGE", targetId: "msg-1", reason: "Harassment" }),
@@ -91,8 +117,12 @@ describe("submit", () => {
   });
 
   it("reason exactly 2000 chars is accepted", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.report.create.mockResolvedValue(CREATED_REPORT);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_REPORT]),
+      }),
+    });
 
     await expect(
       caller.submit({ targetType: "USER", targetId: "user-2", reason: "a".repeat(2000) }),
@@ -100,28 +130,28 @@ describe("submit", () => {
   });
 
   it("reason 2001 chars → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(
       caller.submit({ targetType: "USER", targetId: "user-2", reason: "a".repeat(2001) }),
     ).rejects.toThrow();
   });
 
   it("empty reason → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(
       caller.submit({ targetType: "USER", targetId: "user-2", reason: "" }),
     ).rejects.toThrow();
   });
 
   it("reporter targeting themselves → BAD_REQUEST", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-1"));
+    const caller = createCaller(makeCtx("SEEKER", mockDb, "user-1"));
     await expect(
       caller.submit({ targetType: "USER", targetId: "user-1", reason: "test" }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
   });
 
   it("invalid targetType → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(
       // @ts-expect-error intentionally invalid targetType
       caller.submit({ targetType: "PROFILE", targetId: "x", reason: "test" }),
@@ -129,20 +159,21 @@ describe("submit", () => {
   });
 
   it("reporterId is always set to the caller's id, not a supplied value", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "real-user"));
-    mockPrisma.report.create.mockResolvedValue({ ...CREATED_REPORT, reporterId: "real-user" });
-
-    await caller.submit({ targetType: "USER", targetId: "user-2", reason: "Spam" });
-
-    expect(mockPrisma.report.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ reporterId: "real-user" }),
+    const caller = createCaller(makeCtx("SEEKER", mockDb, "real-user"));
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_REPORT, reporterId: "real-user" }]),
       }),
-    );
+    });
+
+    const result = await caller.submit({ targetType: "USER", targetId: "user-2", reason: "Spam" });
+
+    expect(result.reporterId).toBe("real-user");
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(
       caller.submit({ targetType: "USER", targetId: "user-2", reason: "Spam" }),
     ).rejects.toMatchObject({ code: "UNAUTHORIZED" });

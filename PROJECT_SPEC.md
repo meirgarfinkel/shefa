@@ -9,8 +9,8 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **Frontend + Backend**: Next.js (App Router) with TypeScript
 - **API layer**: tRPC
 - **Database**: PostgreSQL
-- **ORM**: Prisma 6 (`prisma-client-js`, standard output — no driver adapter, `DATABASE_URL` via datasource block)
-- **Auth**: Auth.js v5 (`next-auth@beta`) with Google OAuth + email magic links via Resend; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with Prisma adapter)
+- **ORM**: Drizzle ORM (`drizzle-orm` + `@neondatabase/serverless` Neon HTTP driver; schema in `src/db/schema/`; config in `drizzle.config.ts`)
+- **Auth**: Auth.js v5 (`next-auth@beta`) with Google OAuth + email magic links via Resend; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with `@auth/drizzle-adapter`)
 - **Background jobs**: Vercel Cron (API routes in `src/app/api/cron/`)
 - **Email**: Resend
 - **Validation**: Zod
@@ -259,7 +259,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 ## Build Plan (8 phases)
 
-1. **Foundation**: Next.js + TS + Prisma + Postgres + tRPC + Tailwind + shadcn/ui + Docker Compose. Empty app that runs. ✅
+1. **Foundation**: Next.js + TS + Drizzle + Postgres + tRPC + Tailwind + shadcn/ui + Docker Compose. Empty app that runs. ✅
 2. **Auth + base User**: Auth.js magic links via Resend, role selection, protected routes. ✅
 3. **Profiles**: Seeker + Employer profile schemas, signup flows (lean), profile completion pages, skill/language seed + multi-select. ✅ backend + signup UI; ⚠️ missing: profile view/edit pages.
 4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page. ✅ backend + core UI; ⚠️ missing: job edit page, publish/pause/close/fill status controls.

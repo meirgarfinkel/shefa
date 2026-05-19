@@ -1,6 +1,8 @@
-import { prisma } from "@/lib/prisma";
-import type { PrismaClient, PingResponse } from "@prisma/client";
-import { JobClosureReason, JobStatus, ProfileStatus } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
+import type { PingResponse } from "@/db/schema";
+import { freshnessToken, verificationPing, seekerProfile, jobPosting } from "@/db/schema";
 
 export type RedeemResult =
   | { status: "success"; targetType: string }
@@ -10,10 +12,10 @@ export type RedeemResult =
 
 export async function redeemToken(
   tokenStr: string,
-  db: PrismaClient = prisma,
+  db: DbClient = defaultDb,
 ): Promise<RedeemResult> {
-  const record = await db.freshnessToken.findUnique({
-    where: { token: tokenStr },
+  const record = await db.query.freshnessToken.findFirst({
+    where: eq(freshnessToken.token, tokenStr),
   });
 
   if (!record) return { status: "invalid" };
@@ -31,50 +33,40 @@ export async function redeemToken(
   }
 
   if (record.pingId) {
-    await db.verificationPing.update({
-      where: { id: record.pingId },
-      data: {
-        respondedAt: now,
-        response: record.action,
-      },
-    });
+    await db
+      .update(verificationPing)
+      .set({ respondedAt: now, response: record.action })
+      .where(eq(verificationPing.id, record.pingId));
 
-    await db.freshnessToken.updateMany({
-      where: { pingId: record.pingId },
-      data: { usedAt: now },
-    });
+    await db
+      .update(freshnessToken)
+      .set({ usedAt: now })
+      .where(eq(freshnessToken.pingId, record.pingId));
   }
 
-  return {
-    status: "success",
-    targetType: record.targetType,
-  };
+  return { status: "success", targetType: record.targetType };
 }
 
 async function applySeekerAction(
   seekerProfileId: string,
   action: PingResponse,
   now: Date,
-  db: PrismaClient,
+  db: DbClient,
 ): Promise<void> {
   switch (action) {
     case "CONFIRMED":
-      await db.seekerProfile.update({
-        where: { id: seekerProfileId },
-        data: {
-          lastVerifiedAt: now,
-        },
-      });
+      await db
+        .update(seekerProfile)
+        .set({ lastVerifiedAt: now })
+        .where(eq(seekerProfile.id, seekerProfileId));
       return;
 
     case "NOT_LOOKING":
     case "PAUSED":
-      await db.seekerProfile.update({
-        where: { id: seekerProfileId },
-        data: {
-          status: ProfileStatus.PAUSED,
-        },
-      });
+      await db
+        .update(seekerProfile)
+        .set({ status: "PAUSED" })
+        .where(eq(seekerProfile.id, seekerProfileId));
       return;
 
     default:
@@ -86,36 +78,22 @@ async function applyJobAction(
   jobId: string,
   action: PingResponse,
   now: Date,
-  db: PrismaClient,
+  db: DbClient,
 ): Promise<void> {
   switch (action) {
     case "CONFIRMED":
-      await db.jobPosting.update({
-        where: { id: jobId },
-        data: {
-          lastVerifiedAt: now,
-        },
-      });
+      await db.update(jobPosting).set({ lastVerifiedAt: now }).where(eq(jobPosting.id, jobId));
       return;
 
     case "FILLED":
-      await db.jobPosting.update({
-        where: { id: jobId },
-        data: {
-          status: JobStatus.CLOSED,
-          closureReason: JobClosureReason.FILLED_ON_SHEFA,
-          closedAt: now,
-        },
-      });
+      await db
+        .update(jobPosting)
+        .set({ status: "CLOSED", closureReason: "FILLED_ON_SHEFA", closedAt: now })
+        .where(eq(jobPosting.id, jobId));
       return;
 
     case "PAUSED":
-      await db.jobPosting.update({
-        where: { id: jobId },
-        data: {
-          status: JobStatus.PAUSED,
-        },
-      });
+      await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, jobId));
       return;
 
     default:

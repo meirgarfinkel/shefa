@@ -1,44 +1,55 @@
-import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
+import { eq, and, or, ne, gte, desc, asc, isNull, inArray } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import {
   buildDailyDigestEmail,
   type MessageGroup,
   type ApplicationGroup,
 } from "@/server/emails/daily-digest";
+import { message, conversation, application, jobPosting } from "@/db/schema";
 
-export async function runDailyDigestJob(db: PrismaClient = prisma): Promise<void> {
+export async function runDailyDigestJob(db: DbClient = defaultDb): Promise<void> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const prefsWithUsers = await db.notificationPreferences.findMany({
-    where: {
-      OR: [{ messageNotifications: "DAILY_DIGEST" }, { applicationNotifications: "DAILY_DIGEST" }],
-    },
-    include: {
-      user: { select: { id: true, email: true } },
+  const prefsWithUsers = await db.query.notificationPreferences.findMany({
+    where: (p, { or, eq }) =>
+      or(
+        eq(p.messageNotifications, "DAILY_DIGEST"),
+        eq(p.applicationNotifications, "DAILY_DIGEST"),
+      ),
+    with: {
+      user: { columns: { id: true, email: true } },
     },
   });
 
   for (const prefs of prefsWithUsers) {
+    if (!prefs.user) continue;
+
     try {
       const messageGroups: MessageGroup[] = [];
       const applicationGroups: ApplicationGroup[] = [];
 
       if (prefs.messageNotifications === "DAILY_DIGEST") {
-        const messages = await db.message.findMany({
-          where: {
-            readAt: null,
-            createdAt: { gte: since },
-            senderId: { not: prefs.userId },
-            conversation: {
-              OR: [{ seekerId: prefs.userId }, { employerId: prefs.userId }],
-            },
+        const userConvIds = db
+          .select({ id: conversation.id })
+          .from(conversation)
+          .where(
+            or(eq(conversation.seekerId, prefs.userId), eq(conversation.employerId, prefs.userId)),
+          );
+
+        const messages = await db.query.message.findMany({
+          where: and(
+            isNull(message.readAt),
+            gte(message.createdAt, since),
+            ne(message.senderId, prefs.userId),
+            inArray(message.conversationId, userConvIds),
+          ),
+          with: {
+            sender: { columns: { email: true } },
+            conversation: { columns: { id: true } },
           },
-          include: {
-            sender: { select: { email: true } },
-            conversation: { select: { id: true } },
-          },
-          orderBy: { createdAt: "asc" },
+          orderBy: asc(message.createdAt),
         });
 
         const convMap = new Map<
@@ -66,15 +77,17 @@ export async function runDailyDigestJob(db: PrismaClient = prisma): Promise<void
       }
 
       if (prefs.applicationNotifications === "DAILY_DIGEST") {
-        const applications = await db.application.findMany({
-          where: {
-            createdAt: { gte: since },
-            job: { employerId: prefs.userId },
+        const employerJobIds = db
+          .select({ id: jobPosting.id })
+          .from(jobPosting)
+          .where(eq(jobPosting.employerId, prefs.userId));
+
+        const applications = await db.query.application.findMany({
+          where: and(gte(application.createdAt, since), inArray(application.jobId, employerJobIds)),
+          with: {
+            job: { columns: { id: true, title: true } },
           },
-          include: {
-            job: { select: { id: true, title: true } },
-          },
-          orderBy: { createdAt: "desc" },
+          orderBy: desc(application.createdAt),
         });
 
         const jobMap = new Map<string, { jobTitle: string; applicationCount: number }>();

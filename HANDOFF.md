@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 8 (polish) — BullMQ/Redis removed, Vercel Cron implemented**
+**Phase 8 (polish) — Prisma → Drizzle ORM migration**
 
 ---
 
@@ -23,80 +23,118 @@
 
 ## What was just completed
 
-### BullMQ/Redis → Vercel Cron migration
+### Prisma → Drizzle ORM migration
 
-**Removed entirely:**
-- `bullmq` and `ioredis` packages
-- `src/server/jobs/redis.ts`
-- `src/server/jobs/queue.ts`
-- `src/server/jobs/worker.ts`
-- `src/server/jobs/schedule-message-notify.ts`
-- `src/server/jobs/schedule-application-notify.ts`
-- Redis service from `docker-compose.yml`
-- `REDIS_URL` from `.env.example`
-- `npm run worker` script from `package.json`
+**Goal**: replace Prisma 6 + `@prisma/client` with Drizzle ORM + `@neondatabase/serverless` HTTP driver for edge/Cloudflare compatibility.
 
-**Created (Vercel Cron routes):**
-- `src/app/api/cron/freshness/route.ts` — daily 9am UTC, wraps `runFreshnessCheck()`
-- `src/app/api/cron/responsiveness/route.ts` — every 2 days 3am UTC, wraps `runResponsivenessJob()`
-- `src/app/api/cron/digest/route.ts` — daily 6pm UTC, wraps `runDailyDigestJob()`
-- All routes require `Authorization: Bearer <CRON_SECRET>` header (Vercel injects automatically)
+**New files created:**
+- `src/db/schema/enums.ts` — all 16 pgEnum definitions + TypeScript union type exports
+- `src/db/schema/auth.ts` — User, Account, Session, VerificationToken tables (PascalCase SQL names preserved)
+- `src/db/schema/seeker.ts` — SeekerProfile, SeekerLanguage
+- `src/db/schema/employer.ts` — EmployerProfile, Company
+- `src/db/schema/job.ts` — JobPosting, JobLanguage
+- `src/db/schema/application.ts` — Application
+- `src/db/schema/conversation.ts` — Conversation, Message
+- `src/db/schema/freshness.ts` — VerificationPing, FreshnessToken
+- `src/db/schema/notification.ts` — NotificationPreferences
+- `src/db/schema/report.ts` — Report
+- `src/db/schema/geo.ts` — State, City
+- `src/db/schema/taxonomy.ts` — Language
+- `src/db/schema/relations.ts` — all Drizzle `relations()` definitions (named relations for ConversationSeeker/ConversationEmployer/SeekerPings/JobPings)
+- `src/db/schema/index.ts` — re-exports all schema files
+- `src/db/index.ts` — Neon HTTP driver + drizzle client; exports `db` and `DbClient` type
+- `drizzle.config.ts` — Drizzle Kit config
 
-**Updated:**
-- `vercel.json` — added `crons` array with 3 schedules
-- `src/server/api/routers/message.ts` — now calls `runMessageNotifyJob()` immediately inline instead of scheduling via BullMQ
-- `src/server/api/routers/application.ts` — now calls `runApplicationNotifyJob()` immediately inline instead of scheduling via BullMQ
-- `.env.example` — removed `REDIS_URL`, added `CRON_SECRET`
-- `CLAUDE.md`, `PROJECT_SPEC.md` — architecture updated
+**Modified:**
+- `package.json` — removed prisma/`@prisma/client`/`@auth/prisma-adapter`; added drizzle-orm/drizzle-kit/`@neondatabase/serverless`/`@paralleldrive/cuid2`/`@auth/drizzle-adapter`; added `db:generate`, `db:migrate`, `db:push`, `db:studio` scripts
+- `src/auth.ts` — DrizzleAdapter instead of PrismaAdapter
+- `src/server/api/trpc.ts` — `ctx.db` (Drizzle DbClient) instead of `ctx.prisma`
+- All tRPC routers: taxonomy, location, report, notification, user, employer, seeker, company, application, conversation, message, jobPosting
+- All job files: token.ts, redeem.ts, freshness.job.ts, responsiveness.job.ts, daily-digest.job.ts, message-notify.job.ts, application-notify.job.ts
+- `src/app/api/change-email/route.ts`
+- `src/app/employer/(needs-company)/layout.tsx`
+- `src/app/employer/(needs-company)/dashboard/page.tsx`
+- All pages that imported enum types from `@prisma/client` (replaced with `@/db/schema`)
+- `src/components/ui/job-card.tsx`
+- `src/lib/schemas/application.ts` — replaced `z.nativeEnum(ApplicationStatus)` with `z.enum([...])`
+- `src/lib/prisma.ts` — emptied (tombstoned)
+- `CLAUDE.md`, `PROJECT_SPEC.md` — updated to reflect Drizzle stack
 
-**Tests:**
-- Deleted: `schedule-message-notify.test.ts`, `schedule-application-notify.test.ts` (BullMQ-specific)
-- Updated: `message.test.ts`, `application.test.ts` (mocks updated to `message-notify.job` / `application-notify.job`)
-- Fixed pre-existing `message.test.ts` failures: added `seekerProfile` and `employerProfile` to `makeMockPrisma`
-- 363/366 passing (3 pre-existing failures in `redeem.test.ts` × 2, `conversation.test.ts` × 1 — unrelated to this work)
+**Key patterns established:**
+- `_count` replacement: separate aggregation query → `Map` → manual merge
+- Nested filter replacement: `inArray(col, db.select({ id: X.id }).from(X).where(...))` subquery
+- Language join-table updates: delete-all + insert pattern
+- `mode: 'insensitive'` → `ilike()`
+- Prisma `hasSome` → `arrayOverlaps(column, values)`
+- Decimal columns: `.mapWith(Number)` to return `number` not `string`
+- Unique violation: PostgreSQL error code `23505` (was Prisma `P2002`)
+- Prisma relation includes → explicit joins or separate queries
+
+---
+
+## Pending work
+
+### Test files (need separate attention)
+
+These test files mock `PrismaClient` and pass it as the `db` parameter. They need to be rewritten to mock `DbClient` (Drizzle) instead:
+
+- `src/server/jobs/__tests__/application-notify.test.ts`
+- `src/server/jobs/__tests__/daily-digest.test.ts`
+- `src/server/jobs/__tests__/message-notify.test.ts`
+- `src/server/jobs/__tests__/responsiveness.job.test.ts`
+
+Also needs migration: any other test files that import from `@prisma/client` or `@/lib/prisma`.
+
+---
+
+## Commands to run
+
+**1. Install packages (removes Prisma, adds Drizzle):**
+```bash
+npm install
+```
+
+**2. Generate Drizzle migration files:**
+```bash
+npx drizzle-kit generate
+```
+
+**3. Apply migrations to database:**
+```bash
+npx drizzle-kit migrate
+```
+
+Or for local dev against a running Postgres:
+```bash
+npx drizzle-kit push
+```
+
+**4. Verify types after install:**
+```bash
+npx tsc --noEmit
+```
+
+**5. Run lint/format:**
+```bash
+npm run lint:fix && npm run format
+```
+
+---
+
+## Important notes
+
+- GIN trigram indexes (`pg_trgm`) used in job search and text similarity queries are NOT created by Drizzle Kit automatically. The migration SQL must include:
+  ```sql
+  CREATE EXTENSION IF NOT EXISTS pg_trgm;
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS "JobPosting_title_trgm_idx" ON "JobPosting" USING gin (title gin_trgm_ops);
+  CREATE INDEX CONCURRENTLY IF NOT EXISTS "JobPosting_description_trgm_idx" ON "JobPosting" USING gin (description gin_trgm_ops);
+  ```
+  These should be added to the first generated migration SQL file before running `migrate`.
+
+- All existing PostgreSQL tables retain their original PascalCase names — no data migration needed. The Drizzle schema uses the same SQL table names as Prisma did.
 
 ---
 
 ## Open questions / blockers
 
 None.
-
----
-
-## What's next
-
-1. **Run npm install** to remove `bullmq` and `ioredis` from `node_modules`:
-   ```bash
-   npm install
-   ```
-2. **Update Docker** — remove old Redis container and data volume:
-   ```bash
-   docker-compose down -v && docker-compose up -d
-   ```
-3. **Run migrations** (see above)
-4. **Generate `CRON_SECRET`**:
-   ```bash
-   openssl rand -hex 32
-   ```
-   Add to Vercel env vars as `CRON_SECRET`. Vercel automatically sends it as `Authorization: Bearer <secret>` to cron routes.
-5. **Production deploy checklist** — verify env vars on Vercel + Neon + Resend (no more Upstash/Railway needed)
-6. **Email templates** — verify magic link and notification emails render correctly in prod
-7. **Final QA pass** — test full employer + seeker flows end-to-end in production
-
----
-
-## Uncommitted changes
-
-All files modified since last commit. Suggested commit message:
-
-```
-Replace BullMQ/Redis with Vercel Cron and immediate notifications
-
-- Remove bullmq, ioredis packages and all queue/worker files
-- Add Vercel Cron routes: /api/cron/freshness, /api/cron/responsiveness, /api/cron/digest
-- Message and application notifications now fire immediately inline (no debounce queue)
-- All cron routes protected by CRON_SECRET bearer token
-- Remove Redis from docker-compose.yml; remove REDIS_URL from .env.example; add CRON_SECRET
-- Update PROJECT_SPEC.md and CLAUDE.md to reflect Vercel + Neon + Resend stack
-- Fix pre-existing message.test.ts failures (missing seekerProfile/employerProfile mocks)
-```

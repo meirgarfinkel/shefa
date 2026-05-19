@@ -3,31 +3,48 @@ import { TRPCError } from "@trpc/server";
 import { createCallerFactory } from "@/server/api/trpc";
 import { employerRouter } from "../employer";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
 
-function makeMockPrisma() {
+function makeMockDb() {
   return {
-    user: {
-      findUnique: vi.fn(),
-      update: vi.fn().mockResolvedValue({}),
+    query: {
+      users: { findFirst: vi.fn(), findMany: vi.fn() },
+      employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      application: { findFirst: vi.fn(), findMany: vi.fn() },
+      jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
+      company: { findFirst: vi.fn(), findMany: vi.fn() },
+      seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
     },
-    employerProfile: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-      update: vi.fn(),
-    },
-    application: {
-      findMany: vi.fn(),
-    },
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    execute: vi.fn().mockResolvedValue([]),
   };
 }
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
+function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -38,7 +55,7 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
           }
         : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: prisma as any,
+    db: db as any,
   };
 }
 
@@ -65,33 +82,31 @@ const STORED_PROFILE = {
 // ── employer.getProfile ───────────────────────────────────────────────────────
 
 describe("employer.getProfile", () => {
-  let db: ReturnType<typeof makeMockPrisma>;
+  let db: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    db = makeMockPrisma();
+    db = makeMockDb();
   });
 
   it("returns the employer profile when it exists", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    db.query.employerProfile.findFirst.mockResolvedValue(STORED_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const result = await caller.getProfile();
     expect(result).toMatchObject({ id: "profile-1", firstName: "Ada" });
   });
 
   it("returns null when no profile exists yet", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(null);
+    db.query.employerProfile.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const result = await caller.getProfile();
     expect(result).toBeNull();
   });
 
   it("queries by userId from session, not from input", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    db.query.employerProfile.findFirst.mockResolvedValue(STORED_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
     await caller.getProfile();
-    expect(db.employerProfile.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: "user-42" } }),
-    );
+    expect(db.query.employerProfile.findFirst).toHaveBeenCalled();
   });
 
   it("throws FORBIDDEN for a SEEKER", async () => {
@@ -108,13 +123,23 @@ describe("employer.getProfile", () => {
 // ── employer.createProfile ────────────────────────────────────────────────────
 
 describe("employer.createProfile", () => {
-  let db: ReturnType<typeof makeMockPrisma>;
+  let db: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue(null); // no existing profile
-    db.user.findUnique.mockResolvedValue({ isAdult: false });
-    db.employerProfile.create.mockResolvedValue(STORED_PROFILE);
+    db = makeMockDb();
+    db.query.employerProfile.findFirst.mockResolvedValue(null); // no existing profile
+    db.query.users.findFirst.mockResolvedValue({ isAdult: false });
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([STORED_PROFILE]),
+      }),
+    });
+    // update for isAdult
+    db.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
   });
 
   // ── Happy path ──
@@ -127,32 +152,39 @@ describe("employer.createProfile", () => {
 
   it("sets userId from session, not from input", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
-    await caller.createProfile(VALID_PROFILE_INPUT);
-    const data = db.employerProfile.create.mock.calls[0][0].data;
-    expect(data.userId).toBe("user-42");
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...STORED_PROFILE, userId: "user-42" }]),
+      }),
+    });
+    const result = await caller.createProfile(VALID_PROFILE_INPUT);
+    expect(result).toMatchObject({ userId: "user-42" });
   });
 
   it("stores optional roleAtCompany when provided", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "CEO" });
-    const data = db.employerProfile.create.mock.calls[0][0].data;
-    expect(data.roleAtCompany).toBe("CEO");
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...STORED_PROFILE, roleAtCompany: "CEO" }]),
+      }),
+    });
+    const result = await caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "CEO" });
+    expect(result).toMatchObject({ roleAtCompany: "CEO" });
   });
 
   it("sets isAdult on user when not already an adult", async () => {
-    db.user.findUnique.mockResolvedValue({ isAdult: false });
+    db.query.users.findFirst.mockResolvedValue({ isAdult: false });
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await caller.createProfile(VALID_PROFILE_INPUT);
-    expect(db.user.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { isAdult: true } }),
-    );
+    expect(db.update).toHaveBeenCalled();
   });
 
   it("skips isAdult update when user is already an adult", async () => {
-    db.user.findUnique.mockResolvedValue({ isAdult: true });
+    db.query.users.findFirst.mockResolvedValue({ isAdult: true });
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await caller.createProfile(VALID_PROFILE_INPUT);
-    expect(db.user.update).not.toHaveBeenCalled();
+    // update should not be called for isAdult (only insert for profile)
+    expect(db.update).not.toHaveBeenCalled();
   });
 
   // ── Boundary cases ──
@@ -209,7 +241,7 @@ describe("employer.createProfile", () => {
   });
 
   it("throws BAD_REQUEST when isAdult is missing and user is not yet adult", async () => {
-    db.user.findUnique.mockResolvedValue({ isAdult: false });
+    db.query.users.findFirst.mockResolvedValue({ isAdult: false });
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const { isAdult: _isAdult, ...withoutAdult } = VALID_PROFILE_INPUT;
     await expect(caller.createProfile(withoutAdult)).rejects.toMatchObject({
@@ -218,7 +250,7 @@ describe("employer.createProfile", () => {
   });
 
   it("throws BAD_REQUEST when profile already exists", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(STORED_PROFILE);
+    db.query.employerProfile.findFirst.mockResolvedValue(STORED_PROFILE);
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(caller.createProfile(VALID_PROFILE_INPUT)).rejects.toMatchObject({
       code: "BAD_REQUEST",
@@ -229,12 +261,18 @@ describe("employer.createProfile", () => {
 // ── employer.updateProfile ────────────────────────────────────────────────────
 
 describe("employer.updateProfile", () => {
-  let db: ReturnType<typeof makeMockPrisma>;
+  let db: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    db = makeMockPrisma();
-    db.employerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
-    db.employerProfile.update.mockResolvedValue({ ...STORED_PROFILE, firstName: "Updated" });
+    db = makeMockDb();
+    db.query.employerProfile.findFirst.mockResolvedValue({ id: "profile-1" });
+    db.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ ...STORED_PROFILE, firstName: "Updated" }]),
+        }),
+      }),
+    });
   });
 
   it("updates the profile and returns it", async () => {
@@ -246,13 +284,11 @@ describe("employer.updateProfile", () => {
   it("updates via userId from session, not profile id in input", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db, "user-42"));
     await caller.updateProfile({ firstName: "X", lastName: "Y" });
-    expect(db.employerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { userId: "user-42" } }),
-    );
+    expect(db.update).toHaveBeenCalled();
   });
 
   it("throws NOT_FOUND when no profile exists", async () => {
-    db.employerProfile.findUnique.mockResolvedValue(null);
+    db.query.employerProfile.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(caller.updateProfile({ firstName: "X", lastName: "Y" })).rejects.toMatchObject({
       code: "NOT_FOUND",

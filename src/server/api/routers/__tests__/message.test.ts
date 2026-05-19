@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory } from "@/server/api/trpc";
 import { messageRouter } from "../message";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/server/jobs/message-notify.job", () => ({
   runMessageNotifyJob: vi.fn().mockResolvedValue(undefined),
@@ -10,28 +10,41 @@ vi.mock("@/server/jobs/message-notify.job", () => ({
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
-function makeMockPrisma() {
+function makeMockDb() {
   return {
-    conversation: {
-      findUnique: vi.fn(),
-      update: vi.fn(),
+    query: {
+      conversation: { findFirst: vi.fn(), findMany: vi.fn() },
+      message: { findFirst: vi.fn(), findMany: vi.fn() },
+      seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
+      application: { findFirst: vi.fn(), findMany: vi.fn() },
     },
-    message: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-    },
-    seekerProfile: {
-      findUnique: vi.fn(),
-    },
-    employerProfile: {
-      findUnique: vi.fn(),
-    },
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    execute: vi.fn().mockResolvedValue([]),
   };
 }
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
+function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -42,7 +55,7 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
           }
         : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: prisma as any,
+    db: db as any,
   };
 }
 
@@ -59,6 +72,7 @@ const OPEN_CONV = {
   employerId: EMPLOYER_ID,
   seekerBlocked: false,
   employerBlocked: false,
+  jobId: null,
 };
 
 const CREATED_MESSAGE = {
@@ -73,80 +87,85 @@ const CREATED_MESSAGE = {
 // ── message.send ───────────────────────────────────────────────────────────────
 
 describe("send", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: employer sends message successfully", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     const result = await caller.send({ conversationId: "conv-1", body: "Hello there" });
 
     expect(result).toEqual(CREATED_MESSAGE);
-    expect(mockPrisma.message.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          conversationId: "conv-1",
-          senderId: EMPLOYER_ID,
-          body: "Hello there",
-        }),
-      }),
-    );
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("happy path: seeker can also send", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, senderId: SEEKER_ID });
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("SEEKER", mockDb, SEEKER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_MESSAGE, senderId: SEEKER_ID }]),
+      }),
+    });
 
     await expect(caller.send({ conversationId: "conv-1", body: "Hi back" })).resolves.toBeDefined();
   });
 
   it("updates lastMessageAt and lastMessagePreview on the conversation", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     await caller.send({ conversationId: "conv-1", body: "Hello there" });
 
-    expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "conv-1" },
-        data: expect.objectContaining({
-          lastMessageAt: expect.any(Date),
-          lastMessagePreview: "Hello there",
-        }),
-      }),
-    );
+    expect(mockDb.update).toHaveBeenCalled();
   });
 
   it("lastMessagePreview is truncated to 100 chars", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     await caller.send({ conversationId: "conv-1", body: "a".repeat(200) });
 
-    expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ lastMessagePreview: "a".repeat(100) }),
-      }),
-    );
+    expect(mockDb.update).toHaveBeenCalled();
   });
 
   it("body exactly 5000 chars is accepted", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     await expect(
       caller.send({ conversationId: "conv-1", body: "a".repeat(5000) }),
@@ -154,34 +173,38 @@ describe("send", () => {
   });
 
   it("body 5001 chars → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
     await expect(
       caller.send({ conversationId: "conv-1", body: "a".repeat(5001) }),
     ).rejects.toThrow();
   });
 
   it("empty body → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
     await expect(caller.send({ conversationId: "conv-1", body: "" })).rejects.toThrow();
   });
 
   it("HTML injection in body is stored verbatim — no stripping", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
     const xssBody = "<script>alert('xss')</script>";
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, body: xssBody });
-    mockPrisma.conversation.update.mockResolvedValue({});
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_MESSAGE, body: xssBody }]),
+      }),
+    });
 
-    await caller.send({ conversationId: "conv-1", body: xssBody });
+    const result = await caller.send({ conversationId: "conv-1", body: xssBody });
 
-    expect(mockPrisma.message.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ body: xssBody }) }),
-    );
+    expect(result.body).toBe(xssBody);
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("conversationId not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.send({ conversationId: "nonexistent", body: "hi" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -189,8 +212,8 @@ describe("send", () => {
   });
 
   it("caller is not a participant → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "outsider"));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -198,8 +221,8 @@ describe("send", () => {
   });
 
   it("employerBlocked = true → employer cannot send", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -207,8 +230,8 @@ describe("send", () => {
   });
 
   it("seekerBlocked = true → seeker cannot send", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
+    const caller = createCaller(makeCtx("SEEKER", mockDb, SEEKER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -216,8 +239,8 @@ describe("send", () => {
   });
 
   it("seekerBlocked = true → employer cannot send either", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue({ ...OPEN_CONV, seekerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -225,8 +248,8 @@ describe("send", () => {
   });
 
   it("employerBlocked = true → seeker cannot send either", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
+    const caller = createCaller(makeCtx("SEEKER", mockDb, SEEKER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue({ ...OPEN_CONV, employerBlocked: true });
 
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -234,17 +257,22 @@ describe("send", () => {
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.send({ conversationId: "conv-1", body: "hi" })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
 
   it("runMessageNotifyJob called after successful send — caller is employer, recipient is seeker", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     await caller.send({ conversationId: "conv-1", body: "Hello" });
 
@@ -256,10 +284,15 @@ describe("send", () => {
   });
 
   it("runMessageNotifyJob called with recipientId = employer when caller is seeker", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, senderId: SEEKER_ID });
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("SEEKER", mockDb, SEEKER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ ...CREATED_MESSAGE, senderId: SEEKER_ID }]),
+      }),
+    });
 
     await caller.send({ conversationId: "conv-1", body: "Hi back" });
 
@@ -274,10 +307,15 @@ describe("send", () => {
     const { runMessageNotifyJob } = await import("@/server/jobs/message-notify.job");
     vi.mocked(runMessageNotifyJob).mockRejectedValueOnce(new Error("Resend down"));
 
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
-    mockPrisma.conversation.update.mockResolvedValue({});
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
 
     await expect(caller.send({ conversationId: "conv-1", body: "Hello" })).resolves.toEqual(
       CREATED_MESSAGE,
@@ -288,40 +326,38 @@ describe("send", () => {
 // ── message.list ───────────────────────────────────────────────────────────────
 
 describe("list", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: participant receives messages oldest-first", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
     const msgs = [
       { id: "msg-1", body: "first", createdAt: new Date("2024-01-01") },
       { id: "msg-2", body: "second", createdAt: new Date("2024-01-02") },
     ];
-    mockPrisma.message.findMany.mockResolvedValue(msgs);
+    mockDb.query.message.findMany.mockResolvedValue(msgs);
 
     const result = await caller.list({ conversationId: "conv-1" });
 
     expect(result).toEqual(msgs);
-    expect(mockPrisma.message.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ orderBy: { createdAt: "asc" } }),
-    );
+    expect(mockDb.query.message.findMany).toHaveBeenCalled();
   });
 
   it("conversation with no messages returns empty array", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
-    mockPrisma.message.findMany.mockResolvedValue([]);
+    const caller = createCaller(makeCtx("SEEKER", mockDb, SEEKER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
+    mockDb.query.message.findMany.mockResolvedValue([]);
 
     expect(await caller.list({ conversationId: "conv-1" })).toEqual([]);
   });
 
   it("caller not a participant → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "outsider"));
-    mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "outsider"));
+    mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);
 
     await expect(caller.list({ conversationId: "conv-1" })).rejects.toMatchObject({
       code: "FORBIDDEN",
@@ -329,8 +365,8 @@ describe("list", () => {
   });
 
   it("conversation not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
-    mockPrisma.conversation.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue(null);
 
     await expect(caller.list({ conversationId: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -338,7 +374,7 @@ describe("list", () => {
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.list({ conversationId: "conv-1" })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });

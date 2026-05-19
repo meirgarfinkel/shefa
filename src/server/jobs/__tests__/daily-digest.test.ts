@@ -1,28 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "@/db";
 import { runDailyDigestJob } from "../daily-digest.job";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/server/emails", () => ({ sendEmail: vi.fn() }));
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
 function makeMockDb() {
   return {
-    notificationPreferences: {
-      findMany: vi.fn(),
+    query: {
+      notificationPreferences: { findMany: vi.fn() },
+      message: { findMany: vi.fn() },
+      application: { findMany: vi.fn() },
     },
-    message: {
-      findMany: vi.fn(),
-    },
-    application: {
-      findMany: vi.fn(),
-    },
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({}),
+      }),
+    }),
   };
-}
-
-function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
-  return mock as unknown as PrismaClient;
 }
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────
@@ -30,6 +27,7 @@ function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
 const USER_A = { id: "user-a", email: "a@example.com" };
 const USER_B = { id: "user-b", email: "b@example.com" };
 
+// notificationPreferences rows with user included via `with: { user }`
 const MSG_PREFS_A = {
   userId: USER_A.id,
   messageNotifications: "DAILY_DIGEST" as const,
@@ -80,10 +78,11 @@ describe("runDailyDigestJob", () => {
   // ── Happy paths ──────────────────────────────────────────────────────────────
 
   it("message digest user with unread messages → sends 1 email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([UNREAD_MSG]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
@@ -93,10 +92,11 @@ describe("runDailyDigestJob", () => {
   });
 
   it("application digest user with new applications → sends 1 email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
-    mockDb.application.findMany.mockResolvedValue([NEW_APP]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
+    mockDb.query.application.findMany.mockResolvedValue([NEW_APP]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
@@ -106,22 +106,24 @@ describe("runDailyDigestJob", () => {
   });
 
   it("user with both digest prefs and both types of activity → exactly 1 email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([UNREAD_MSG]);
-    mockDb.application.findMany.mockResolvedValue([NEW_APP]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+    mockDb.query.application.findMany.mockResolvedValue([NEW_APP]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
   });
 
   it("two DAILY_DIGEST users → each gets their own email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A, APP_PREFS_B]);
-    mockDb.message.findMany.mockResolvedValue([UNREAD_MSG]);
-    mockDb.application.findMany.mockResolvedValue([NEW_APP]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A, APP_PREFS_B]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+    mockDb.query.application.findMany.mockResolvedValue([NEW_APP]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(2);
@@ -130,40 +132,44 @@ describe("runDailyDigestJob", () => {
   // ── Boundary: no activity → no email ────────────────────────────────────────
 
   it("message digest user with no unread messages → no email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("application digest user with no new applications → no email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
-    mockDb.application.findMany.mockResolvedValue([]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
+    mockDb.query.application.findMany.mockResolvedValue([]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("user with both digest prefs but no activity of either type → no email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([]);
-    mockDb.application.findMany.mockResolvedValue([]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([]);
+    mockDb.query.application.findMany.mockResolvedValue([]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("no DAILY_DIGEST users → no emails, no crash", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([]);
 
-    await expect(runDailyDigestJob(asDb(mockDb))).resolves.toBeUndefined();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(runDailyDigestJob(mockDb as any as DbClient)).resolves.toBeUndefined();
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
@@ -172,11 +178,12 @@ describe("runDailyDigestJob", () => {
   // ── Boundary: partial prefs ──────────────────────────────────────────────────
 
   it("user with both prefs, only has messages → email contains message section", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([UNREAD_MSG]);
-    mockDb.application.findMany.mockResolvedValue([]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([BOTH_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+    mockDb.query.application.findMany.mockResolvedValue([]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
@@ -187,8 +194,8 @@ describe("runDailyDigestJob", () => {
   // ── Grouping ─────────────────────────────────────────────────────────────────
 
   it("multiple unread messages in different conversations → all conversation IDs in email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([
       { ...UNREAD_MSG, conversationId: "conv-1", conversation: { id: "conv-1" } },
       {
         id: "msg-2",
@@ -200,7 +207,8 @@ describe("runDailyDigestJob", () => {
       },
     ]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -209,13 +217,14 @@ describe("runDailyDigestJob", () => {
   });
 
   it("multiple new applications across different jobs → all job IDs in email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
-    mockDb.application.findMany.mockResolvedValue([
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
+    mockDb.query.application.findMany.mockResolvedValue([
       { ...NEW_APP, id: "app-1", job: { id: "job-1", title: "Junior Chef" } },
       { id: "app-2", createdAt: new Date(), job: { id: "job-2", title: "Line Cook" } },
     ]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -224,13 +233,14 @@ describe("runDailyDigestJob", () => {
   });
 
   it("multiple applications for the same job → grouped, count shown in email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
-    mockDb.application.findMany.mockResolvedValue([
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
+    mockDb.query.application.findMany.mockResolvedValue([
       { id: "app-1", createdAt: new Date(), job: { id: "job-1", title: "Junior Chef" } },
       { id: "app-2", createdAt: new Date(), job: { id: "job-1", title: "Junior Chef" } },
     ]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -244,15 +254,16 @@ describe("runDailyDigestJob", () => {
   // ── Adversarial: HTML injection ──────────────────────────────────────────────
 
   it("message body with HTML chars → escaped in email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
-    mockDb.message.findMany.mockResolvedValue([
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([
       {
         ...UNREAD_MSG,
         body: "<script>alert('xss')</script>",
       },
     ]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -261,8 +272,8 @@ describe("runDailyDigestJob", () => {
   });
 
   it("job title with HTML chars → escaped in email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
-    mockDb.application.findMany.mockResolvedValue([
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([APP_PREFS_B]);
+    mockDb.query.application.findMany.mockResolvedValue([
       {
         id: "app-1",
         createdAt: new Date(),
@@ -270,7 +281,8 @@ describe("runDailyDigestJob", () => {
       },
     ]);
 
-    await runDailyDigestJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -282,16 +294,17 @@ describe("runDailyDigestJob", () => {
   // ── Adversarial: sendEmail failure ───────────────────────────────────────────
 
   it("sendEmail throws for first user → second user still gets email", async () => {
-    mockDb.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A, APP_PREFS_B]);
-    mockDb.message.findMany.mockResolvedValue([UNREAD_MSG]);
-    mockDb.application.findMany.mockResolvedValue([NEW_APP]);
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A, APP_PREFS_B]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+    mockDb.query.application.findMany.mockResolvedValue([NEW_APP]);
 
     const { sendEmail } = await import("@/server/emails");
     vi.mocked(sendEmail)
       .mockRejectedValueOnce(new Error("SMTP error"))
       .mockResolvedValueOnce(undefined);
 
-    await expect(runDailyDigestJob(asDb(mockDb))).resolves.toBeUndefined();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(runDailyDigestJob(mockDb as any as DbClient)).resolves.toBeUndefined();
     expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(2);
   });
 });

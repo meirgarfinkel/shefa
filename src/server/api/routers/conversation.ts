@@ -1,18 +1,22 @@
 import { z } from "zod";
+import { eq, and, isNull, ne, count, inArray, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { conversation, message, seekerProfile, jobPosting, application } from "@/db/schema";
 
 const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 
-// Participant shape returned by list/get: first company name for employers, profile name for seekers
-const participantSelect = {
-  id: true,
-  seekerProfile: { select: { id: true, firstName: true, lastName: true, status: true } },
-  employerProfile: { select: { status: true } },
-  companies: {
-    take: 1,
-    orderBy: { name: "asc" as const },
-    select: { id: true, name: true },
+const participantWith = {
+  columns: {
+    id: true,
+  },
+  with: {
+    seekerProfile: { columns: { id: true, firstName: true, lastName: true, status: true } },
+    employerProfile: { columns: { status: true } },
+    companies: {
+      limit: 1,
+      columns: { id: true, name: true },
+    },
   },
 } as const;
 
@@ -20,7 +24,6 @@ export const conversationRouter = createTRPCRouter({
   create: protectedProcedure
     .input(
       z.object({
-        // For seekers: employer's userId. For employers: seekerProfile.id.
         targetId: z.string().min(1),
         jobId: z.string().min(1).optional(),
       }),
@@ -40,10 +43,9 @@ export const conversationRouter = createTRPCRouter({
           });
         }
 
-        // Verify the job exists and belongs to the target employer
-        const job = await ctx.prisma.jobPosting.findUnique({
-          where: { id: jobId },
-          select: { id: true, employerId: true },
+        const job = await ctx.db.query.jobPosting.findFirst({
+          where: eq(jobPosting.id, jobId),
+          columns: { id: true, employerId: true },
         });
         if (!job) throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
         if (job.employerId !== targetId) {
@@ -53,11 +55,11 @@ export const conversationRouter = createTRPCRouter({
           });
         }
 
-        const application = await ctx.prisma.application.findFirst({
-          where: { seekerId: callerId, jobId },
-          select: { id: true },
+        const app = await ctx.db.query.application.findFirst({
+          where: and(eq(application.seekerId, callerId), eq(application.jobId, jobId)),
+          columns: { id: true },
         });
-        if (!application) {
+        if (!app) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "You must apply to this job before messaging the employer",
@@ -67,27 +69,26 @@ export const conversationRouter = createTRPCRouter({
         seekerId = callerId;
         employerId = targetId;
       } else {
-        // EMPLOYER — targetId is a seekerProfile.id
-        const seekerProfile = await ctx.prisma.seekerProfile.findUnique({
-          where: { id: targetId },
-          select: { userId: true, status: true },
+        const profile = await ctx.db.query.seekerProfile.findFirst({
+          where: eq(seekerProfile.id, targetId),
+          columns: { userId: true, status: true },
         });
-        if (!seekerProfile) throw new TRPCError({ code: "NOT_FOUND", message: "Seeker not found" });
-        if (seekerProfile.status !== "ACTIVE") {
+        if (!profile) throw new TRPCError({ code: "NOT_FOUND", message: "Seeker not found" });
+        if (profile.status !== "ACTIVE") {
           throw new TRPCError({ code: "FORBIDDEN", message: "Seeker profile is not active" });
         }
 
         if (jobId) {
-          const job = await ctx.prisma.jobPosting.findUnique({
-            where: { id: jobId },
-            select: { employerId: true },
+          const job = await ctx.db.query.jobPosting.findFirst({
+            where: eq(jobPosting.id, jobId),
+            columns: { employerId: true },
           });
           if (!job || job.employerId !== callerId) {
             throw new TRPCError({ code: "FORBIDDEN", message: "Job does not belong to you" });
           }
         }
 
-        seekerId = seekerProfile.userId;
+        seekerId = profile.userId;
         employerId = callerId;
       }
 
@@ -95,50 +96,74 @@ export const conversationRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot message yourself" });
       }
 
-      const existing = await ctx.prisma.conversation.findFirst({
-        where: { seekerId, employerId, jobId: jobId ?? null },
+      const existing = await ctx.db.query.conversation.findFirst({
+        where: and(
+          eq(conversation.seekerId, seekerId),
+          eq(conversation.employerId, employerId),
+          jobId ? eq(conversation.jobId, jobId) : isNull(conversation.jobId),
+        ),
       });
       if (existing) return existing;
 
-      return ctx.prisma.conversation.create({
-        data: { seekerId, employerId, jobId: jobId ?? null },
-      });
+      const [created] = await ctx.db
+        .insert(conversation)
+        .values({ seekerId, employerId, jobId: jobId ?? null })
+        .returning();
+      return created!;
     }),
 
   list: protectedProcedure.query(async ({ ctx }) => {
     const callerId = ctx.user.id;
     const isSeeker = ctx.user.role === "SEEKER";
-    const where = isSeeker ? { seekerId: callerId } : { employerId: callerId };
 
-    return ctx.prisma.conversation.findMany({
-      where,
-      include: {
-        seeker: { select: participantSelect },
-        employer: { select: participantSelect },
-        job: { select: { id: true, title: true } },
-        _count: {
-          select: {
-            messages: { where: { senderId: { not: callerId }, readAt: null } },
-          },
-        },
+    const convs = await ctx.db.query.conversation.findMany({
+      where: isSeeker ? eq(conversation.seekerId, callerId) : eq(conversation.employerId, callerId),
+      with: {
+        seeker: participantWith,
+        employer: participantWith,
+        job: { columns: { id: true, title: true } },
       },
-      orderBy: [{ lastMessageAt: "desc" }],
+      orderBy: desc(conversation.lastMessageAt),
     });
+
+    if (convs.length === 0) return [];
+
+    const convIds = convs.map((c) => c.id);
+    const unreadRows = await ctx.db
+      .select({ conversationId: message.conversationId, count: count() })
+      .from(message)
+      .where(
+        and(
+          inArray(message.conversationId, convIds),
+          ne(message.senderId, callerId),
+          isNull(message.readAt),
+        ),
+      )
+      .groupBy(message.conversationId);
+
+    const unreadMap = new Map(unreadRows.map((r) => [r.conversationId, r.count]));
+
+    return convs.map((c) => ({
+      ...c,
+      _count: { messages: unreadMap.get(c.id) ?? 0 },
+    }));
   }),
 
   get: protectedProcedure.input(ConversationIdInput).query(async ({ ctx, input }) => {
     const callerId = ctx.user.id;
     const isSeeker = ctx.user.role === "SEEKER";
-    const participantWhere = isSeeker ? { seekerId: callerId } : { employerId: callerId };
 
-    const conv = await ctx.prisma.conversation.findFirst({
-      where: { id: input.conversationId, ...participantWhere },
-      include: {
-        messages: { orderBy: { createdAt: "asc" } },
-        seeker: { select: participantSelect },
-        employer: { select: participantSelect },
+    const conv = await ctx.db.query.conversation.findFirst({
+      where: and(
+        eq(conversation.id, input.conversationId),
+        isSeeker ? eq(conversation.seekerId, callerId) : eq(conversation.employerId, callerId),
+      ),
+      with: {
+        messages: { orderBy: (t, ops) => [ops.asc(t.createdAt)] },
+        seeker: participantWith,
+        employer: participantWith,
         job: {
-          select: {
+          columns: {
             id: true,
             title: true,
             status: true,
@@ -154,19 +179,21 @@ export const conversationRouter = createTRPCRouter({
             description: true,
             whatWeTeach: true,
             whatWereLookingFor: true,
+          },
+          with: {
             company: {
-              select: {
-                id: true,
-                name: true,
+              columns: { id: true, name: true },
+              with: {
                 owner: {
-                  select: {
-                    employerProfile: { select: { isResponsive: true } },
+                  columns: { id: true },
+                  with: {
+                    employerProfile: { columns: { isResponsive: true } },
                   },
                 },
               },
             },
             requiredLanguages: {
-              select: { language: { select: { name: true } } },
+              with: { language: { columns: { name: true } } },
             },
           },
         },
@@ -174,12 +201,11 @@ export const conversationRouter = createTRPCRouter({
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-    // Fetch the linked application status so the client can gate messaging
     const applicationStatus = conv.jobId
-      ? await ctx.prisma.application
+      ? await ctx.db.query.application
           .findFirst({
-            where: { seekerId: conv.seekerId, jobId: conv.jobId },
-            select: { status: true },
+            where: and(eq(application.seekerId, conv.seekerId), eq(application.jobId, conv.jobId)),
+            columns: { status: true },
           })
           .then((a) => a?.status ?? null)
       : null;
@@ -190,53 +216,65 @@ export const conversationRouter = createTRPCRouter({
   markRead: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {
     const callerId = ctx.user.id;
     const isSeeker = ctx.user.role === "SEEKER";
-    const participantWhere = isSeeker ? { seekerId: callerId } : { employerId: callerId };
 
-    const conv = await ctx.prisma.conversation.findFirst({
-      where: { id: input.conversationId, ...participantWhere },
-      select: { seekerId: true, employerId: true },
+    const conv = await ctx.db.query.conversation.findFirst({
+      where: and(
+        eq(conversation.id, input.conversationId),
+        isSeeker ? eq(conversation.seekerId, callerId) : eq(conversation.employerId, callerId),
+      ),
+      columns: { seekerId: true, employerId: true },
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
     const otherId = isSeeker ? conv.employerId : conv.seekerId;
 
-    await ctx.prisma.message.updateMany({
-      where: { conversationId: input.conversationId, senderId: otherId, readAt: null },
-      data: { readAt: new Date() },
-    });
+    await ctx.db
+      .update(message)
+      .set({ readAt: new Date() })
+      .where(
+        and(
+          eq(message.conversationId, input.conversationId),
+          eq(message.senderId, otherId),
+          isNull(message.readAt),
+        ),
+      );
   }),
 
   block: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {
     const callerId = ctx.user.id;
     const isSeeker = ctx.user.role === "SEEKER";
-    const participantWhere = isSeeker ? { seekerId: callerId } : { employerId: callerId };
 
-    const conv = await ctx.prisma.conversation.findFirst({
-      where: { id: input.conversationId, ...participantWhere },
-      select: { id: true },
+    const conv = await ctx.db.query.conversation.findFirst({
+      where: and(
+        eq(conversation.id, input.conversationId),
+        isSeeker ? eq(conversation.seekerId, callerId) : eq(conversation.employerId, callerId),
+      ),
+      columns: { id: true },
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-    await ctx.prisma.conversation.update({
-      where: { id: input.conversationId },
-      data: isSeeker ? { seekerBlocked: true } : { employerBlocked: true },
-    });
+    await ctx.db
+      .update(conversation)
+      .set(isSeeker ? { seekerBlocked: true } : { employerBlocked: true })
+      .where(eq(conversation.id, input.conversationId));
   }),
 
   unblock: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {
     const callerId = ctx.user.id;
     const isSeeker = ctx.user.role === "SEEKER";
-    const participantWhere = isSeeker ? { seekerId: callerId } : { employerId: callerId };
 
-    const conv = await ctx.prisma.conversation.findFirst({
-      where: { id: input.conversationId, ...participantWhere },
-      select: { id: true },
+    const conv = await ctx.db.query.conversation.findFirst({
+      where: and(
+        eq(conversation.id, input.conversationId),
+        isSeeker ? eq(conversation.seekerId, callerId) : eq(conversation.employerId, callerId),
+      ),
+      columns: { id: true },
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-    await ctx.prisma.conversation.update({
-      where: { id: input.conversationId },
-      data: isSeeker ? { seekerBlocked: false } : { employerBlocked: false },
-    });
+    await ctx.db
+      .update(conversation)
+      .set(isSeeker ? { seekerBlocked: false } : { employerBlocked: false })
+      .where(eq(conversation.id, input.conversationId));
   }),
 });

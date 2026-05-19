@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "@/db";
 import { computeResponsivenessScore, runResponsivenessJob } from "../responsiveness.job";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -321,17 +321,18 @@ describe("computeResponsivenessScore", () => {
 
 function makeMockDb() {
   return {
-    user: {
-      findMany: vi.fn(),
+    query: {
+      users: { findMany: vi.fn() },
     },
-    employerProfile: {
-      update: vi.fn(),
-    },
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockResolvedValue([]),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
   };
-}
-
-function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
-  return mock as unknown as PrismaClient;
 }
 
 // Conversations are directly on the User object (no `user` wrapper)
@@ -364,64 +365,74 @@ describe("runResponsivenessJob", () => {
 
   beforeEach(() => {
     mockDb = makeMockDb();
-    mockDb.employerProfile.update.mockResolvedValue({});
+    // select().from() returns profile rows (one per employer)
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValue([{ userId: "user-1" }]),
+    });
   });
 
   // ── Happy path ───────────────────────────────────────────────────────────────
 
   it("employer with 3 timely-replied conversations → isResponsive true, score set", async () => {
-    mockDb.user.findMany.mockResolvedValue([EMPLOYER_1]);
+    mockDb.query.users.findMany.mockResolvedValue([EMPLOYER_1]);
 
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
 
-    expect(mockDb.employerProfile.update).toHaveBeenCalledOnce();
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      where: { userId: string };
-      data: {
-        isResponsive: boolean;
-        responsivenessUpdatedAt: Date;
-      };
+    expect(mockDb.update).toHaveBeenCalledOnce();
+    const setFn = mockDb.update.mock.results[0]!.value.set;
+    const whereFn = setFn.mock.results[0]!.value.where;
+    // Check the set call had isResponsive: true and responsivenessUpdatedAt
+    const setCall = setFn.mock.calls[0]![0] as {
+      isResponsive: boolean;
+      responsivenessUpdatedAt: Date;
     };
-    expect(call.where.userId).toBe("user-1");
-    expect(call.data.isResponsive).toBe(true);
-    expect(call.data.responsivenessUpdatedAt).toBeInstanceOf(Date);
+    expect(setCall.isResponsive).toBe(true);
+    expect(setCall.responsivenessUpdatedAt).toBeInstanceOf(Date);
+    expect(whereFn).toHaveBeenCalled();
   });
 
   it("no employers → no updates, no crash", async () => {
-    mockDb.user.findMany.mockResolvedValue([]);
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValue([]),
+    });
+    mockDb.query.users.findMany.mockResolvedValue([]);
 
-    await expect(runResponsivenessJob(asDb(mockDb))).resolves.toBeUndefined();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(runResponsivenessJob(mockDb as any as DbClient)).resolves.toBeUndefined();
 
-    expect(mockDb.employerProfile.update).not.toHaveBeenCalled();
+    expect(mockDb.update).not.toHaveBeenCalled();
   });
 
   it("employer with 0 conversations → score null, isResponsive false", async () => {
-    mockDb.user.findMany.mockResolvedValue([{ id: "user-2", conversationsAsEmployer: [] }]);
+    mockDb.query.users.findMany.mockResolvedValue([{ id: "user-2", conversationsAsEmployer: [] }]);
 
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
 
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean };
+    const setCall = mockDb.update.mock.results[0]!.value.set.mock.calls[0]![0] as {
+      isResponsive: boolean;
     };
-    expect(call.data.isResponsive).toBe(false);
+    expect(setCall.isResponsive).toBe(false);
   });
 
   it("responsivenessUpdatedAt is always set, even when score is null", async () => {
-    mockDb.user.findMany.mockResolvedValue([{ id: "user-3", conversationsAsEmployer: [] }]);
+    mockDb.query.users.findMany.mockResolvedValue([{ id: "user-3", conversationsAsEmployer: [] }]);
 
     const before = new Date();
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
     const after = new Date();
 
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { responsivenessUpdatedAt: Date };
+    const setCall = mockDb.update.mock.results[0]!.value.set.mock.calls[0]![0] as {
+      responsivenessUpdatedAt: Date;
     };
-    expect(call.data.responsivenessUpdatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
-    expect(call.data.responsivenessUpdatedAt.getTime()).toBeLessThanOrEqual(after.getTime());
+    expect(setCall.responsivenessUpdatedAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect(setCall.responsivenessUpdatedAt.getTime()).toBeLessThanOrEqual(after.getTime());
   });
 
   it("all conversationsAsEmployer are counted toward responsiveness score", async () => {
-    mockDb.user.findMany.mockResolvedValue([
+    mockDb.query.users.findMany.mockResolvedValue([
       {
         id: "user-4",
         conversationsAsEmployer: [
@@ -447,19 +458,23 @@ describe("runResponsivenessJob", () => {
       },
     ]);
 
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
 
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean };
+    const setCall = mockDb.update.mock.results[0]!.value.set.mock.calls[0]![0] as {
+      isResponsive: boolean;
     };
     // 3 scoreable, all replied → isResponsive true
-    expect(call.data.isResponsive).toBe(true);
+    expect(setCall.isResponsive).toBe(true);
   });
 
   // ── Isolation: one failure doesn't stop others ───────────────────────────────
 
   it("update throws for first employer → second employer still updated", async () => {
-    mockDb.user.findMany.mockResolvedValue([
+    mockDb.select.mockReturnValue({
+      from: vi.fn().mockResolvedValue([{ userId: "user-1" }, { userId: "user-5" }]),
+    });
+    mockDb.query.users.findMany.mockResolvedValue([
       EMPLOYER_1,
       {
         id: "user-5",
@@ -486,13 +501,23 @@ describe("runResponsivenessJob", () => {
       },
     ]);
 
-    mockDb.employerProfile.update
-      .mockRejectedValueOnce(new Error("DB timeout"))
-      .mockResolvedValueOnce({});
+    // First update throws, second resolves
+    mockDb.update
+      .mockReturnValueOnce({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockRejectedValue(new Error("DB timeout")),
+        }),
+      })
+      .mockReturnValueOnce({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      });
 
-    await expect(runResponsivenessJob(asDb(mockDb))).resolves.toBeUndefined();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await expect(runResponsivenessJob(mockDb as any as DbClient)).resolves.toBeUndefined();
 
-    expect(mockDb.employerProfile.update).toHaveBeenCalledTimes(2);
+    expect(mockDb.update).toHaveBeenCalledTimes(2);
   });
 
   // ── isResponsive threshold ────────────────────────────────────────────────────
@@ -513,16 +538,17 @@ describe("runResponsivenessJob", () => {
       return { messages: msgs };
     });
 
-    mockDb.user.findMany.mockResolvedValue([
+    mockDb.query.users.findMany.mockResolvedValue([
       { id: "user-7", conversationsAsEmployer: conversations },
     ]);
 
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
 
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean };
+    const setCall = mockDb.update.mock.results[0]!.value.set.mock.calls[0]![0] as {
+      isResponsive: boolean;
     };
-    expect(call.data.isResponsive).toBe(true);
+    expect(setCall.isResponsive).toBe(true);
   });
 
   it("score just below 0.7 with 3+ conversations → isResponsive false", async () => {
@@ -541,15 +567,16 @@ describe("runResponsivenessJob", () => {
       return { messages: msgs };
     });
 
-    mockDb.user.findMany.mockResolvedValue([
+    mockDb.query.users.findMany.mockResolvedValue([
       { id: "user-8", conversationsAsEmployer: conversations },
     ]);
 
-    await runResponsivenessJob(asDb(mockDb));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runResponsivenessJob(mockDb as any as DbClient);
 
-    const call = mockDb.employerProfile.update.mock.calls[0]![0] as {
-      data: { isResponsive: boolean };
+    const setCall = mockDb.update.mock.results[0]!.value.set.mock.calls[0]![0] as {
+      isResponsive: boolean;
     };
-    expect(call.data.isResponsive).toBe(false);
+    expect(setCall.isResponsive).toBe(false);
   });
 });

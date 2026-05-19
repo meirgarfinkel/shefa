@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Pill } from "@/components/ui/pill";
-import type { JobType, WorkArrangement } from "@prisma/client";
+import type { JobType, WorkArrangement } from "@/db/schema";
 import type { z } from "zod";
 import { JobStatusEnum } from "@/lib/schemas/jobPosting";
 

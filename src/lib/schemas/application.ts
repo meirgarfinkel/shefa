@@ -1,4 +1,3 @@
-import { ApplicationStatus } from "@prisma/client";
 import { z } from "zod";
 
 export const ApplySchema = z.object({
@@ -16,5 +15,5 @@ export const ListForJobSchema = z.object({
 
 export const UpdateApplicationStatusSchema = z.object({
   id: z.string().min(1),
-  status: z.enum([ApplicationStatus.VIEWED, ApplicationStatus.REJECTED, ApplicationStatus.CLOSED]),
+  status: z.enum(["VIEWED", "REJECTED", "CLOSED"]),
 });

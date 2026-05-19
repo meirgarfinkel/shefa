@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { eq } from "drizzle-orm";
+import { db } from "@/db";
+import { verificationTokens, users } from "@/db/schema";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -9,14 +11,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/sign-in?error=InvalidToken`);
   }
 
-  const record = await prisma.verificationToken.findUnique({ where: { token } });
+  const record = await db.query.verificationTokens.findFirst({
+    where: eq(verificationTokens.token, token),
+  });
 
   if (!record || !record.identifier.startsWith("email_change:")) {
     return NextResponse.redirect(`${origin}/sign-in?error=InvalidToken`);
   }
 
   if (record.expires < new Date()) {
-    await prisma.verificationToken.delete({ where: { token } });
+    await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
     return NextResponse.redirect(`${origin}/sign-in?error=TokenExpired`);
   }
 
@@ -26,8 +30,8 @@ export async function GET(request: Request) {
   const userId = withoutPrefix.slice(0, colonIdx);
   const newEmail = withoutPrefix.slice(colonIdx + 1);
 
-  await prisma.user.update({ where: { id: userId }, data: { email: newEmail } });
-  await prisma.verificationToken.delete({ where: { token } });
+  await db.update(users).set({ email: newEmail }).where(eq(users.id, userId));
+  await db.delete(verificationTokens).where(eq(verificationTokens.token, token));
 
   return NextResponse.redirect(`${origin}/?emailChanged=1`);
 }

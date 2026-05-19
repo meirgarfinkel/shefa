@@ -1,7 +1,12 @@
 import "dotenv/config";
-import { PrismaClient } from "@prisma/client";
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { sql } from "drizzle-orm";
+import { createId } from "@paralleldrive/cuid2";
+import { language, state, city } from "../schema";
 
-const prisma = new PrismaClient();
+const client = postgres(process.env.DATABASE_URL!);
+const db = drizzle(client);
 
 const LANGUAGES: string[] = [
   "English",
@@ -790,31 +795,42 @@ const CITIES_BY_STATE: Record<string, { name: string; lat: number; lon: number }
 
 async function main() {
   console.log("Seeding languages...");
-  for (const name of LANGUAGES) {
-    await prisma.language.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-  }
+  await db
+    .insert(language)
+    .values(LANGUAGES.map((name) => ({ id: createId(), name })))
+    .onConflictDoNothing();
   console.log(`  ${LANGUAGES.length} languages seeded.`);
 
-  console.log("Seeding states...");
+  console.log("Seeding states and cities...");
   let cityCount = 0;
   for (const s of STATES) {
-    const state = await prisma.state.upsert({
-      where: { abbr: s.abbr },
-      update: { name: s.name, lat: s.lat, lon: s.lon },
-      create: s,
-    });
+    const [row] = await db
+      .insert(state)
+      .values({ id: createId(), name: s.name, abbr: s.abbr, lat: s.lat, lon: s.lon })
+      .onConflictDoUpdate({
+        target: state.abbr,
+        set: { name: s.name, lat: s.lat, lon: s.lon },
+      })
+      .returning({ id: state.id });
+
     const cities = CITIES_BY_STATE[s.abbr] ?? [];
-    for (const c of cities) {
-      await prisma.city.upsert({
-        where: { name_stateId: { name: c.name, stateId: state.id } },
-        update: { lat: c.lat, lon: c.lon },
-        create: { name: c.name, lat: c.lat, lon: c.lon, stateId: state.id },
-      });
-      cityCount++;
+    if (cities.length > 0) {
+      await db
+        .insert(city)
+        .values(
+          cities.map((c) => ({
+            id: createId(),
+            name: c.name,
+            stateId: row.id,
+            lat: c.lat,
+            lon: c.lon,
+          })),
+        )
+        .onConflictDoUpdate({
+          target: [city.name, city.stateId],
+          set: { lat: sql`excluded.lat`, lon: sql`excluded.lon` },
+        });
+      cityCount += cities.length;
     }
   }
   console.log(`  ${STATES.length} states and ${cityCount} cities seeded.`);
@@ -825,4 +841,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(() => client.end());

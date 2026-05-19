@@ -1,13 +1,19 @@
 import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Google from "next-auth/providers/google";
 import Resend from "next-auth/providers/resend";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
+import { users, accounts, sessions, verificationTokens } from "@/db/schema";
 import { authConfig } from "./auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter: DrizzleAdapter(db, {
+    usersTable: users,
+    accountsTable: accounts,
+    sessionsTable: sessions,
+    verificationTokensTable: verificationTokens,
+  }),
   session: { strategy: "jwt" },
   providers: [
     Google({

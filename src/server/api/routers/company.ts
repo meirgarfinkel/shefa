@@ -1,14 +1,15 @@
 import { z } from "zod";
+import { eq, and, ne, count, asc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { CreateCompanySchema, UpdateCompanySchema } from "@/lib/schemas/employer";
+import { company, jobPosting } from "@/db/schema";
 
 export const companyRouter = createTRPCRouter({
-  // Public company page
   getPublic: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
-    const company = await ctx.prisma.company.findUnique({
-      where: { id: input.id },
-      select: {
+    const co = await ctx.db.query.company.findFirst({
+      where: eq(company.id, input.id),
+      columns: {
         id: true,
         name: true,
         city: true,
@@ -17,104 +18,123 @@ export const companyRouter = createTRPCRouter({
         website: true,
         aboutCompany: true,
         missionText: true,
+      },
+      with: {
         owner: {
-          select: {
+          columns: { id: true },
+          with: {
             employerProfile: {
-              select: { isResponsive: true, responsivenessUpdatedAt: true },
+              columns: { isResponsive: true, responsivenessUpdatedAt: true },
             },
           },
         },
-        _count: { select: { jobs: { where: { status: "ACTIVE" } } } },
       },
     });
-    if (!company) throw new TRPCError({ code: "NOT_FOUND" });
+    if (!co) throw new TRPCError({ code: "NOT_FOUND" });
+
+    const [activeJobsRow] = await ctx.db
+      .select({ count: count() })
+      .from(jobPosting)
+      .where(and(eq(jobPosting.companyId, input.id), eq(jobPosting.status, "ACTIVE")));
+
     return {
-      id: company.id,
-      companyName: company.name,
-      city: company.city,
-      state: company.state,
-      industry: company.industry,
-      website: company.website,
-      aboutCompany: company.aboutCompany,
-      missionText: company.missionText,
-      isResponsive: company.owner.employerProfile?.isResponsive ?? false,
-      isNew:
-        !company.owner.employerProfile ||
-        company.owner.employerProfile.responsivenessUpdatedAt === null,
-      _count: company._count,
+      id: co.id,
+      companyName: co.name,
+      city: co.city,
+      state: co.state,
+      industry: co.industry,
+      website: co.website,
+      aboutCompany: co.aboutCompany,
+      missionText: co.missionText,
+      isResponsive: co.owner.employerProfile?.isResponsive ?? false,
+      isNew: !co.owner.employerProfile || co.owner.employerProfile.responsivenessUpdatedAt === null,
+      _count: { jobs: activeJobsRow?.count ?? 0 },
     };
   }),
 
-  // List caller's companies
   listMine: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    const companies = await ctx.prisma.company.findMany({
-      where: { ownerId: ctx.user.id },
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        city: true,
-        state: true,
-        _count: { select: { jobs: { where: { status: "ACTIVE" } } } },
-      },
+
+    const companies = await ctx.db.query.company.findMany({
+      where: eq(company.ownerId, ctx.user.id),
+      orderBy: asc(company.name),
+      columns: { id: true, name: true, city: true, state: true },
     });
+
+    if (companies.length === 0) return [];
+
+    const companyIds = companies.map((c) => c.id);
+    const countRows = await ctx.db
+      .select({ companyId: jobPosting.companyId, count: count() })
+      .from(jobPosting)
+      .where(and(eq(jobPosting.status, "ACTIVE"), inArray(jobPosting.companyId, companyIds)))
+      .groupBy(jobPosting.companyId);
+
+    const countMap = new Map(countRows.map((r) => [r.companyId, r.count]));
+
     return companies.map((c) => ({
       id: c.id,
       companyName: c.name,
       city: c.city,
       state: c.state,
-      activeJobsCount: c._count.jobs,
+      activeJobsCount: countMap.get(c.id) ?? 0,
     }));
   }),
 
-  // Get a specific company by id (for edit page, verifies ownership)
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    const company = await ctx.prisma.company.findUnique({ where: { id: input.id } });
-    if (!company) throw new TRPCError({ code: "NOT_FOUND" });
-    if (company.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-    return company;
+    const co = await ctx.db.query.company.findFirst({ where: eq(company.id, input.id) });
+    if (!co) throw new TRPCError({ code: "NOT_FOUND" });
+    if (co.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+    return co;
   }),
 
   create: protectedProcedure.input(CreateCompanySchema).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    return ctx.prisma.company.create({
-      data: { ...input, ownerId: ctx.user.id },
-    });
+    const [created] = await ctx.db
+      .insert(company)
+      .values({ ...input, ownerId: ctx.user.id })
+      .returning();
+    return created!;
   }),
 
   update: protectedProcedure.input(UpdateCompanySchema).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
     const { id, ...data } = input;
-    const company = await ctx.prisma.company.findUnique({
-      where: { id },
-      select: { ownerId: true },
+    const co = await ctx.db.query.company.findFirst({
+      where: eq(company.id, id),
+      columns: { ownerId: true },
     });
-    if (!company) throw new TRPCError({ code: "NOT_FOUND" });
-    if (company.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-    return ctx.prisma.company.update({ where: { id }, data });
+    if (!co) throw new TRPCError({ code: "NOT_FOUND" });
+    if (co.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+    const [updated] = await ctx.db.update(company).set(data).where(eq(company.id, id)).returning();
+    return updated!;
   }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-      const company = await ctx.prisma.company.findUnique({
-        where: { id: input.id },
-        select: {
-          ownerId: true,
-          _count: { select: { jobs: { where: { status: { not: "CLOSED" } } } } },
-        },
+      const co = await ctx.db.query.company.findFirst({
+        where: eq(company.id, input.id),
+        columns: { ownerId: true },
       });
-      if (!company) throw new TRPCError({ code: "NOT_FOUND" });
-      if (company.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-      if (company._count.jobs > 0) {
+      if (!co) throw new TRPCError({ code: "NOT_FOUND" });
+      if (co.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const [nonClosedRow] = await ctx.db
+        .select({ count: count() })
+        .from(jobPosting)
+        .where(and(eq(jobPosting.companyId, input.id), ne(jobPosting.status, "CLOSED")));
+
+      if ((nonClosedRow?.count ?? 0) > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Close all active job postings before deleting this company",
         });
       }
-      return ctx.prisma.company.delete({ where: { id: input.id } });
+
+      const [deleted] = await ctx.db.delete(company).where(eq(company.id, input.id)).returning();
+      return deleted!;
     }),
 });

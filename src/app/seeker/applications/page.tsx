@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
-import { ApplicationStatus } from "@prisma/client";
+import type { ApplicationStatus } from "@/db/schema";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "Applied",

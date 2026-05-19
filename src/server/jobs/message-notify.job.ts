@@ -1,30 +1,32 @@
-import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
+import { eq, desc } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import { buildMessageNotifyEmail } from "@/server/emails/message-notify";
+import { notificationPreferences, users, message } from "@/db/schema";
 
 export async function runMessageNotifyJob(
   data: { conversationId: string; recipientId: string },
-  db: PrismaClient = prisma,
+  db: DbClient = defaultDb,
 ): Promise<void> {
   const { conversationId, recipientId } = data;
 
-  const prefs = await db.notificationPreferences.findUnique({
-    where: { userId: recipientId },
+  const prefs = await db.query.notificationPreferences.findFirst({
+    where: eq(notificationPreferences.userId, recipientId),
   });
 
   const freq = prefs?.messageNotifications ?? "PER_MESSAGE";
   if (freq === "OFF" || freq === "DAILY_DIGEST") return;
 
   const [recipient, latestMessage] = await Promise.all([
-    db.user.findUnique({
-      where: { id: recipientId },
-      select: { email: true },
+    db.query.users.findFirst({
+      where: eq(users.id, recipientId),
+      columns: { email: true },
     }),
-    db.message.findFirst({
-      where: { conversationId },
-      orderBy: { createdAt: "desc" },
-      include: { sender: { select: { email: true } } },
+    db.query.message.findFirst({
+      where: eq(message.conversationId, conversationId),
+      orderBy: desc(message.createdAt),
+      with: { sender: { columns: { email: true } } },
     }),
   ]);
 

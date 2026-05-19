@@ -1,22 +1,23 @@
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import { CreateSeekerProfileSchema, UpdateSeekerProfileSchema } from "@/lib/schemas/seeker";
+import { seekerProfile, seekerLanguage, users } from "@/db/schema";
 
 export const seekerRouter = createTRPCRouter({
   getPublicProfile: publicProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
-      const profile = await ctx.prisma.seekerProfile.findUnique({
-        where: { id: input.id },
-        include: {
-          languages: { include: { language: { select: { name: true } } } },
+      const profile = await ctx.db.query.seekerProfile.findFirst({
+        where: eq(seekerProfile.id, input.id),
+        with: {
+          languages: { with: { language: { columns: { name: true } } } },
         },
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
 
       const { userId: _userId, languages, ...publicFields } = profile;
-
       return {
         ...publicFields,
         languages: languages.map((l) => l.language.name),
@@ -27,21 +28,20 @@ export const seekerRouter = createTRPCRouter({
     if (ctx.user.role !== "SEEKER") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
-    const profile = await ctx.prisma.seekerProfile.findUnique({
-      where: { userId: ctx.user.id },
-      select: { id: true, city: true, state: true },
+    return ctx.db.query.seekerProfile.findFirst({
+      where: eq(seekerProfile.userId, ctx.user.id),
+      columns: { id: true, city: true, state: true },
     });
-    return profile;
   }),
 
   getMyFullProfile: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "SEEKER") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
-    const profile = await ctx.prisma.seekerProfile.findUnique({
-      where: { userId: ctx.user.id },
-      include: {
-        languages: { select: { languageId: true } },
+    const profile = await ctx.db.query.seekerProfile.findFirst({
+      where: eq(seekerProfile.userId, ctx.user.id),
+      with: {
+        languages: { columns: { languageId: true } },
       },
     });
     if (!profile) return null;
@@ -58,26 +58,29 @@ export const seekerRouter = createTRPCRouter({
       if (ctx.user.role !== "SEEKER") {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
-      const profile = await ctx.prisma.seekerProfile.findUnique({
-        where: { userId: ctx.user.id },
-        select: { id: true },
+      const profile = await ctx.db.query.seekerProfile.findFirst({
+        where: eq(seekerProfile.userId, ctx.user.id),
+        columns: { id: true },
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
 
       const { languageIds, ...profileFields } = input;
 
-      return ctx.prisma.seekerProfile.update({
-        where: { userId: ctx.user.id },
-        data: {
-          ...profileFields,
-          ...(languageIds !== undefined && {
-            languages: {
-              deleteMany: {},
-              create: languageIds.map((languageId) => ({ languageId })),
-            },
-          }),
-        },
-      });
+      if (languageIds !== undefined) {
+        await ctx.db.delete(seekerLanguage).where(eq(seekerLanguage.seekerProfileId, profile.id));
+        if (languageIds.length > 0) {
+          await ctx.db
+            .insert(seekerLanguage)
+            .values(languageIds.map((languageId) => ({ seekerProfileId: profile.id, languageId })));
+        }
+      }
+
+      const [updated] = await ctx.db
+        .update(seekerProfile)
+        .set(profileFields)
+        .where(eq(seekerProfile.userId, ctx.user.id))
+        .returning();
+      return updated!;
     }),
 
   createProfile: protectedProcedure
@@ -87,8 +90,9 @@ export const seekerRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      const existing = await ctx.prisma.seekerProfile.findUnique({
-        where: { userId: ctx.user.id },
+      const existing = await ctx.db.query.seekerProfile.findFirst({
+        where: eq(seekerProfile.userId, ctx.user.id),
+        columns: { id: true },
       });
       if (existing) {
         throw new TRPCError({ code: "CONFLICT", message: "Profile already exists" });
@@ -96,19 +100,19 @@ export const seekerRouter = createTRPCRouter({
 
       const { languageIds, isAdult: _isAdult, ...profileFields } = input;
 
-      await ctx.prisma.user.update({
-        where: { id: ctx.user.id },
-        data: { isAdult: true },
-      });
+      await ctx.db.update(users).set({ isAdult: true }).where(eq(users.id, ctx.user.id));
 
-      return ctx.prisma.seekerProfile.create({
-        data: {
-          ...profileFields,
-          userId: ctx.user.id,
-          ...(languageIds?.length && {
-            languages: { create: languageIds.map((languageId) => ({ languageId })) },
-          }),
-        },
-      });
+      const [created] = await ctx.db
+        .insert(seekerProfile)
+        .values({ ...profileFields, userId: ctx.user.id })
+        .returning();
+
+      if (languageIds?.length) {
+        await ctx.db
+          .insert(seekerLanguage)
+          .values(languageIds.map((languageId) => ({ seekerProfileId: created!.id, languageId })));
+      }
+
+      return created!;
     }),
 });

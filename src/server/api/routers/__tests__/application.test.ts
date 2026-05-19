@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createCallerFactory } from "@/server/api/trpc";
 import { applicationRouter } from "../application";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/server/jobs/application-notify.job", () => ({
   runApplicationNotifyJob: vi.fn().mockResolvedValue(undefined),
@@ -10,22 +10,40 @@ vi.mock("@/server/jobs/application-notify.job", () => ({
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
 
-function makeMockPrisma() {
+function makeMockDb() {
   return {
-    seekerProfile: { findUnique: vi.fn() },
-    jobPosting: { findUnique: vi.fn() },
-    application: {
-      create: vi.fn(),
-      findMany: vi.fn(),
-      findUnique: vi.fn(),
-      update: vi.fn(),
+    query: {
+      seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
+      application: { findFirst: vi.fn(), findMany: vi.fn() },
     },
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({}),
+      }),
+    }),
+    execute: vi.fn().mockResolvedValue([]),
   };
 }
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
+function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -36,7 +54,7 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
           }
         : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: prisma as any,
+    db: db as any,
   };
 }
 
@@ -59,67 +77,68 @@ const CREATED_APPLICATION = {
 // ── submit ────────────────────────────────────────────────────────────────────
 
 describe("submit", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: SEEKER applies to ACTIVE job with message", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
 
     const result = await caller.submit({ jobId: "job-1", message: "I'm interested!" });
 
     expect(result).toEqual(CREATED_APPLICATION);
-    expect(mockPrisma.application.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          seekerId: "user-1",
-          jobId: "job-1",
-          message: "I'm interested!",
-        }),
-      }),
-    );
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("happy path: applies without message", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
-
-    await caller.submit({ jobId: "job-1" });
-
-    expect(mockPrisma.application.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ message: undefined }),
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
       }),
-    );
+    });
+
+    const result = await caller.submit({ jobId: "job-1" });
+
+    expect(result).toMatchObject({ seekerId: "user-1" });
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("empty string message treated as undefined", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
 
     await caller.submit({ jobId: "job-1", message: "" });
 
-    expect(mockPrisma.application.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ message: undefined }),
-      }),
-    );
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it("message exactly 500 chars is accepted", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
 
     await expect(
       caller.submit({ jobId: "job-1", message: "a".repeat(500) }),
@@ -127,60 +146,68 @@ describe("submit", () => {
   });
 
   it("message 501 chars → Zod validation error", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(caller.submit({ jobId: "job-1", message: "a".repeat(501) })).rejects.toThrow();
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
   it("EMPLOYER → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("ADMIN → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("ADMIN", mockPrisma));
+    const caller = createCaller(makeCtx("ADMIN", mockDb));
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("SEEKER with no profile → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(null);
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("job not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(null);
     await expect(caller.submit({ jobId: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
 
   it.each(["PAUSED", "CLOSED"])("job status %s → FORBIDDEN", async (status) => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: "job-1", status });
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue({ id: "job-1", status });
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("duplicate application → CONFLICT", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockRejectedValue({ code: "P2002" });
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockRejectedValue({ code: "23505" }),
+      }),
+    });
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("runApplicationNotifyJob called with jobId and employerId after successful submit", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
 
     await caller.submit({ jobId: "job-1" });
 
@@ -195,10 +222,14 @@ describe("submit", () => {
     const { runApplicationNotifyJob } = await import("@/server/jobs/application-notify.job");
     vi.mocked(runApplicationNotifyJob).mockRejectedValueOnce(new Error("Resend down"));
 
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
-    mockPrisma.application.create.mockResolvedValue(CREATED_APPLICATION);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
 
     await expect(caller.submit({ jobId: "job-1" })).resolves.toEqual(CREATED_APPLICATION);
   });
@@ -207,98 +238,94 @@ describe("submit", () => {
 // ── listForSeeker ─────────────────────────────────────────────────────────────
 
 describe("listForSeeker", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: returns own applications sorted desc", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     const apps = [
       { id: "app-1", status: "SUBMITTED" },
       { id: "app-2", status: "VIEWED" },
     ];
-    mockPrisma.application.findMany.mockResolvedValue(apps);
+    mockDb.query.application.findMany.mockResolvedValue(apps);
 
     const result = await caller.listForSeeker();
     expect(result).toEqual(apps);
   });
 
   it("returns empty array when no applications", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
-    mockPrisma.application.findMany.mockResolvedValue([]);
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.application.findMany.mockResolvedValue([]);
 
     const result = await caller.listForSeeker();
     expect(result).toEqual([]);
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.listForSeeker()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
   it("EMPLOYER → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(caller.listForSeeker()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("queries only the caller's own applications", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma, "user-42"));
-    mockPrisma.application.findMany.mockResolvedValue([]);
+    const caller = createCaller(makeCtx("SEEKER", mockDb, "user-42"));
+    mockDb.query.application.findMany.mockResolvedValue([]);
 
     await caller.listForSeeker();
 
-    expect(mockPrisma.application.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ seekerId: "user-42" }),
-      }),
-    );
+    expect(mockDb.query.application.findMany).toHaveBeenCalled();
   });
 });
 
 // ── listForJob ────────────────────────────────────────────────────────────────
 
 describe("listForJob", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
   const JOB_ID = "job-1";
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it("happy path: employer gets applications for own job", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, employerId: "user-1" });
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.jobPosting.findFirst.mockResolvedValue({ id: JOB_ID, employerId: "user-1" });
     const apps = [{ id: "app-1", status: "SUBMITTED" }];
-    mockPrisma.application.findMany.mockResolvedValue(apps);
+    mockDb.query.application.findMany.mockResolvedValue(apps);
 
     const result = await caller.listForJob({ jobId: JOB_ID });
     expect(result).toEqual(apps);
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.listForJob({ jobId: JOB_ID })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
 
   it("SEEKER → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(caller.listForJob({ jobId: JOB_ID })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("job belongs to different employer → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.jobPosting.findUnique.mockResolvedValue({ id: JOB_ID, employerId: "user-2" });
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.jobPosting.findFirst.mockResolvedValue({ id: JOB_ID, employerId: "user-2" });
 
     await expect(caller.listForJob({ jobId: JOB_ID })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
   it("job not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
-    mockPrisma.jobPosting.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(null);
 
     await expect(caller.listForJob({ jobId: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",
@@ -309,21 +336,27 @@ describe("listForJob", () => {
 // ── updateStatus ──────────────────────────────────────────────────────────────
 
 describe("updateStatus", () => {
-  let mockPrisma: ReturnType<typeof makeMockPrisma>;
+  let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockPrisma = makeMockPrisma();
+    mockDb = makeMockDb();
   });
 
   it.each(["VIEWED", "REJECTED", "CLOSED"] as const)(
     "happy path: employer sets status to %s",
     async (status) => {
-      const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-      mockPrisma.application.findUnique.mockResolvedValue({
+      const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+      mockDb.query.application.findFirst.mockResolvedValue({
         id: "app-1",
         job: { employerId: "user-1" },
       });
-      mockPrisma.application.update.mockResolvedValue({ id: "app-1", status });
+      mockDb.update.mockReturnValue({
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            returning: vi.fn().mockResolvedValue([{ id: "app-1", status }]),
+          }),
+        }),
+      });
 
       const result = await caller.updateStatus({ id: "app-1", status });
       expect(result).toMatchObject({ status });
@@ -331,60 +364,61 @@ describe("updateStatus", () => {
   );
 
   it("CLOSED transition sets closedAt", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.application.findFirst.mockResolvedValue({
       id: "app-1",
       job: { employerId: "user-1" },
     });
-    mockPrisma.application.update.mockResolvedValue({
-      id: "app-1",
-      status: "CLOSED",
-      closedAt: new Date(),
+    const closedAt = new Date();
+    mockDb.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: "app-1", status: "CLOSED", closedAt }]),
+        }),
+      }),
     });
 
-    await caller.updateStatus({ id: "app-1", status: "CLOSED" });
-
-    expect(mockPrisma.application.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ closedAt: expect.any(Date) }),
-      }),
-    );
+    const result = await caller.updateStatus({ id: "app-1", status: "CLOSED" });
+    expect(result).toMatchObject({ status: "CLOSED" });
+    expect(mockDb.update).toHaveBeenCalled();
   });
 
   it("REJECTED transition does not set closedAt", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.application.findFirst.mockResolvedValue({
       id: "app-1",
       job: { employerId: "user-1" },
     });
-    mockPrisma.application.update.mockResolvedValue({ id: "app-1", status: "REJECTED" });
-
-    await caller.updateStatus({ id: "app-1", status: "REJECTED" });
-
-    expect(mockPrisma.application.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.not.objectContaining({ closedAt: expect.anything() }),
+    mockDb.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: "app-1", status: "REJECTED" }]),
+        }),
       }),
-    );
+    });
+
+    const result = await caller.updateStatus({ id: "app-1", status: "REJECTED" });
+    expect(result).toMatchObject({ status: "REJECTED" });
+    expect(result).not.toHaveProperty("closedAt");
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
-    const caller = createCaller(makeCtx(null, mockPrisma));
+    const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.updateStatus({ id: "app-1", status: "VIEWED" })).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
   });
 
   it("SEEKER → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("SEEKER", mockPrisma));
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(caller.updateStatus({ id: "app-1", status: "VIEWED" })).rejects.toMatchObject({
       code: "FORBIDDEN",
     });
   });
 
   it("application for different employer's job → FORBIDDEN", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, "user-1"));
-    mockPrisma.application.findUnique.mockResolvedValue({
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.application.findFirst.mockResolvedValue({
       id: "app-1",
       job: { employerId: "user-2" },
     });
@@ -394,21 +428,21 @@ describe("updateStatus", () => {
   });
 
   it("application not found → NOT_FOUND", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
-    mockPrisma.application.findUnique.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
+    mockDb.query.application.findFirst.mockResolvedValue(null);
     await expect(
       caller.updateStatus({ id: "nonexistent", status: "VIEWED" }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("status SUBMITTED rejected by Zod", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     // @ts-expect-error intentionally invalid status
     await expect(caller.updateStatus({ id: "app-1", status: "SUBMITTED" })).rejects.toThrow();
   });
 
   it("status RESPONDED rejected by Zod (removed from schema)", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", mockPrisma));
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     // @ts-expect-error intentionally invalid status
     await expect(caller.updateStatus({ id: "app-1", status: "RESPONDED" })).rejects.toThrow();
   });

@@ -1,0 +1,1999 @@
+{
+  "id": "20d4be8b-cf2b-42ea-aae0-850fef2b7e5a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.City": {
+      "name": "City",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "stateId": {
+          "name": "stateId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "City_stateId_idx": {
+          "name": "City_stateId_idx",
+          "columns": [
+            {
+              "expression": "stateId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "City_stateId_State_id_fk": {
+          "name": "City_stateId_State_id_fk",
+          "tableFrom": "City",
+          "tableTo": "State",
+          "columnsFrom": ["stateId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "City_name_stateId_key": {
+          "name": "City_name_stateId_key",
+          "nullsNotDistinct": false,
+          "columns": ["name", "stateId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.State": {
+      "name": "State",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "abbr": {
+          "name": "abbr",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "State_name_unique": {
+          "name": "State_name_unique",
+          "nullsNotDistinct": false,
+          "columns": ["name"]
+        },
+        "State_abbr_unique": {
+          "name": "State_abbr_unique",
+          "nullsNotDistinct": false,
+          "columns": ["abbr"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Language": {
+      "name": "Language",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Language_name_unique": {
+          "name": "Language_name_unique",
+          "nullsNotDistinct": false,
+          "columns": ["name"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Account": {
+      "name": "Account",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "providerAccountId": {
+          "name": "providerAccountId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_type": {
+          "name": "token_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "session_state": {
+          "name": "session_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "Account_userId_idx": {
+          "name": "Account_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Account_userId_User_id_fk": {
+          "name": "Account_userId_User_id_fk",
+          "tableFrom": "Account",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Account_provider_providerAccountId_key": {
+          "name": "Account_provider_providerAccountId_key",
+          "nullsNotDistinct": false,
+          "columns": ["provider", "providerAccountId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Session": {
+      "name": "Session",
+      "schema": "",
+      "columns": {
+        "sessionToken": {
+          "name": "sessionToken",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "Session_userId_idx": {
+          "name": "Session_userId_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Session_userId_User_id_fk": {
+          "name": "Session_userId_User_id_fk",
+          "tableFrom": "Session",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.User": {
+      "name": "User",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emailVerified": {
+          "name": "emailVerified",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "Role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "isAdult": {
+          "name": "isAdult",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "User_role_idx": {
+          "name": "User_role_idx",
+          "columns": [
+            {
+              "expression": "role",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "User_email_unique": {
+          "name": "User_email_unique",
+          "nullsNotDistinct": false,
+          "columns": ["email"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.VerificationToken": {
+      "name": "VerificationToken",
+      "schema": "",
+      "columns": {
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires": {
+          "name": "expires",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "VerificationToken_token_unique": {
+          "name": "VerificationToken_token_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token"]
+        },
+        "VerificationToken_identifier_token_key": {
+          "name": "VerificationToken_identifier_token_key",
+          "nullsNotDistinct": false,
+          "columns": ["identifier", "token"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.SeekerLanguage": {
+      "name": "SeekerLanguage",
+      "schema": "",
+      "columns": {
+        "seekerProfileId": {
+          "name": "seekerProfileId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "languageId": {
+          "name": "languageId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "SeekerLanguage_seekerProfileId_SeekerProfile_id_fk": {
+          "name": "SeekerLanguage_seekerProfileId_SeekerProfile_id_fk",
+          "tableFrom": "SeekerLanguage",
+          "tableTo": "SeekerProfile",
+          "columnsFrom": ["seekerProfileId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "SeekerLanguage_languageId_Language_id_fk": {
+          "name": "SeekerLanguage_languageId_Language_id_fk",
+          "tableFrom": "SeekerLanguage",
+          "tableTo": "Language",
+          "columnsFrom": ["languageId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "SeekerLanguage_seekerProfileId_languageId_pk": {
+          "name": "SeekerLanguage_seekerProfileId_languageId_pk",
+          "columns": ["seekerProfileId", "languageId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.SeekerProfile": {
+      "name": "SeekerProfile",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firstName": {
+          "name": "firstName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lastName": {
+          "name": "lastName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workAuthorization": {
+          "name": "workAuthorization",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "availableDays": {
+          "name": "availableDays",
+          "type": "DayOfWeek[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jobSeekText": {
+          "name": "jobSeekText",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "educationLevel": {
+          "name": "educationLevel",
+          "type": "EducationLevel",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "otherSkills": {
+          "name": "otherSkills",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "otherLanguages": {
+          "name": "otherLanguages",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "about": {
+          "name": "about",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "resumeUrl": {
+          "name": "resumeUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "ProfileStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIVE'"
+        },
+        "lastVerifiedAt": {
+          "name": "lastVerifiedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "SeekerProfile_status_idx": {
+          "name": "SeekerProfile_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "SeekerProfile_userId_User_id_fk": {
+          "name": "SeekerProfile_userId_User_id_fk",
+          "tableFrom": "SeekerProfile",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "SeekerProfile_userId_unique": {
+          "name": "SeekerProfile_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": ["userId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Company": {
+      "name": "Company",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ownerId": {
+          "name": "ownerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "industry": {
+          "name": "industry",
+          "type": "Industry",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "companySize": {
+          "name": "companySize",
+          "type": "CompanySize",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "aboutCompany": {
+          "name": "aboutCompany",
+          "type": "varchar(2000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "missionText": {
+          "name": "missionText",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "Company_ownerId_idx": {
+          "name": "Company_ownerId_idx",
+          "columns": [
+            {
+              "expression": "ownerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Company_ownerId_User_id_fk": {
+          "name": "Company_ownerId_User_id_fk",
+          "tableFrom": "Company",
+          "tableTo": "User",
+          "columnsFrom": ["ownerId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Company_ownerId_name_key": {
+          "name": "Company_ownerId_name_key",
+          "nullsNotDistinct": false,
+          "columns": ["ownerId", "name"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.EmployerProfile": {
+      "name": "EmployerProfile",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firstName": {
+          "name": "firstName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lastName": {
+          "name": "lastName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "roleAtCompany": {
+          "name": "roleAtCompany",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "ProfileStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIVE'"
+        },
+        "isResponsive": {
+          "name": "isResponsive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "responsivenessUpdatedAt": {
+          "name": "responsivenessUpdatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "EmployerProfile_status_idx": {
+          "name": "EmployerProfile_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "EmployerProfile_userId_User_id_fk": {
+          "name": "EmployerProfile_userId_User_id_fk",
+          "tableFrom": "EmployerProfile",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "EmployerProfile_userId_unique": {
+          "name": "EmployerProfile_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": ["userId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.JobLanguage": {
+      "name": "JobLanguage",
+      "schema": "",
+      "columns": {
+        "jobId": {
+          "name": "jobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "languageId": {
+          "name": "languageId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "JobLanguage_jobId_JobPosting_id_fk": {
+          "name": "JobLanguage_jobId_JobPosting_id_fk",
+          "tableFrom": "JobLanguage",
+          "tableTo": "JobPosting",
+          "columnsFrom": ["jobId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "JobLanguage_languageId_Language_id_fk": {
+          "name": "JobLanguage_languageId_Language_id_fk",
+          "tableFrom": "JobLanguage",
+          "tableTo": "Language",
+          "columnsFrom": ["languageId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "JobLanguage_jobId_languageId_pk": {
+          "name": "JobLanguage_jobId_languageId_pk",
+          "columns": ["jobId", "languageId"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.JobPosting": {
+      "name": "JobPosting",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "employerId": {
+          "name": "employerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "companyId": {
+          "name": "companyId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "varchar(5000)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jobType": {
+          "name": "jobType",
+          "type": "JobType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "workArrangement": {
+          "name": "workArrangement",
+          "type": "WorkArrangement",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lat": {
+          "name": "lat",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lon": {
+          "name": "lon",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minHourlyRate": {
+          "name": "minHourlyRate",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payNotes": {
+          "name": "payNotes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workDays": {
+          "name": "workDays",
+          "type": "DayOfWeek[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scheduleNotes": {
+          "name": "scheduleNotes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "workAuthRequired": {
+          "name": "workAuthRequired",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "whatWeTeach": {
+          "name": "whatWeTeach",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "whatWereLookingFor": {
+          "name": "whatWereLookingFor",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "JobStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIVE'"
+        },
+        "closureReason": {
+          "name": "closureReason",
+          "type": "JobClosureReason",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closedAt": {
+          "name": "closedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lastVerifiedAt": {
+          "name": "lastVerifiedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "JobPosting_status_idx": {
+          "name": "JobPosting_status_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_employerId_status_createdAt_idx": {
+          "name": "JobPosting_employerId_status_createdAt_idx",
+          "columns": [
+            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_status_jobType_idx": {
+          "name": "JobPosting_status_jobType_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "jobType", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_status_workArrangement_idx": {
+          "name": "JobPosting_status_workArrangement_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "workArrangement", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_status_createdAt_idx": {
+          "name": "JobPosting_status_createdAt_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_employerId_idx": {
+          "name": "JobPosting_employerId_idx",
+          "columns": [
+            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_companyId_idx": {
+          "name": "JobPosting_companyId_idx",
+          "columns": [
+            { "expression": "companyId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_lat_lon_idx": {
+          "name": "JobPosting_lat_lon_idx",
+          "columns": [
+            { "expression": "lat", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "lon", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "JobPosting_closedAt_idx": {
+          "name": "JobPosting_closedAt_idx",
+          "columns": [
+            { "expression": "closedAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "JobPosting_employerId_User_id_fk": {
+          "name": "JobPosting_employerId_User_id_fk",
+          "tableFrom": "JobPosting",
+          "tableTo": "User",
+          "columnsFrom": ["employerId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "JobPosting_companyId_Company_id_fk": {
+          "name": "JobPosting_companyId_Company_id_fk",
+          "tableFrom": "JobPosting",
+          "tableTo": "Company",
+          "columnsFrom": ["companyId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Application": {
+      "name": "Application",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "seekerId": { "name": "seekerId", "type": "text", "primaryKey": false, "notNull": true },
+        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": true },
+        "message": {
+          "name": "message",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "ApplicationStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'SUBMITTED'"
+        },
+        "closedAt": {
+          "name": "closedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "Application_jobId_createdAt_idx": {
+          "name": "Application_jobId_createdAt_idx",
+          "columns": [
+            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Application_jobId_idx": {
+          "name": "Application_jobId_idx",
+          "columns": [
+            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Application_status_idx": {
+          "name": "Application_status_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Application_seekerId_User_id_fk": {
+          "name": "Application_seekerId_User_id_fk",
+          "tableFrom": "Application",
+          "tableTo": "User",
+          "columnsFrom": ["seekerId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "Application_jobId_JobPosting_id_fk": {
+          "name": "Application_jobId_JobPosting_id_fk",
+          "tableFrom": "Application",
+          "tableTo": "JobPosting",
+          "columnsFrom": ["jobId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Application_seekerId_jobId_key": {
+          "name": "Application_seekerId_jobId_key",
+          "nullsNotDistinct": false,
+          "columns": ["seekerId", "jobId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Conversation": {
+      "name": "Conversation",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "seekerId": { "name": "seekerId", "type": "text", "primaryKey": false, "notNull": true },
+        "employerId": {
+          "name": "employerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": false },
+        "lastMessageAt": {
+          "name": "lastMessageAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lastMessagePreview": {
+          "name": "lastMessagePreview",
+          "type": "varchar(80)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "seekerBlocked": {
+          "name": "seekerBlocked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "employerBlocked": {
+          "name": "employerBlocked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "Conversation_seekerId_idx": {
+          "name": "Conversation_seekerId_idx",
+          "columns": [
+            { "expression": "seekerId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Conversation_employerId_idx": {
+          "name": "Conversation_employerId_idx",
+          "columns": [
+            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Conversation_seekerId_lastMessageAt_idx": {
+          "name": "Conversation_seekerId_lastMessageAt_idx",
+          "columns": [
+            { "expression": "seekerId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Conversation_employerId_lastMessageAt_idx": {
+          "name": "Conversation_employerId_lastMessageAt_idx",
+          "columns": [
+            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Conversation_lastMessageAt_idx": {
+          "name": "Conversation_lastMessageAt_idx",
+          "columns": [
+            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Conversation_seekerId_User_id_fk": {
+          "name": "Conversation_seekerId_User_id_fk",
+          "tableFrom": "Conversation",
+          "tableTo": "User",
+          "columnsFrom": ["seekerId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "Conversation_employerId_User_id_fk": {
+          "name": "Conversation_employerId_User_id_fk",
+          "tableFrom": "Conversation",
+          "tableTo": "User",
+          "columnsFrom": ["employerId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "Conversation_jobId_JobPosting_id_fk": {
+          "name": "Conversation_jobId_JobPosting_id_fk",
+          "tableFrom": "Conversation",
+          "tableTo": "JobPosting",
+          "columnsFrom": ["jobId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "Conversation_seekerId_employerId_jobId_key": {
+          "name": "Conversation_seekerId_employerId_jobId_key",
+          "nullsNotDistinct": false,
+          "columns": ["seekerId", "employerId", "jobId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Message": {
+      "name": "Message",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "conversationId": {
+          "name": "conversationId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "senderId": { "name": "senderId", "type": "text", "primaryKey": false, "notNull": true },
+        "body": { "name": "body", "type": "varchar(5000)", "primaryKey": false, "notNull": true },
+        "readAt": {
+          "name": "readAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "Message_conversationId_createdAt_idx": {
+          "name": "Message_conversationId_createdAt_idx",
+          "columns": [
+            { "expression": "conversationId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Message_conversationId_readAt_idx": {
+          "name": "Message_conversationId_readAt_idx",
+          "columns": [
+            { "expression": "conversationId", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "readAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Message_conversationId_Conversation_id_fk": {
+          "name": "Message_conversationId_Conversation_id_fk",
+          "tableFrom": "Message",
+          "tableTo": "Conversation",
+          "columnsFrom": ["conversationId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "Message_senderId_User_id_fk": {
+          "name": "Message_senderId_User_id_fk",
+          "tableFrom": "Message",
+          "tableTo": "User",
+          "columnsFrom": ["senderId"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.FreshnessToken": {
+      "name": "FreshnessToken",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "token": { "name": "token", "type": "text", "primaryKey": false, "notNull": true },
+        "targetType": {
+          "name": "targetType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "targetId": { "name": "targetId", "type": "text", "primaryKey": false, "notNull": true },
+        "action": {
+          "name": "action",
+          "type": "PingResponse",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pingId": { "name": "pingId", "type": "text", "primaryKey": false, "notNull": false },
+        "expiresAt": {
+          "name": "expiresAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "usedAt": {
+          "name": "usedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "FreshnessToken_targetType_targetId_idx": {
+          "name": "FreshnessToken_targetType_targetId_idx",
+          "columns": [
+            { "expression": "targetType", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "targetId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "FreshnessToken_expiresAt_idx": {
+          "name": "FreshnessToken_expiresAt_idx",
+          "columns": [
+            { "expression": "expiresAt", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "FreshnessToken_pingId_VerificationPing_id_fk": {
+          "name": "FreshnessToken_pingId_VerificationPing_id_fk",
+          "tableFrom": "FreshnessToken",
+          "tableTo": "VerificationPing",
+          "columnsFrom": ["pingId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "FreshnessToken_token_unique": {
+          "name": "FreshnessToken_token_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.VerificationPing": {
+      "name": "VerificationPing",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "type": {
+          "name": "type",
+          "type": "PingType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sentAt": {
+          "name": "sentAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "respondedAt": {
+          "name": "respondedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "response": {
+          "name": "response",
+          "type": "PingResponse",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "userId": { "name": "userId", "type": "text", "primaryKey": false, "notNull": false },
+        "seekerProfileId": {
+          "name": "seekerProfileId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": false }
+      },
+      "indexes": {
+        "VerificationPing_userId_idx": {
+          "name": "VerificationPing_userId_idx",
+          "columns": [
+            { "expression": "userId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "VerificationPing_jobId_idx": {
+          "name": "VerificationPing_jobId_idx",
+          "columns": [
+            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "VerificationPing_userId_User_id_fk": {
+          "name": "VerificationPing_userId_User_id_fk",
+          "tableFrom": "VerificationPing",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "VerificationPing_seekerProfileId_SeekerProfile_id_fk": {
+          "name": "VerificationPing_seekerProfileId_SeekerProfile_id_fk",
+          "tableFrom": "VerificationPing",
+          "tableTo": "SeekerProfile",
+          "columnsFrom": ["seekerProfileId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "VerificationPing_jobId_JobPosting_id_fk": {
+          "name": "VerificationPing_jobId_JobPosting_id_fk",
+          "tableFrom": "VerificationPing",
+          "tableTo": "JobPosting",
+          "columnsFrom": ["jobId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.NotificationPreferences": {
+      "name": "NotificationPreferences",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "userId": { "name": "userId", "type": "text", "primaryKey": false, "notNull": true },
+        "messageNotifications": {
+          "name": "messageNotifications",
+          "type": "NotificationFrequency",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PER_MESSAGE'"
+        },
+        "applicationNotifications": {
+          "name": "applicationNotifications",
+          "type": "NotificationFrequency",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'PER_MESSAGE'"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "NotificationPreferences_userId_User_id_fk": {
+          "name": "NotificationPreferences_userId_User_id_fk",
+          "tableFrom": "NotificationPreferences",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "NotificationPreferences_userId_unique": {
+          "name": "NotificationPreferences_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": ["userId"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Report": {
+      "name": "Report",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "reporterId": {
+          "name": "reporterId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "targetType": {
+          "name": "targetType",
+          "type": "ReportTargetType",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "targetId": { "name": "targetId", "type": "text", "primaryKey": false, "notNull": true },
+        "reason": { "name": "reason", "type": "text", "primaryKey": false, "notNull": true },
+        "status": {
+          "name": "status",
+          "type": "ReportStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OPEN'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "Report_status_idx": {
+          "name": "Report_status_idx",
+          "columns": [
+            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Report_targetType_targetId_idx": {
+          "name": "Report_targetType_targetId_idx",
+          "columns": [
+            { "expression": "targetType", "isExpression": false, "asc": true, "nulls": "last" },
+            { "expression": "targetId", "isExpression": false, "asc": true, "nulls": "last" }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Report_reporterId_User_id_fk": {
+          "name": "Report_reporterId_User_id_fk",
+          "tableFrom": "Report",
+          "tableTo": "User",
+          "columnsFrom": ["reporterId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.ApplicationStatus": {
+      "name": "ApplicationStatus",
+      "schema": "public",
+      "values": ["SUBMITTED", "VIEWED", "REJECTED", "CLOSED"]
+    },
+    "public.CompanySize": {
+      "name": "CompanySize",
+      "schema": "public",
+      "values": ["SIZE_1_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_PLUS"]
+    },
+    "public.DayOfWeek": {
+      "name": "DayOfWeek",
+      "schema": "public",
+      "values": ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    },
+    "public.EducationLevel": {
+      "name": "EducationLevel",
+      "schema": "public",
+      "values": [
+        "NONE",
+        "SOME_HIGH_SCHOOL",
+        "HIGH_SCHOOL",
+        "SOME_COLLEGE",
+        "ASSOCIATE",
+        "BACHELOR",
+        "GRADUATE"
+      ]
+    },
+    "public.Industry": {
+      "name": "Industry",
+      "schema": "public",
+      "values": [
+        "FOOD_SERVICE",
+        "RETAIL",
+        "HOSPITALITY",
+        "HEALTHCARE",
+        "TRADES",
+        "MANUFACTURING",
+        "OFFICE_ADMIN",
+        "TRANSPORTATION",
+        "EDUCATION",
+        "PERSONAL_SERVICES",
+        "TECHNOLOGY",
+        "BUSINESS",
+        "FINANCE",
+        "MARKETING",
+        "MEDIA",
+        "REAL_ESTATE",
+        "OTHER"
+      ]
+    },
+    "public.JobClosureReason": {
+      "name": "JobClosureReason",
+      "schema": "public",
+      "values": ["FILLED_ON_SHEFA", "FILLED_ELSEWHERE", "HIRING_FROZEN", "CANCELLED", "OTHER"]
+    },
+    "public.JobStatus": {
+      "name": "JobStatus",
+      "schema": "public",
+      "values": ["ACTIVE", "PAUSED", "CLOSED"]
+    },
+    "public.JobType": {
+      "name": "JobType",
+      "schema": "public",
+      "values": ["FULL_TIME", "PART_TIME", "EITHER"]
+    },
+    "public.NotificationFrequency": {
+      "name": "NotificationFrequency",
+      "schema": "public",
+      "values": ["PER_MESSAGE", "DAILY_DIGEST", "OFF"]
+    },
+    "public.PingResponse": {
+      "name": "PingResponse",
+      "schema": "public",
+      "values": ["CONFIRMED", "NOT_LOOKING", "FILLED", "PAUSED", "NO_RESPONSE"]
+    },
+    "public.PingType": {
+      "name": "PingType",
+      "schema": "public",
+      "values": ["SEEKER_STILL_LOOKING", "JOB_STILL_OPEN"]
+    },
+    "public.ProfileStatus": {
+      "name": "ProfileStatus",
+      "schema": "public",
+      "values": ["ACTIVE", "PAUSED", "SUSPENDED"]
+    },
+    "public.ReportStatus": {
+      "name": "ReportStatus",
+      "schema": "public",
+      "values": ["OPEN", "REVIEWED", "ACTIONED", "DISMISSED"]
+    },
+    "public.ReportTargetType": {
+      "name": "ReportTargetType",
+      "schema": "public",
+      "values": ["USER", "JOB", "MESSAGE"]
+    },
+    "public.Role": {
+      "name": "Role",
+      "schema": "public",
+      "values": ["SEEKER", "EMPLOYER", "ADMIN"]
+    },
+    "public.WorkArrangement": {
+      "name": "WorkArrangement",
+      "schema": "public",
+      "values": ["REMOTE", "ON_SITE", "HYBRID"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

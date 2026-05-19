@@ -1,16 +1,14 @@
 import "dotenv/config";
-import {
-  ApplicationStatus,
-  CompanySize,
-  DayOfWeek,
-  Industry,
-  JobStatus,
-  JobType,
-  PrismaClient,
-  WorkArrangement,
-} from "@prisma/client";
-
-const prisma = new PrismaClient();
+import postgres from "postgres";
+import { drizzle } from "drizzle-orm/postgres-js";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import type { DayOfWeek, JobType, WorkArrangement } from "../schema";
+import { users } from "../schema/auth";
+import { employerProfile, company } from "../schema/employer";
+import { seekerProfile } from "../schema/seeker";
+import { jobPosting } from "../schema/job";
+import { application } from "../schema/application";
+import { conversation, message } from "../schema/conversation";
 
 const JOB_DAYS: DayOfWeek[] = ["MON", "TUE", "WED", "THU", "FRI"];
 
@@ -512,131 +510,147 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
   },
 ];
 
+const APPLICATION_MESSAGES = [
+  "I am very excited about this opportunity and believe I would be a strong fit. I am a fast learner and dedicated to doing excellent work.",
+  "This role looks like a great match for my interests and goals. I am available to start immediately and am fully committed to the position.",
+  "I have been looking for exactly this kind of opportunity. I bring a positive attitude and genuine enthusiasm for the work.",
+  "I would love the chance to learn from your team. I am reliable, punctual, and ready to give everything I have to this role.",
+  "Your company's mission really resonates with me. I am confident I can contribute meaningfully once given the chance to get started.",
+  "I am eager to prove myself. I may not have formal experience yet but I am a hard worker and a quick study.",
+  "This looks like a wonderful place to begin my career. I am very motivated and would not take this opportunity for granted.",
+  "I have read everything I can find about your company and I am genuinely excited. Please give me the chance to show what I can do.",
+];
+
 async function main() {
-  console.log("Creating employer user (e1@gmail.com)...");
-  const employer = await prisma.user.upsert({
-    where: { email: "e1@gmail.com" },
-    update: { role: "EMPLOYER", isAdult: true, name: "Employer One" },
-    create: {
-      email: "e1@gmail.com",
-      role: "EMPLOYER",
-      isAdult: true,
-      name: "Employer One",
-    },
-  });
-  await prisma.employerProfile.upsert({
-    where: { userId: employer.id },
-    update: {},
-    create: {
-      userId: employer.id,
-      firstName: "Employer",
-      lastName: "One",
-      roleAtCompany: "Hiring Manager",
-    },
-  });
+  const client = postgres(process.env.DATABASE_URL!);
+  const db = drizzle(client);
 
-  console.log("Creating seeker user (s1@gmail.com)...");
-  const seeker = await prisma.user.upsert({
-    where: { email: "s1@gmail.com" },
-    update: { role: "SEEKER", isAdult: true, name: "Seeker One" },
-    create: {
-      email: "s1@gmail.com",
-      role: "SEEKER",
-      isAdult: true,
-      name: "Seeker One",
-    },
-  });
-  await prisma.seekerProfile.upsert({
-    where: { userId: seeker.id },
-    update: {},
-    create: {
-      userId: seeker.id,
-      firstName: "Seeker",
-      lastName: "One",
-      city: "New York City",
-      state: "NY",
-      workAuthorization: true,
-      availableDays: JOB_DAYS,
-      jobSeekText:
-        "I am an eager, fast learner looking for an opportunity to start my career. I have no formal work experience but I show up on time, follow instructions, and never stop improving.",
-      educationLevel: "HIGH_SCHOOL",
-      about:
-        "Brooklyn native, looking for my first real break. I bring a strong work ethic and a positive attitude to everything I do.",
-    },
-  });
+  try {
+    console.log("Creating employer user (e1@gmail.com)...");
+    const [employer] = await db
+      .insert(users)
+      .values({ email: "e1@gmail.com", role: "EMPLOYER", isAdult: true, name: "Employer One" })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: { role: "EMPLOYER", isAdult: true, name: "Employer One" },
+      })
+      .returning({ id: users.id });
 
-  console.log("Creating companies...");
-  const company1 = await prisma.company.upsert({
-    where: { ownerId_name: { ownerId: employer.id, name: "Company One" } },
-    update: {},
-    create: {
-      ownerId: employer.id,
-      name: "Company One",
-      city: "New York City",
-      state: "NY",
-      industry: Industry.TECHNOLOGY,
-      companySize: CompanySize.SIZE_51_200,
-      aboutCompany:
-        "Company One builds software tools that help small nonprofits manage their operations. We are a mission-driven team that values learning, inclusion, and getting things done.",
-      missionText: "Technology should work for every organization, not just the well-funded ones.",
-    },
-  });
+    await db
+      .insert(employerProfile)
+      .values({
+        userId: employer.id,
+        firstName: "Employer",
+        lastName: "One",
+        roleAtCompany: "Hiring Manager",
+      })
+      .onConflictDoNothing();
 
-  const company2 = await prisma.company.upsert({
-    where: { ownerId_name: { ownerId: employer.id, name: "Company Two" } },
-    update: {},
-    create: {
-      ownerId: employer.id,
-      name: "Company Two",
-      city: "Brooklyn",
-      state: "NY",
-      industry: Industry.RETAIL,
-      companySize: CompanySize.SIZE_11_50,
-      aboutCompany:
-        "Company Two is a neighborhood retail store serving Brooklyn for over 20 years. We carry a wide range of products and pride ourselves on knowing every customer by name.",
-      missionText: "Great retail is about relationships, not just transactions.",
-    },
-  });
+    console.log("Creating seeker user (s1@gmail.com)...");
+    const [seeker] = await db
+      .insert(users)
+      .values({ email: "s1@gmail.com", role: "SEEKER", isAdult: true, name: "Seeker One" })
+      .onConflictDoUpdate({
+        target: users.email,
+        set: { role: "SEEKER", isAdult: true, name: "Seeker One" },
+      })
+      .returning({ id: users.id });
 
-  // Clean up existing test jobs, applications, and conversations
-  console.log("Cleaning up existing test jobs and conversations...");
-  const existingJobs = await prisma.jobPosting.findMany({
-    where: { companyId: { in: [company1.id, company2.id] } },
-    select: { id: true },
-  });
-  const existingJobIds = existingJobs.map((j) => j.id);
+    await db
+      .insert(seekerProfile)
+      .values({
+        userId: seeker.id,
+        firstName: "Seeker",
+        lastName: "One",
+        city: "New York City",
+        state: "NY",
+        workAuthorization: true,
+        availableDays: JOB_DAYS,
+        jobSeekText:
+          "I am an eager, fast learner looking for an opportunity to start my career. I have no formal work experience but I show up on time, follow instructions, and never stop improving.",
+        educationLevel: "HIGH_SCHOOL",
+        about:
+          "Brooklyn native, looking for my first real break. I bring a strong work ethic and a positive attitude to everything I do.",
+      })
+      .onConflictDoNothing();
 
-  if (existingJobIds.length > 0) {
-    await prisma.message.deleteMany({
-      where: { conversation: { jobId: { in: existingJobIds } } },
-    });
-    await prisma.conversation.deleteMany({
-      where: { jobId: { in: existingJobIds } },
-    });
-    await prisma.application.deleteMany({
-      where: { jobId: { in: existingJobIds } },
-    });
-    await prisma.jobPosting.deleteMany({
-      where: { id: { in: existingJobIds } },
-    });
-  }
+    console.log("Creating companies...");
+    const [company1] = await db
+      .insert(company)
+      .values({
+        ownerId: employer.id,
+        name: "Company One",
+        city: "New York City",
+        state: "NY",
+        industry: "TECHNOLOGY",
+        companySize: "SIZE_51_200",
+        aboutCompany:
+          "Company One builds software tools that help small nonprofits manage their operations. We are a mission-driven team that values learning, inclusion, and getting things done.",
+        missionText:
+          "Technology should work for every organization, not just the well-funded ones.",
+      })
+      .onConflictDoUpdate({
+        target: [company.ownerId, company.name],
+        set: { name: sql`excluded.name` },
+      })
+      .returning({ id: company.id });
 
-  // Also clean up any existing no-job conversation between these two users
-  await prisma.message.deleteMany({
-    where: {
-      conversation: { seekerId: seeker.id, employerId: employer.id, jobId: null },
-    },
-  });
-  await prisma.conversation.deleteMany({
-    where: { seekerId: seeker.id, employerId: employer.id, jobId: null },
-  });
+    const [company2] = await db
+      .insert(company)
+      .values({
+        ownerId: employer.id,
+        name: "Company Two",
+        city: "Brooklyn",
+        state: "NY",
+        industry: "RETAIL",
+        companySize: "SIZE_11_50",
+        aboutCompany:
+          "Company Two is a neighborhood retail store serving Brooklyn for over 20 years. We carry a wide range of products and pride ourselves on knowing every customer by name.",
+        missionText: "Great retail is about relationships, not just transactions.",
+      })
+      .onConflictDoUpdate({
+        target: [company.ownerId, company.name],
+        set: { name: sql`excluded.name` },
+      })
+      .returning({ id: company.id });
 
-  // Create 15 jobs for company1
-  console.log("Creating 15 jobs for Company One...");
-  const jobs1 = await Promise.all(
-    COMPANY_ONE_JOBS.map((t) =>
-      prisma.jobPosting.create({
-        data: {
+    console.log("Cleaning up existing test jobs and conversations...");
+    const existingJobs = await db
+      .select({ id: jobPosting.id })
+      .from(jobPosting)
+      .where(inArray(jobPosting.companyId, [company1.id, company2.id]));
+    const existingJobIds = existingJobs.map((j) => j.id);
+
+    if (existingJobIds.length > 0) {
+      await db.delete(conversation).where(inArray(conversation.jobId, existingJobIds));
+      await db.delete(application).where(inArray(application.jobId, existingJobIds));
+      await db.delete(jobPosting).where(inArray(jobPosting.id, existingJobIds));
+    }
+
+    const freeConvIds = await db
+      .select({ id: conversation.id })
+      .from(conversation)
+      .where(
+        and(
+          eq(conversation.seekerId, seeker.id),
+          eq(conversation.employerId, employer.id),
+          isNull(conversation.jobId),
+        ),
+      );
+    if (freeConvIds.length > 0) {
+      await db.delete(conversation).where(
+        inArray(
+          conversation.id,
+          freeConvIds.map((c) => c.id),
+        ),
+      );
+    }
+
+    console.log("Creating 15 jobs for Company One...");
+    const jobs1 = await db
+      .insert(jobPosting)
+      .values(
+        COMPANY_ONE_JOBS.map((t) => ({
           employerId: employer.id,
           companyId: company1.id,
           title: t.title,
@@ -647,23 +661,21 @@ async function main() {
           state: t.state,
           lat: t.lat,
           lon: t.lon,
-          minHourlyRate: t.minHourlyRate,
+          minHourlyRate: String(t.minHourlyRate),
           workAuthRequired: t.workAuthRequired,
           workDays: JOB_DAYS,
           whatWeTeach: t.whatWeTeach,
           whatWereLookingFor: t.whatWereLookingFor,
-          status: JobStatus.ACTIVE,
-        },
-      }),
-    ),
-  );
+          status: "ACTIVE" as const,
+        })),
+      )
+      .returning({ id: jobPosting.id, title: jobPosting.title });
 
-  // Create 15 jobs for company2
-  console.log("Creating 15 jobs for Company Two...");
-  const jobs2 = await Promise.all(
-    COMPANY_TWO_JOBS.map((t) =>
-      prisma.jobPosting.create({
-        data: {
+    console.log("Creating 15 jobs for Company Two...");
+    const jobs2 = await db
+      .insert(jobPosting)
+      .values(
+        COMPANY_TWO_JOBS.map((t) => ({
           employerId: employer.id,
           companyId: company2.id,
           title: t.title,
@@ -674,141 +686,115 @@ async function main() {
           state: t.state,
           lat: t.lat,
           lon: t.lon,
-          minHourlyRate: t.minHourlyRate,
+          minHourlyRate: String(t.minHourlyRate),
           workAuthRequired: t.workAuthRequired,
           workDays: JOB_DAYS,
           whatWeTeach: t.whatWeTeach,
           whatWereLookingFor: t.whatWereLookingFor,
-          status: JobStatus.ACTIVE,
-        },
-      }),
-    ),
-  );
+          status: "ACTIVE" as const,
+        })),
+      )
+      .returning({ id: jobPosting.id, title: jobPosting.title });
 
-  // s1 applies to first 4 jobs from each company
-  console.log("Creating 8 applications (4 per company)...");
-  const appliedJobs = [...jobs1.slice(0, 4), ...jobs2.slice(0, 4)];
+    console.log("Creating 8 applications (4 per company)...");
+    const appliedJobs = [...jobs1.slice(0, 4), ...jobs2.slice(0, 4)];
 
-  const applicationMessages = [
-    "I am very excited about this opportunity and believe I would be a strong fit. I am a fast learner and dedicated to doing excellent work.",
-    "This role looks like a great match for my interests and goals. I am available to start immediately and am fully committed to the position.",
-    "I have been looking for exactly this kind of opportunity. I bring a positive attitude and genuine enthusiasm for the work.",
-    "I would love the chance to learn from your team. I am reliable, punctual, and ready to give everything I have to this role.",
-    "Your company's mission really resonates with me. I am confident I can contribute meaningfully once given the chance to get started.",
-    "I am eager to prove myself. I may not have formal experience yet but I am a hard worker and a quick study.",
-    "This looks like a wonderful place to begin my career. I am very motivated and would not take this opportunity for granted.",
-    "I have read everything I can find about your company and I am genuinely excited. Please give me the chance to show what I can do.",
-  ];
+    const conversations = await Promise.all(
+      appliedJobs.map(async (job, i) => {
+        const [app] = await db
+          .insert(application)
+          .values({
+            seekerId: seeker.id,
+            jobId: job.id,
+            message: APPLICATION_MESSAGES[i],
+            status: "SUBMITTED",
+          })
+          .returning({ id: application.id });
 
-  const conversations = await Promise.all(
-    appliedJobs.map(async (job, i) => {
-      const application = await prisma.application.create({
-        data: {
-          seekerId: seeker.id,
-          jobId: job.id,
-          message: applicationMessages[i],
-          status: ApplicationStatus.SUBMITTED,
-        },
-      });
+        const now = new Date();
+        const preview = `Thanks for applying to ${job.title}! We will be in touch shortly.`;
 
-      const now = new Date();
-      const preview = `Thanks for applying to ${job.title}! We will be in touch shortly.`;
+        const [conv] = await db
+          .insert(conversation)
+          .values({
+            seekerId: seeker.id,
+            employerId: employer.id,
+            jobId: job.id,
+            lastMessageAt: now,
+            lastMessagePreview: preview.slice(0, 80),
+          })
+          .returning({ id: conversation.id });
 
-      const conversation = await prisma.conversation.create({
-        data: {
-          seekerId: seeker.id,
-          employerId: employer.id,
-          jobId: job.id,
-          lastMessageAt: now,
-          lastMessagePreview: preview.slice(0, 100),
-        },
-      });
-
-      // Employer sends first message
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
+        await db.insert(message).values({
+          conversationId: conv.id,
           senderId: employer.id,
           body: `Hi Seeker, thanks for applying to the ${job.title} role! We have reviewed your application and would love to learn more about you. Are you available for a quick call this week?`,
           createdAt: new Date(now.getTime() - 60 * 60 * 1000),
-        },
-      });
+        });
 
-      // Seeker replies
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
+        await db.insert(message).values({
+          conversationId: conv.id,
           senderId: seeker.id,
-          body: `Hi! Yes, absolutely — I am very excited about this opportunity. I am available any weekday afternoon this week. Just let me know what time works best for you.`,
+          body: "Hi! Yes, absolutely — I am very excited about this opportunity. I am available any weekday afternoon this week. Just let me know what time works best for you.",
           createdAt: new Date(now.getTime() - 30 * 60 * 1000),
-        },
-      });
+        });
 
-      // Employer follows up
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
+        await db.insert(message).values({
+          conversationId: conv.id,
           senderId: employer.id,
-          body: `Great! Let's say Thursday at 2pm. I will send a calendar invite. Looking forward to chatting!`,
+          body: "Great! Let's say Thursday at 2pm. I will send a calendar invite. Looking forward to chatting!",
           createdAt: now,
-        },
-      });
+        });
 
-      await prisma.application.update({
-        where: { id: application.id },
-        data: { status: ApplicationStatus.VIEWED },
-      });
+        await db.update(application).set({ status: "VIEWED" }).where(eq(application.id, app.id));
 
-      return conversation;
-    }),
-  );
+        return conv;
+      }),
+    );
 
-  // One conversation not attached to a job
-  console.log("Creating 1 conversation without a job...");
-  const freeConversationTime = new Date();
-  const freeConversation = await prisma.conversation.create({
-    data: {
-      seekerId: seeker.id,
-      employerId: employer.id,
-      jobId: null,
-      lastMessageAt: freeConversationTime,
-      lastMessagePreview: "Hey, I just wanted to reach out directly.",
-    },
-  });
+    console.log("Creating 1 conversation without a job...");
+    const freeConversationTime = new Date();
+    const [freeConversation] = await db
+      .insert(conversation)
+      .values({
+        seekerId: seeker.id,
+        employerId: employer.id,
+        jobId: null,
+        lastMessageAt: freeConversationTime,
+        lastMessagePreview: "Hey, I just wanted to reach out directly.",
+      })
+      .returning({ id: conversation.id });
 
-  await prisma.message.create({
-    data: {
+    await db.insert(message).values({
       conversationId: freeConversation.id,
       senderId: seeker.id,
       body: "Hi, I came across your company profile and I am really impressed by your mission. I know I have already applied to a few of your roles, but I just wanted to reach out directly to express how much I would love to work with your team.",
       createdAt: new Date(freeConversationTime.getTime() - 20 * 60 * 1000),
-    },
-  });
+    });
 
-  await prisma.message.create({
-    data: {
+    await db.insert(message).values({
       conversationId: freeConversation.id,
       senderId: employer.id,
       body: "Thanks so much for reaching out! We really appreciate the enthusiasm. Keep an eye on your applications — we will be reviewing them soon.",
       createdAt: freeConversationTime,
-    },
-  });
+    });
 
-  console.log("\n✓ Dev seed complete:");
-  console.log(`  Employer: e1@gmail.com (id: ${employer.id})`);
-  console.log(`  Seeker:   s1@gmail.com (id: ${seeker.id})`);
-  console.log(`  Company One: ${company1.id} — 15 jobs`);
-  console.log(`  Company Two: ${company2.id} — 15 jobs`);
-  console.log(`  Applications: 8 (4 per company)`);
-  console.log(`  Conversations with job: ${conversations.length}`);
-  console.log(`  Conversations without job: 1`);
-  console.log(`  Messages per job conversation: 3`);
-  console.log(`  Messages in free conversation: 2`);
+    console.log("\n✓ Dev seed complete:");
+    console.log(`  Employer: e1@gmail.com (id: ${employer.id})`);
+    console.log(`  Seeker:   s1@gmail.com (id: ${seeker.id})`);
+    console.log(`  Company One: ${company1.id} — 15 jobs`);
+    console.log(`  Company Two: ${company2.id} — 15 jobs`);
+    console.log(`  Applications: 8 (4 per company)`);
+    console.log(`  Conversations with job: ${conversations.length}`);
+    console.log(`  Conversations without job: 1`);
+    console.log(`  Messages per job conversation: 3`);
+    console.log(`  Messages in free conversation: 2`);
+  } finally {
+    await client.end();
+  }
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

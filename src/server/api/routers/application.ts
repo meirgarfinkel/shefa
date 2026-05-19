@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { eq, and, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
@@ -7,7 +8,7 @@ import {
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
 import { runApplicationNotifyJob } from "@/server/jobs/application-notify.job";
-import { ApplicationStatus } from "@prisma/client";
+import { application, seekerProfile, jobPosting } from "@/db/schema";
 
 export const applicationRouter = createTRPCRouter({
   submit: protectedProcedure.input(ApplySchema).mutation(async ({ ctx, input }) => {
@@ -15,17 +16,17 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
-    const profile = await ctx.prisma.seekerProfile.findUnique({
-      where: { userId: ctx.user.id },
-      select: { id: true },
+    const profile = await ctx.db.query.seekerProfile.findFirst({
+      where: eq(seekerProfile.userId, ctx.user.id),
+      columns: { id: true },
     });
     if (!profile) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Seeker profile not found" });
     }
 
-    const job = await ctx.prisma.jobPosting.findUnique({
-      where: { id: input.jobId },
-      select: { id: true, status: true, employerId: true },
+    const job = await ctx.db.query.jobPosting.findFirst({
+      where: eq(jobPosting.id, input.jobId),
+      columns: { id: true, status: true, employerId: true },
     });
     if (!job) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
@@ -34,35 +35,36 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN", message: "Job is not accepting applications" });
     }
 
-    let application;
+    let newApplication;
     try {
-      application = await ctx.prisma.application.create({
-        data: {
+      const [created] = await ctx.db
+        .insert(application)
+        .values({
           seekerId: ctx.user.id,
           jobId: input.jobId,
           message: input.message,
-        },
-      });
+        })
+        .returning();
+      newApplication = created!;
     } catch (e) {
       if (
         typeof e === "object" &&
         e !== null &&
         "code" in e &&
-        (e as { code: string }).code === "P2002"
+        (e as { code: string }).code === "23505"
       ) {
         throw new TRPCError({ code: "CONFLICT", message: "Already applied to this job" });
       }
       throw e;
     }
 
-    // Fire-and-forget — notification failure must not fail the submit
     runApplicationNotifyJob({ jobId: input.jobId, employerId: job.employerId }).catch(
       (err: unknown) => {
         console.error("[application.submit] Failed to send notification:", err);
       },
     );
 
-    return application;
+    return newApplication;
   }),
 
   listForSeeker: protectedProcedure.query(async ({ ctx }) => {
@@ -70,11 +72,12 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
-    return ctx.prisma.application.findMany({
-      where: { seekerId: ctx.user.id },
-      include: {
+    return ctx.db.query.application.findMany({
+      where: eq(application.seekerId, ctx.user.id),
+      orderBy: desc(application.createdAt),
+      with: {
         job: {
-          select: {
+          columns: {
             id: true,
             title: true,
             city: true,
@@ -82,11 +85,12 @@ export const applicationRouter = createTRPCRouter({
             jobType: true,
             status: true,
             employerId: true,
-            company: { select: { id: true, name: true } },
+          },
+          with: {
+            company: { columns: { id: true, name: true } },
           },
         },
       },
-      orderBy: { createdAt: "desc" },
     });
   }),
 
@@ -95,9 +99,9 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
-    const job = await ctx.prisma.jobPosting.findUnique({
-      where: { id: input.jobId },
-      select: { id: true, employerId: true },
+    const job = await ctx.db.query.jobPosting.findFirst({
+      where: eq(jobPosting.id, input.jobId),
+      columns: { id: true, employerId: true },
     });
     if (!job) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
@@ -106,14 +110,15 @@ export const applicationRouter = createTRPCRouter({
       throw new TRPCError({ code: "FORBIDDEN" });
     }
 
-    return ctx.prisma.application.findMany({
-      where: { jobId: input.jobId },
-      include: {
+    return ctx.db.query.application.findMany({
+      where: eq(application.jobId, input.jobId),
+      orderBy: desc(application.createdAt),
+      with: {
         seeker: {
-          select: {
-            id: true,
+          columns: { id: true },
+          with: {
             seekerProfile: {
-              select: {
+              columns: {
                 id: true,
                 firstName: true,
                 lastName: true,
@@ -126,7 +131,6 @@ export const applicationRouter = createTRPCRouter({
           },
         },
       },
-      orderBy: { createdAt: "desc" },
     });
   }),
 
@@ -137,35 +141,38 @@ export const applicationRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      const application = await ctx.prisma.application.findUnique({
-        where: { id: input.id },
-        select: { id: true, job: { select: { employerId: true } } },
+      const app = await ctx.db.query.application.findFirst({
+        where: eq(application.id, input.id),
+        columns: { id: true },
+        with: {
+          job: { columns: { employerId: true } },
+        },
       });
-      if (!application) {
+      if (!app) {
         throw new TRPCError({ code: "NOT_FOUND" });
       }
-      if (application.job.employerId !== ctx.user.id) {
+      if (app.job.employerId !== ctx.user.id) {
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
-      return ctx.prisma.application.update({
-        where: { id: input.id },
-        data: {
+      const [updated] = await ctx.db
+        .update(application)
+        .set({
           status: input.status,
-          ...(input.status === ApplicationStatus.CLOSED && {
-            closedAt: new Date(),
-          }),
-        },
-      });
+          ...(input.status === "CLOSED" && { closedAt: new Date() }),
+        })
+        .where(eq(application.id, input.id))
+        .returning();
+      return updated!;
     }),
 
   myStatus: protectedProcedure
     .input(z.object({ jobId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "SEEKER") return null;
-      return ctx.prisma.application.findUnique({
-        where: { seekerId_jobId: { seekerId: ctx.user.id, jobId: input.jobId } },
-        select: { id: true, status: true },
+      return ctx.db.query.application.findFirst({
+        where: and(eq(application.seekerId, ctx.user.id), eq(application.jobId, input.jobId)),
+        columns: { id: true, status: true },
       });
     }),
 });

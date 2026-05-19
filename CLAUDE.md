@@ -9,7 +9,7 @@ Core stack:
 - Next.js App Router
 - TypeScript (strict)
 - tRPC
-- Prisma 6
+- Drizzle ORM (`drizzle-orm` + `@neondatabase/serverless` HTTP driver)
 - PostgreSQL
 - Auth.js v5 (`next-auth@beta`)
 - Resend
@@ -105,17 +105,17 @@ These rules are non-negotiable.
 - Middleware is the ONLY auth redirect layer
 - No auth redirects in React components
 - Middleware must remain Edge-safe
-- Middleware must never import Prisma
+- Middleware must never import the db client (Drizzle/Neon are Node-only)
 - Session strategy must be JWT
 
 ---
 
 ## Database
 
-- Prisma schema is the canonical database contract
-- Prisma enums are the canonical enum source
-- Do not duplicate Prisma enums as TypeScript unions
-- Zod enums should derive from Prisma enums via `z.nativeEnum`
+- `src/db/schema/` is the canonical database contract
+- `src/db/schema/enums.ts` is the canonical enum source
+- Drizzle `pgEnum` values export TypeScript union types (e.g. `type JobStatus = ...`)
+- Zod enums must use string literals matching enum values — not `z.nativeEnum`
 - Never bypass schema drift with `as any`
 
 ---
@@ -404,9 +404,9 @@ Summarize:
 Never introduce:
 
 - client-side auth redirects
-- duplicated Prisma enums
+- duplicated enum definitions (use `@/db/schema` as canonical source)
 - business logic inside components
-- middleware importing Prisma
+- middleware importing db/Drizzle
 - raw SQL without justification
 - cascading destructive updates
 - inline color styles
@@ -436,44 +436,35 @@ If a new env variable is needed:
 
 Never autonomously run:
 
-- `prisma migrate dev`
-- `prisma migrate reset`
-- `prisma migrate deploy`
-- `prisma db push`
-- `prisma db seed`
+- `drizzle-kit push`
+- `drizzle-kit migrate`
 - destructive `psql` commands
 
-When modifying `schema.prisma`:
+When modifying schema files in `src/db/schema/`:
 
 Immediately provide the exact migration command:
 
 ```bash
-npx prisma migrate dev --name descriptive_name
+npx drizzle-kit generate
+npx drizzle-kit migrate
 ```
 
 Do this BEFORE writing dependent code.
 
 ---
 
-# Prisma Rules
+# Drizzle Rules
 
-Use:
-
-```prisma
-provider = "prisma-client-js"
-```
+- Use `db` from `src/db/index.ts` (`DbClient = typeof db`)
+- Use `db.query.X.findFirst/findMany` for relational queries with `with`
+- Use `db.insert/update/delete` for mutations
+- Use `db.execute(sql\`...\`)` for raw SQL (must justify)
+- Import table/enum types from `@/db/schema`
 
 Never:
 
-- custom Prisma output paths
-- duplicate enums manually
+- duplicate enum values as TypeScript unions manually (use `typeof X.enumValues[number]`)
 - use `as any` to bypass schema mismatches
-
-Always import Prisma types from:
-
-```ts
-@prisma/client
-```
 
 ---
 
@@ -486,14 +477,14 @@ Always import Prisma types from:
 ## `auth.config.ts`
 
 - Edge-safe only
-- no Prisma imports
-- no `@prisma/client`
+- no db/Drizzle imports
+- no `@/db` or `drizzle-orm`
 - no adapter
 
 ## `auth.ts`
 
 - full Node config
-- Prisma adapter
+- DrizzleAdapter (from `@auth/drizzle-adapter`)
 - Resend provider
 
 ## Middleware
@@ -503,7 +494,7 @@ Must import ONLY:
 - `auth.config.ts`
 - Next.js built-ins
 
-Never Prisma.
+Never import `@/db` or `drizzle-orm`.
 
 ---
 
@@ -612,10 +603,12 @@ before manual fixes.
 src/server/api/routers/
 ```
 
-## Prisma
+## Database Schema
 
 ```text
-prisma/schema.prisma
+src/db/schema/
+src/db/index.ts
+drizzle.config.ts
 ```
 
 ## Jobs

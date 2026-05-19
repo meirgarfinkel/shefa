@@ -7,7 +7,7 @@ A nonprofit job board where employers give unqualified candidates a real chance 
 - **Framework**: Next.js 15 (App Router) + TypeScript
 - **API**: tRPC
 - **Database**: PostgreSQL (Neon in production, Docker locally)
-- **ORM**: Prisma 6
+- **ORM**: Drizzle
 - **Auth**: Auth.js v5 — Google OAuth + email magic links via Resend
 - **Background jobs**: BullMQ + Redis (Upstash in production)
 - **UI**: Tailwind 4 + shadcn/ui (glassmorphism design)
@@ -19,7 +19,7 @@ A nonprofit job board where employers give unqualified candidates a real chance 
 
 ```bash
 # 1. Start Postgres and Redis
-docker-compose up -d
+docker compose up -d
 
 # 2. Install dependencies
 npm install
@@ -29,10 +29,10 @@ cp .env.example .env.local
 # Edit .env.local — DATABASE_URL and REDIS_URL work as-is for Docker
 
 # 4. Apply the database schema
-npx prisma migrate dev
+npm run dev:migrate
 
 # 5. Seed geography data (50 states + ~600 cities)
-npx prisma db seed
+npm run dev:seed
 
 # 6. Start the web app
 npm run dev
@@ -51,7 +51,7 @@ See `env.production.example` for all required environment variables.
 
 1. Connect the GitHub repo to Vercel.
 2. Set all variables from `env.production.example` in the Vercel project settings.
-3. The build command in `vercel.json` handles `prisma generate`, `prisma migrate deploy`, and `next build` automatically.
+3. The build command in `vercel.json` handles `drizzle generate`, `drizzle migrate deploy`, and `next build` automatically.
 
 ### Neon (database)
 
@@ -82,8 +82,7 @@ src/
     emails/             Resend email templates
   lib/schemas/          Shared Zod schemas
   components/           React components
-prisma/
-  schema.prisma         Database schema
+drizzle/
   migrations/           Single flattened migration (0_init)
   seed.ts               Geography seed data
 ```

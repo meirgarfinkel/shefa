@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
-import { ApplicationStatus, JobStatus, ProfileStatus } from "@prisma/client";
+import type { JobStatus } from "@/db/schema";
 
 const MAX_BODY = 5000;
 
@@ -287,22 +287,16 @@ export default function ConversationPage({
   const otherProfileStatus = callerIsSeeker ? employerProfileStatus : seekerProfileStatus;
 
   const blockReason: string | null = (() => {
-    if (
-      seekerProfileStatus === ProfileStatus.SUSPENDED ||
-      employerProfileStatus === ProfileStatus.SUSPENDED
-    )
+    if (seekerProfileStatus === "SUSPENDED" || employerProfileStatus === "SUSPENDED")
       return "suspended";
-    if (callerProfileStatus === ProfileStatus.PAUSED) return "own-profile-paused";
-    if (
-      conv.applicationStatus === ApplicationStatus.REJECTED ||
-      conv.applicationStatus === ApplicationStatus.CLOSED
-    )
+    if (callerProfileStatus === "PAUSED") return "own-profile-paused";
+    if (conv.applicationStatus === "REJECTED" || conv.applicationStatus === "CLOSED")
       return "application-closed";
-    if (conv.job?.status === JobStatus.CLOSED) return "job-closed";
+    if (conv.job?.status === "CLOSED") return "job-closed";
     if (conv.seekerBlocked || conv.employerBlocked)
       return callerBlocked ? "caller-blocked" : "other-blocked";
-    if (conv.job?.status === JobStatus.PAUSED) return "job-paused";
-    if (otherProfileStatus === ProfileStatus.PAUSED) return "other-profile-paused";
+    if (conv.job?.status === "PAUSED") return "job-paused";
+    if (otherProfileStatus === "PAUSED") return "other-profile-paused";
     return null;
   })();
 
@@ -315,7 +309,7 @@ export default function ConversationPage({
           ? "Your profile is paused. Reactivate it to send messages."
           : "Your profile is paused. Reactivate it to send messages.";
       case "application-closed":
-        return conv.applicationStatus === ApplicationStatus.REJECTED
+        return conv.applicationStatus === "REJECTED"
           ? "This application was not selected. Messaging has been disabled."
           : "This application is closed. Messaging has been disabled.";
       case "job-closed":

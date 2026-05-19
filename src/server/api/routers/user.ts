@@ -1,20 +1,19 @@
 import { randomBytes } from "crypto";
 import { z } from "zod";
+import { eq, like } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { users, verificationTokens } from "@/db/schema";
 
 export const userRouter = createTRPCRouter({
   setRole: protectedProcedure
     .input(z.object({ role: z.enum(["SEEKER", "EMPLOYER"]) }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.prisma.user.update({
-        where: { id: ctx.user.id },
-        data: { role: input.role },
-      });
+      await ctx.db.update(users).set({ role: input.role }).where(eq(users.id, ctx.user.id));
     }),
 
   deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.prisma.user.delete({ where: { id: ctx.user.id } });
+    await ctx.db.delete(users).where(eq(users.id, ctx.user.id));
   }),
 
   requestEmailChange: protectedProcedure
@@ -22,25 +21,25 @@ export const userRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { newEmail } = input;
 
-      const existing = await ctx.prisma.user.findUnique({ where: { email: newEmail } });
+      const existing = await ctx.db.query.users.findFirst({
+        where: eq(users.email, newEmail),
+        columns: { id: true },
+      });
       if (existing && existing.id !== ctx.user.id) {
         throw new TRPCError({ code: "CONFLICT", message: "That email is already in use" });
       }
 
-      // Clear any existing email-change tokens for this user
-      await ctx.prisma.verificationToken.deleteMany({
-        where: { identifier: { startsWith: `email_change:${ctx.user.id}:` } },
-      });
+      await ctx.db
+        .delete(verificationTokens)
+        .where(like(verificationTokens.identifier, `email_change:${ctx.user.id}:%`));
 
       const token = randomBytes(32).toString("hex");
       const expires = new Date(Date.now() + 60 * 60 * 1000);
 
-      await ctx.prisma.verificationToken.create({
-        data: {
-          identifier: `email_change:${ctx.user.id}:${newEmail}`,
-          token,
-          expires,
-        },
+      await ctx.db.insert(verificationTokens).values({
+        identifier: `email_change:${ctx.user.id}:${newEmail}`,
+        token,
+        expires,
       });
 
       const siteUrl = process.env.AUTH_URL ?? "http://localhost:3000";

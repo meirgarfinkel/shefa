@@ -1,13 +1,14 @@
+import { eq, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { CreateEmployerProfileSchema, UpdateEmployerProfileSchema } from "@/lib/schemas/employer";
+import { employerProfile, users, application, jobPosting } from "@/db/schema";
 
 export const employerRouter = createTRPCRouter({
-  // Get the caller's own employer profile (returns null if not yet created)
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    return ctx.prisma.employerProfile.findUnique({
-      where: { userId: ctx.user.id },
+    return ctx.db.query.employerProfile.findFirst({
+      where: eq(employerProfile.userId, ctx.user.id),
     });
   }),
 
@@ -16,9 +17,9 @@ export const employerRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
-      const existing = await ctx.prisma.employerProfile.findUnique({
-        where: { userId: ctx.user.id },
-        select: { id: true },
+      const existing = await ctx.db.query.employerProfile.findFirst({
+        where: eq(employerProfile.userId, ctx.user.id),
+        columns: { id: true },
       });
       if (existing) {
         throw new TRPCError({
@@ -29,9 +30,9 @@ export const employerRouter = createTRPCRouter({
 
       const { isAdult: isAdultConfirmed, ...profileFields } = input;
 
-      const dbUser = await ctx.prisma.user.findUnique({
-        where: { id: ctx.user.id },
-        select: { isAdult: true },
+      const dbUser = await ctx.db.query.users.findFirst({
+        where: eq(users.id, ctx.user.id),
+        columns: { isAdult: true },
       });
 
       if (!dbUser?.isAdult) {
@@ -41,49 +42,57 @@ export const employerRouter = createTRPCRouter({
             message: "You must be 18 or older to use this platform",
           });
         }
-        await ctx.prisma.user.update({
-          where: { id: ctx.user.id },
-          data: { isAdult: true },
-        });
+        await ctx.db.update(users).set({ isAdult: true }).where(eq(users.id, ctx.user.id));
       }
 
-      return ctx.prisma.employerProfile.create({
-        data: { ...profileFields, userId: ctx.user.id },
-      });
+      const [created] = await ctx.db
+        .insert(employerProfile)
+        .values({ ...profileFields, userId: ctx.user.id })
+        .returning();
+      return created!;
     }),
 
   updateProfile: protectedProcedure
     .input(UpdateEmployerProfileSchema)
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-      const profile = await ctx.prisma.employerProfile.findUnique({
-        where: { userId: ctx.user.id },
-        select: { id: true },
+      const profile = await ctx.db.query.employerProfile.findFirst({
+        where: eq(employerProfile.userId, ctx.user.id),
+        columns: { id: true },
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
-      return ctx.prisma.employerProfile.update({
-        where: { userId: ctx.user.id },
-        data: input,
-      });
+      const [updated] = await ctx.db
+        .update(employerProfile)
+        .set(input)
+        .where(eq(employerProfile.userId, ctx.user.id))
+        .returning();
+      return updated!;
     }),
 
   getRecentApplications: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    return ctx.prisma.application.findMany({
-      where: { job: { employerId: ctx.user.id } },
-      orderBy: { createdAt: "desc" },
-      take: 20,
-      select: {
-        id: true,
-        createdAt: true,
-        status: true,
-        jobId: true,
+
+    const employerJobIds = ctx.db
+      .select({ id: jobPosting.id })
+      .from(jobPosting)
+      .where(eq(jobPosting.employerId, ctx.user.id));
+
+    return ctx.db.query.application.findMany({
+      where: (app, { inArray }) => inArray(app.jobId, employerJobIds),
+      orderBy: desc(application.createdAt),
+      limit: 20,
+      columns: { id: true, createdAt: true, status: true, jobId: true },
+      with: {
         job: {
-          select: { id: true, title: true, company: { select: { name: true } } },
+          columns: { id: true, title: true },
+          with: {
+            company: { columns: { name: true } },
+          },
         },
         seeker: {
-          select: {
-            seekerProfile: { select: { firstName: true, lastName: true } },
+          columns: { id: true },
+          with: {
+            seekerProfile: { columns: { firstName: true, lastName: true } },
           },
         },
       },

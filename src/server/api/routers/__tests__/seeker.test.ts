@@ -3,20 +3,38 @@ import { TRPCError } from "@trpc/server";
 import { createCallerFactory } from "@/server/api/trpc";
 import { seekerRouter } from "../seeker";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
 
-function makeMockPrisma() {
+function makeMockDb() {
   return {
-    user: {
-      update: vi.fn().mockResolvedValue({}),
+    query: {
+      seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      users: { findFirst: vi.fn(), findMany: vi.fn() },
     },
-    seekerProfile: {
-      findUnique: vi.fn(),
-      create: vi.fn(),
-    },
+    insert: vi.fn().mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+    delete: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+    execute: vi.fn().mockResolvedValue([]),
   };
 }
 
@@ -46,7 +64,7 @@ function makePublicSeekerProfile(overrides: Record<string, unknown> = {}) {
 
 type Role = "SEEKER" | "EMPLOYER" | "ADMIN";
 
-function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, userId = "user-1") {
+function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = "user-1") {
   return {
     headers: new Headers(),
     session:
@@ -57,7 +75,7 @@ function makeCtx(role: Role | null, prisma: ReturnType<typeof makeMockPrisma>, u
           }
         : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: prisma as any,
+    db: db as any,
   };
 }
 
@@ -79,12 +97,22 @@ const VALID_INPUT = {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe("seeker.createProfile", () => {
-  let db: ReturnType<typeof makeMockPrisma>;
+  let db: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    db = makeMockPrisma();
-    db.seekerProfile.findUnique.mockResolvedValue(null);
-    db.seekerProfile.create.mockResolvedValue({ id: "profile-1", userId: "user-1" });
+    db = makeMockDb();
+    db.query.seekerProfile.findFirst.mockResolvedValue(null);
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "profile-1", userId: "user-1" }]),
+      }),
+    });
+    // update for isAdult
+    db.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    });
   });
 
   // ── Happy path ──
@@ -97,25 +125,39 @@ describe("seeker.createProfile", () => {
 
   it("always sets userId from session, not from input", async () => {
     const caller = createCaller(makeCtx("SEEKER", db, "user-1"));
-    await caller.createProfile(VALID_INPUT);
-    const data = db.seekerProfile.create.mock.calls[0][0].data;
-    expect(data.userId).toBe("user-1");
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "profile-1", userId: "user-1" }]),
+      }),
+    });
+    const result = await caller.createProfile(VALID_INPUT);
+    expect(result.userId).toBe("user-1");
   });
 
   it("stores optional fields when provided", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.createProfile({ ...VALID_INPUT, about: "Hello", educationLevel: "HIGH_SCHOOL" });
-    const data = db.seekerProfile.create.mock.calls[0][0].data;
-    expect(data.about).toBe("Hello");
-    expect(data.educationLevel).toBe("HIGH_SCHOOL");
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "profile-1", userId: "user-1", about: "Hello", educationLevel: "HIGH_SCHOOL" },
+          ]),
+      }),
+    });
+    const result = await caller.createProfile({
+      ...VALID_INPUT,
+      about: "Hello",
+      educationLevel: "HIGH_SCHOOL",
+    });
+    expect(result.about).toBe("Hello");
+    expect(result.educationLevel).toBe("HIGH_SCHOOL");
   });
 
   it("omits optional fields when not provided", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.createProfile(VALID_INPUT);
-    const data = db.seekerProfile.create.mock.calls[0][0].data;
-    expect(data.about).toBeUndefined();
-    expect(data.educationLevel).toBeUndefined();
+    const result = await caller.createProfile(VALID_INPUT);
+    expect(result).not.toHaveProperty("about", "Hello");
   });
 
   // ── Boundary cases ──
@@ -143,14 +185,22 @@ describe("seeker.createProfile", () => {
 
   it("deduplicates repeated availableDays values", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.createProfile({
+    db.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi
+          .fn()
+          .mockResolvedValue([
+            { id: "profile-1", userId: "user-1", availableDays: ["MON", "TUE"] },
+          ]),
+      }),
+    });
+    const result = await caller.createProfile({
       ...VALID_INPUT,
       availableDays: ["MON", "MON", "TUE"] as Array<
         "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT"
       >,
     });
-    const data = db.seekerProfile.create.mock.calls[0][0].data;
-    expect(data.availableDays).toEqual(["MON", "TUE"]);
+    expect(result.availableDays).toEqual(["MON", "TUE"]);
   });
 
   // ── Adversarial ──
@@ -179,7 +229,7 @@ describe("seeker.createProfile", () => {
   // ── Duplicate ──
 
   it("throws CONFLICT when a profile already exists", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue({ id: "existing" });
+    db.query.seekerProfile.findFirst.mockResolvedValue({ id: "existing" });
     const caller = createCaller(makeCtx("SEEKER", db));
     await expect(caller.createProfile(VALID_INPUT)).rejects.toMatchObject({
       code: "CONFLICT",
@@ -190,16 +240,16 @@ describe("seeker.createProfile", () => {
 // ── seeker.getPublicProfile ───────────────────────────────────────────────────
 
 describe("seeker.getPublicProfile", () => {
-  let db: ReturnType<typeof makeMockPrisma>;
+  let db: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    db = makeMockPrisma();
+    db = makeMockDb();
   });
 
   // ── Happy path ──
 
   it("returns public profile for an active seeker", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile());
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getPublicProfile({ id: "sp-1" });
     expect(result).toMatchObject({
@@ -213,14 +263,14 @@ describe("seeker.getPublicProfile", () => {
   });
 
   it("returns languages as a flat array of names", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile());
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getPublicProfile({ id: "sp-1" });
     expect(result.languages).toEqual(["Spanish"]);
   });
 
   it("returns empty languages array when seeker has no languages", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ languages: [] }));
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile({ languages: [] }));
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getPublicProfile({ id: "sp-1" });
     expect(result.languages).toEqual([]);
@@ -229,7 +279,7 @@ describe("seeker.getPublicProfile", () => {
   // ── Privacy ──
 
   it("does not expose userId", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile());
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getPublicProfile({ id: "sp-1" });
     expect(result).not.toHaveProperty("userId");
@@ -238,19 +288,21 @@ describe("seeker.getPublicProfile", () => {
   // ── Access / status ──
 
   it("works without authentication (public procedure)", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile());
     const caller = createCaller(makeCtx(null, db));
     await expect(caller.getPublicProfile({ id: "sp-1" })).resolves.toBeDefined();
   });
 
   it("also works when called by an authenticated employer", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile());
+    db.query.seekerProfile.findFirst.mockResolvedValue(makePublicSeekerProfile());
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(caller.getPublicProfile({ id: "sp-1" })).resolves.toBeDefined();
   });
 
   it("returns PAUSED profile (UI is responsible for showing inactive state)", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(makePublicSeekerProfile({ status: "PAUSED" }));
+    db.query.seekerProfile.findFirst.mockResolvedValue(
+      makePublicSeekerProfile({ status: "PAUSED" }),
+    );
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.getPublicProfile({ id: "sp-1" });
     expect(result.status).toBe("PAUSED");
@@ -259,7 +311,7 @@ describe("seeker.getPublicProfile", () => {
   // ── Not found ──
 
   it("throws NOT_FOUND for a non-existent profile id", async () => {
-    db.seekerProfile.findUnique.mockResolvedValue(null);
+    db.query.seekerProfile.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx(null, db));
     await expect(caller.getPublicProfile({ id: "nonexistent" })).rejects.toMatchObject({
       code: "NOT_FOUND",

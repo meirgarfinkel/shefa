@@ -1,28 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "@/db";
 import { runApplicationNotifyJob } from "../application-notify.job";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/server/emails", () => ({ sendEmail: vi.fn() }));
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
 function makeMockDb() {
   return {
-    notificationPreferences: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    jobPosting: {
-      findUnique: vi.fn(),
+    query: {
+      notificationPreferences: { findFirst: vi.fn() },
+      users: { findFirst: vi.fn() },
+      jobPosting: { findFirst: vi.fn() },
     },
   };
-}
-
-function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
-  return mock as unknown as PrismaClient;
 }
 
 const EMPLOYER_ID = "employer-1";
@@ -47,11 +39,14 @@ describe("runApplicationNotifyJob", () => {
   });
 
   it("happy path: PER_MESSAGE preference → sends email to employer", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(EMPLOYER_USER);
-    mockDb.jobPosting.findUnique.mockResolvedValue(JOB);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(EMPLOYER_USER);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(JOB);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
@@ -61,41 +56,53 @@ describe("runApplicationNotifyJob", () => {
   });
 
   it("OFF preference → no email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(OFF_PREFS);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(OFF_PREFS);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("DAILY_DIGEST preference → no email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(DAILY_DIGEST_PREFS);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(DAILY_DIGEST_PREFS);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("no preferences row → defaults to PER_MESSAGE → email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(null);
-    mockDb.user.findUnique.mockResolvedValue(EMPLOYER_USER);
-    mockDb.jobPosting.findUnique.mockResolvedValue(JOB);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(null);
+    mockDb.query.users.findFirst.mockResolvedValue(EMPLOYER_USER);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(JOB);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
   });
 
   it("employer user not found → no-op, no crash", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(null);
-    mockDb.jobPosting.findUnique.mockResolvedValue(JOB);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(null);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(JOB);
 
     await expect(
-      runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb)),
+      runApplicationNotifyJob(
+        { jobId: JOB_ID, employerId: EMPLOYER_ID },
+        mockDb as unknown as DbClient,
+      ),
     ).resolves.toBeUndefined();
 
     const { sendEmail } = await import("@/server/emails");
@@ -103,12 +110,15 @@ describe("runApplicationNotifyJob", () => {
   });
 
   it("job not found → no-op, no crash", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(EMPLOYER_USER);
-    mockDb.jobPosting.findUnique.mockResolvedValue(null);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(EMPLOYER_USER);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(null);
 
     await expect(
-      runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb)),
+      runApplicationNotifyJob(
+        { jobId: JOB_ID, employerId: EMPLOYER_ID },
+        mockDb as unknown as DbClient,
+      ),
     ).resolves.toBeUndefined();
 
     const { sendEmail } = await import("@/server/emails");
@@ -116,11 +126,14 @@ describe("runApplicationNotifyJob", () => {
   });
 
   it("email subject includes job title", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(EMPLOYER_USER);
-    mockDb.jobPosting.findUnique.mockResolvedValue(JOB);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(EMPLOYER_USER);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(JOB);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -128,11 +141,14 @@ describe("runApplicationNotifyJob", () => {
   });
 
   it("email html contains jobId for the link", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(EMPLOYER_USER);
-    mockDb.jobPosting.findUnique.mockResolvedValue(JOB);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(EMPLOYER_USER);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(JOB);
 
-    await runApplicationNotifyJob({ jobId: JOB_ID, employerId: EMPLOYER_ID }, asDb(mockDb));
+    await runApplicationNotifyJob(
+      { jobId: JOB_ID, employerId: EMPLOYER_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];

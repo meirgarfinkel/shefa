@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
+import { report } from "@/db/schema";
 
 export const reportRouter = createTRPCRouter({
   submit: protectedProcedure
@@ -16,13 +17,15 @@ export const reportRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Cannot report yourself" });
       }
 
-      return ctx.prisma.report.create({
-        data: {
+      const [created] = await ctx.db
+        .insert(report)
+        .values({
           reporterId: ctx.user.id,
           targetType: input.targetType,
           targetId: input.targetId,
           reason: input.reason,
-        },
-      });
+        })
+        .returning();
+      return created!;
     }),
 });

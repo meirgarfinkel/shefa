@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import type { z } from "zod";
 import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
-import { JobStatus } from "@prisma/client";
+import type { JobStatus } from "@/db/schema";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -204,8 +204,8 @@ export default function EmployerJobsPage() {
       {!isLoading && jobs && jobs.length > 0 && (
         <div className="space-y-3">
           {jobs.map((job) => {
-            const isClosed = job.status === JobStatus.CLOSED;
-            const isActive = job.status === JobStatus.ACTIVE;
+            const isClosed = job.status === "CLOSED";
+            const isActive = job.status === "ACTIVE";
             const daysSinceVerified = Math.floor(
               (Date.now() - new Date(job.lastVerifiedAt).getTime()) / (1000 * 60 * 60 * 24),
             );
@@ -231,7 +231,7 @@ export default function EmployerJobsPage() {
                         variant="ghost"
                         className="text-muted-foreground hover:bg-blue-dark-3 h-6 px-2 text-xs transition-colors duration-100"
                         disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: JobStatus.PAUSED })}
+                        onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
                       >
                         Pause job
                       </Button>
@@ -281,18 +281,18 @@ export default function EmployerJobsPage() {
                         size="sm"
                         className="h-7 text-xs"
                         disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: JobStatus.PAUSED })}
+                        onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
                       >
                         Pause
                       </Button>
                     )}
-                    {job.status === JobStatus.PAUSED && (
+                    {job.status === "PAUSED" && (
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-7 text-xs"
                         disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: JobStatus.ACTIVE })}
+                        onClick={() => updateJob.mutate({ id: job.id, status: "ACTIVE" })}
                       >
                         Unpause
                       </Button>

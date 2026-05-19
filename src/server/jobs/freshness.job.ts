@@ -1,5 +1,6 @@
-import { prisma } from "@/lib/prisma";
-import { JobStatus, type PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import {
   buildSeekerInitialPingEmail,
@@ -7,6 +8,7 @@ import {
   buildJobInitialPingEmail,
   buildJobWarningEmail,
 } from "@/server/emails/freshness-ping";
+import { seekerProfile, jobPosting, verificationPing } from "@/db/schema";
 import { createFreshnessTokensForPing } from "./token";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -39,27 +41,29 @@ export function computeFreshnessAction(
 }
 
 export async function runFreshnessCheck(
-  db: PrismaClient = prisma,
+  db: DbClient = defaultDb,
   now: Date = new Date(),
 ): Promise<void> {
   await Promise.all([checkSeekerProfiles(db, now), checkJobPostings(db, now)]);
 }
 
-async function checkSeekerProfiles(db: PrismaClient, now: Date): Promise<void> {
+async function checkSeekerProfiles(db: DbClient, now: Date): Promise<void> {
   const lookbackCutoff = new Date(now.getTime() - 35 * DAY_MS);
 
-  const profiles = await db.seekerProfile.findMany({
-    where: { status: "ACTIVE" },
-    include: {
+  const profiles = await db.query.seekerProfile.findMany({
+    where: eq(seekerProfile.status, "ACTIVE"),
+    with: {
       verificationPings: {
-        where: { sentAt: { gte: lookbackCutoff } },
-        orderBy: { sentAt: "asc" },
+        where: (ping, { gte }) => gte(ping.sentAt, lookbackCutoff),
+        orderBy: (ping, { asc }) => [asc(ping.sentAt)],
       },
-      user: { select: { id: true, email: true } },
+      user: { columns: { id: true, email: true } },
     },
   });
 
   for (const profile of profiles) {
+    if (!profile.user) continue;
+
     const pingsInCycle = profile.verificationPings.filter(
       (p) => p.sentAt >= profile.lastVerifiedAt,
     );
@@ -68,29 +72,27 @@ async function checkSeekerProfiles(db: PrismaClient, now: Date): Promise<void> {
     if (action === "no-action") continue;
 
     if (action === "auto-pause") {
-      await db.seekerProfile.update({
-        where: { id: profile.id },
-        data: { status: "PAUSED" },
-      });
+      await db
+        .update(seekerProfile)
+        .set({ status: "PAUSED" })
+        .where(eq(seekerProfile.id, profile.id));
       if (pingsInCycle.length > 0) {
         const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
-        await db.verificationPing.update({
-          where: { id: latestPing.id },
-          data: { respondedAt: now, response: "NO_RESPONSE" },
-        });
+        await db
+          .update(verificationPing)
+          .set({ respondedAt: now, response: "NO_RESPONSE" })
+          .where(eq(verificationPing.id, latestPing.id));
       }
       continue;
     }
 
-    const ping = await db.verificationPing.create({
-      data: {
-        type: "SEEKER_STILL_LOOKING",
-        userId: profile.user.id,
-      },
-    });
+    const [ping] = await db
+      .insert(verificationPing)
+      .values({ type: "SEEKER_STILL_LOOKING", userId: profile.user.id })
+      .returning();
 
     const tokens = await createFreshnessTokensForPing(
-      ping.id,
+      ping!.id,
       "SEEKER_PROFILE",
       profile.id,
       ["CONFIRMED", "PAUSED", "NOT_LOOKING"],
@@ -117,17 +119,17 @@ async function checkSeekerProfiles(db: PrismaClient, now: Date): Promise<void> {
   }
 }
 
-async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
+async function checkJobPostings(db: DbClient, now: Date): Promise<void> {
   const lookbackCutoff = new Date(now.getTime() - 35 * DAY_MS);
 
-  const jobs = await db.jobPosting.findMany({
-    where: { status: JobStatus.ACTIVE },
-    include: {
+  const jobs = await db.query.jobPosting.findMany({
+    where: eq(jobPosting.status, "ACTIVE"),
+    with: {
       verificationPings: {
-        where: { sentAt: { gte: lookbackCutoff } },
-        orderBy: { sentAt: "asc" },
+        where: (ping, { gte }) => gte(ping.sentAt, lookbackCutoff),
+        orderBy: (ping, { asc }) => [asc(ping.sentAt)],
       },
-      employer: { select: { id: true, email: true } },
+      employer: { columns: { id: true, email: true } },
     },
   });
 
@@ -138,26 +140,24 @@ async function checkJobPostings(db: PrismaClient, now: Date): Promise<void> {
     if (action === "no-action") continue;
 
     if (action === "auto-pause") {
-      await db.jobPosting.update({
-        where: { id: job.id },
-        data: { status: JobStatus.PAUSED },
-      });
+      await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, job.id));
       if (pingsInCycle.length > 0) {
         const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
-        await db.verificationPing.update({
-          where: { id: latestPing.id },
-          data: { respondedAt: now, response: "NO_RESPONSE" },
-        });
+        await db
+          .update(verificationPing)
+          .set({ respondedAt: now, response: "NO_RESPONSE" })
+          .where(eq(verificationPing.id, latestPing.id));
       }
       continue;
     }
 
-    const ping = await db.verificationPing.create({
-      data: { type: "JOB_STILL_OPEN", jobId: job.id },
-    });
+    const [ping] = await db
+      .insert(verificationPing)
+      .values({ type: "JOB_STILL_OPEN", jobId: job.id })
+      .returning();
 
     const tokens = await createFreshnessTokensForPing(
-      ping.id,
+      ping!.id,
       "JOB_POSTING",
       job.id,
       ["CONFIRMED", "PAUSED", "FILLED"],

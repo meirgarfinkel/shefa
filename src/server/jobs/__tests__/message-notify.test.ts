@@ -1,28 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PrismaClient } from "@prisma/client";
+import type { DbClient } from "@/db";
 import { runMessageNotifyJob } from "../message-notify.job";
 
-vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/server/emails", () => ({ sendEmail: vi.fn() }));
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
 
 function makeMockDb() {
   return {
-    notificationPreferences: {
-      findUnique: vi.fn(),
-    },
-    user: {
-      findUnique: vi.fn(),
-    },
-    message: {
-      findFirst: vi.fn(),
+    query: {
+      notificationPreferences: { findFirst: vi.fn() },
+      users: { findFirst: vi.fn() },
+      message: { findFirst: vi.fn() },
     },
   };
-}
-
-function asDb(mock: ReturnType<typeof makeMockDb>): PrismaClient {
-  return mock as unknown as PrismaClient;
 }
 
 const RECIPIENT_ID = "user-recipient";
@@ -53,11 +45,14 @@ describe("runMessageNotifyJob", () => {
   });
 
   it("happy path: PER_MESSAGE preference → sends email to recipient", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(RECIPIENT_USER);
-    mockDb.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(RECIPIENT_USER);
+    mockDb.query.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
@@ -67,41 +62,53 @@ describe("runMessageNotifyJob", () => {
   });
 
   it("OFF preference → no email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(OFF_PREFS);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(OFF_PREFS);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("DAILY_DIGEST preference → no email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(DAILY_DIGEST_PREFS);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(DAILY_DIGEST_PREFS);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   it("no preferences row → defaults to PER_MESSAGE → email sent", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(null);
-    mockDb.user.findUnique.mockResolvedValue(RECIPIENT_USER);
-    mockDb.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(null);
+    mockDb.query.users.findFirst.mockResolvedValue(RECIPIENT_USER);
+    mockDb.query.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     expect(vi.mocked(sendEmail)).toHaveBeenCalledOnce();
   });
 
   it("recipient user not found → no-op, no crash", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(null);
-    mockDb.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(null);
+    mockDb.query.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
 
     await expect(
-      runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb)),
+      runMessageNotifyJob(
+        { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+        mockDb as unknown as DbClient,
+      ),
     ).resolves.toBeUndefined();
 
     const { sendEmail } = await import("@/server/emails");
@@ -109,12 +116,15 @@ describe("runMessageNotifyJob", () => {
   });
 
   it("no messages in conversation → no-op, no crash", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(RECIPIENT_USER);
-    mockDb.message.findFirst.mockResolvedValue(null);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(RECIPIENT_USER);
+    mockDb.query.message.findFirst.mockResolvedValue(null);
 
     await expect(
-      runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb)),
+      runMessageNotifyJob(
+        { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+        mockDb as unknown as DbClient,
+      ),
     ).resolves.toBeUndefined();
 
     const { sendEmail } = await import("@/server/emails");
@@ -122,11 +132,14 @@ describe("runMessageNotifyJob", () => {
   });
 
   it("email subject contains 'message'", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(RECIPIENT_USER);
-    mockDb.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(RECIPIENT_USER);
+    mockDb.query.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];
@@ -134,11 +147,14 @@ describe("runMessageNotifyJob", () => {
   });
 
   it("email html contains conversation ID for the link", async () => {
-    mockDb.notificationPreferences.findUnique.mockResolvedValue(PER_MESSAGE_PREFS);
-    mockDb.user.findUnique.mockResolvedValue(RECIPIENT_USER);
-    mockDb.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
+    mockDb.query.notificationPreferences.findFirst.mockResolvedValue(PER_MESSAGE_PREFS);
+    mockDb.query.users.findFirst.mockResolvedValue(RECIPIENT_USER);
+    mockDb.query.message.findFirst.mockResolvedValue(LATEST_MESSAGE);
 
-    await runMessageNotifyJob({ conversationId: CONV_ID, recipientId: RECIPIENT_ID }, asDb(mockDb));
+    await runMessageNotifyJob(
+      { conversationId: CONV_ID, recipientId: RECIPIENT_ID },
+      mockDb as unknown as DbClient,
+    );
 
     const { sendEmail } = await import("@/server/emails");
     const call = vi.mocked(sendEmail).mock.calls[0]![0];

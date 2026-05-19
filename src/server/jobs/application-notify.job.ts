@@ -1,40 +1,38 @@
-import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import { buildApplicationNotifyEmail } from "@/server/emails/application-notify";
+import { notificationPreferences, users, jobPosting } from "@/db/schema";
 
 export async function runApplicationNotifyJob(
   data: { jobId: string; employerId: string },
-  db: PrismaClient = prisma,
+  db: DbClient = defaultDb,
 ): Promise<void> {
   const { jobId, employerId } = data;
 
-  const prefs = await db.notificationPreferences.findUnique({
-    where: { userId: employerId },
+  const prefs = await db.query.notificationPreferences.findFirst({
+    where: eq(notificationPreferences.userId, employerId),
   });
 
   const freq = prefs?.applicationNotifications ?? "PER_MESSAGE";
   if (freq === "OFF" || freq === "DAILY_DIGEST") return;
 
   const [employer, job] = await Promise.all([
-    db.user.findUnique({
-      where: { id: employerId },
-      select: { email: true },
+    db.query.users.findFirst({
+      where: eq(users.id, employerId),
+      columns: { email: true },
     }),
-    db.jobPosting.findUnique({
-      where: { id: jobId },
-      select: { title: true },
+    db.query.jobPosting.findFirst({
+      where: eq(jobPosting.id, jobId),
+      columns: { title: true },
     }),
   ]);
 
   if (!employer || !job) return;
 
   const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
-  const emailContent = buildApplicationNotifyEmail({
-    jobTitle: job.title,
-    jobId,
-    appUrl,
-  });
+  const emailContent = buildApplicationNotifyEmail({ jobTitle: job.title, jobId, appUrl });
 
   await sendEmail({
     to: employer.email,

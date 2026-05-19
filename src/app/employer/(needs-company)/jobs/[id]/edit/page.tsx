@@ -33,7 +33,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { LocationPicker } from "@/components/ui/location-picker";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
-import { JobStatus } from "@prisma/client";
 
 // Edit form only carries the fields the employer can change; id is injected before submission
 type EditFormValues = z.input<typeof UpdateJobPostingSchema>;
@@ -131,7 +130,7 @@ export default function JobEditPage() {
     );
   }
 
-  const isClosed = job.status === JobStatus.CLOSED;
+  const isClosed = job.status === "CLOSED";
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8">

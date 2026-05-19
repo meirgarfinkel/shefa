@@ -1,5 +1,7 @@
-import { prisma } from "@/lib/prisma";
-import type { PrismaClient } from "@prisma/client";
+import { eq } from "drizzle-orm";
+import { db as defaultDb } from "@/db";
+import type { DbClient } from "@/db";
+import { employerProfile } from "@/db/schema";
 
 export interface ResponsivenessResult {
   score: number | null;
@@ -13,7 +15,7 @@ type ConversationWithMessages = {
   messages: { senderId: string; createdAt: Date }[];
 };
 
-const RESPONSIVE_WINDOW_MS = 72 * 60 * 60 * 1000; // 72 hours
+const RESPONSIVE_WINDOW_MS = 72 * 60 * 60 * 1000;
 const MIN_SCOREABLE_CONVERSATIONS = 3;
 const RESPONSIVE_THRESHOLD = 0.7;
 
@@ -75,23 +77,25 @@ export function computeResponsivenessScore(
   const isResponsive =
     score >= RESPONSIVE_THRESHOLD && scoreableCount >= MIN_SCOREABLE_CONVERSATIONS;
 
-  return {
-    score,
-    isResponsive,
-    scoreableCount,
-    medianResponseHours,
-    responseRate: score,
-  };
+  return { score, isResponsive, scoreableCount, medianResponseHours, responseRate: score };
 }
 
-export async function runResponsivenessJob(db: PrismaClient = prisma): Promise<void> {
-  const employers = await db.user.findMany({
-    where: { role: "EMPLOYER", employerProfile: { isNot: null } },
-    select: {
-      id: true,
+export async function runResponsivenessJob(db: DbClient = defaultDb): Promise<void> {
+  const profileRows = await db.select({ userId: employerProfile.userId }).from(employerProfile);
+
+  const employerProfileUserIds = profileRows.map((r) => r.userId);
+  if (employerProfileUserIds.length === 0) return;
+
+  const employers = await db.query.users.findMany({
+    where: (u, { and, eq, inArray }) =>
+      and(eq(u.role, "EMPLOYER"), inArray(u.id, employerProfileUserIds)),
+    columns: { id: true },
+    with: {
       conversationsAsEmployer: {
-        select: {
-          messages: { select: { senderId: true, createdAt: true } },
+        with: {
+          messages: {
+            columns: { senderId: true, createdAt: true },
+          },
         },
       },
     },
@@ -101,13 +105,10 @@ export async function runResponsivenessJob(db: PrismaClient = prisma): Promise<v
     try {
       const result = computeResponsivenessScore(employer.id, employer.conversationsAsEmployer);
 
-      await db.employerProfile.update({
-        where: { userId: employer.id },
-        data: {
-          isResponsive: result.isResponsive,
-          responsivenessUpdatedAt: new Date(),
-        },
-      });
+      await db
+        .update(employerProfile)
+        .set({ isResponsive: result.isResponsive, responsivenessUpdatedAt: new Date() })
+        .where(eq(employerProfile.userId, employer.id));
     } catch (err) {
       console.error(`[responsiveness] Failed to update employer ${employer.id}:`, err);
     }

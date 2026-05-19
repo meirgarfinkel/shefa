@@ -2,14 +2,14 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { db } from "@/db";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
   return {
     headers: opts.headers,
     session,
-    prisma,
+    db,
   };
 };
 
