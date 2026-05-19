@@ -1,324 +1,762 @@
-# Claude Code Instructions — Charity Job Board (Shefa)
+# CLAUDE.md — Shefa Engineering Rules
 
-## Required reading at session start
+## Project Overview
 
-Before doing anything in this project:
+Shefa is a nonprofit charity-based job board focused on giving unqualified candidates an opportunity to learn on the job.
 
-1. Read `PROJECT_SPEC.md` fully — it is the source of truth for the data model, design decisions, and 8-phase build plan.
-2. Read `HANDOFF.md` if it exists — it contains in-progress state from the previous session.
-3. Read this file (`CLAUDE.md`) fully.
+Core stack:
 
-If any of these contradict each other, stop and ask the user before proceeding.
+- Next.js App Router
+- TypeScript (strict)
+- tRPC
+- Prisma 6
+- PostgreSQL
+- Auth.js v5 (`next-auth@beta`)
+- Resend
+- Tailwind 4
+- shadcn/ui (Radix-based)
 
-## Project summary
+Infrastructure:
 
-Nonprofit charity-based job board. Stack: Next.js (App Router) + TypeScript + tRPC + Prisma 6 + PostgreSQL + Auth.js v5 (`next-auth@beta`) + Resend + BullMQ + Redis + Tailwind 4 + shadcn/ui (Radix-based). Local dev via Docker Compose (`postgres:16-alpine` + `redis:7-alpine`). Production: Vercel (web) + Neon (Postgres) + Upstash (Redis) + Railway (BullMQ worker). Mission: give unqualified candidates a chance to learn on the job. No payments, ever.
+- Local: Docker Compose (`postgres:16-alpine` only)
+- Production:
+  - Vercel (web + cron jobs)
+  - Neon (Postgres)
+  - Resend (email)
 
----
+Mission constraints:
 
-## Living documentation — keep these in sync
-
-Three files are the source of truth. Keep them current as the project evolves.
-
-- **`PROJECT_SPEC.md`** — data model, architectural decisions, scope. When a design decision is made or changed, update this file in the same response. Don't silently work around the spec — if the spec is wrong, fix the spec.
-- **`CLAUDE.md`** (this file) — project-wide working rules. When you and the user agree on a new rule (e.g., "always do X this way"), add it here in the same response.
-- **`HANDOFF.md`** — see below.
-
-When updating these files, show the diff or explain what changed. Never update them silently.
-
----
-
-## Session handoff protocol
-
-At the end of every working session or phase, and before the user is likely to clear context, you must:
-
-1. Write or update `HANDOFF.md` at the project root.
-2. The handoff must contain:
-   - **Current phase** (from PROJECT_SPEC.md's 8-phase plan)
-   - **What was just completed** (specific files, features, tests)
-   - **What's in progress** (if anything — be precise about state)
-   - **What's next** (the immediate next step)
-   - **Open questions or blockers** for the user
-   - **Any uncommitted changes** the user should review
-   - **Commands the user should run before resuming** (e.g., "run `npm install` because new deps were added")
-
-3. Tell the user: "Handoff written to HANDOFF.md. Safe to `/clear` and start a fresh session."
-
-A new session always starts by reading HANDOFF.md before any other action.
+- No payments ever
+- No protected-class filtering
+- No education-based filtering
+- No deleting user data automatically
 
 ---
 
-## TDD is mandatory
+# Required Reading Order
 
-Every feature follows this exact loop:
+At the start of every session:
 
-### Step 1 — Plan adversarial cases
+1. Read `PROJECT_SPEC.md`
+2. Read `HANDOFF.md` if it exists
+3. Read `CLAUDE.md`
+4. Read `DESIGN_SYSTEM.md` before any UI work
 
-Before writing any test, list:
+If instructions conflict:
 
-- The happy path
-- Boundary cases (empty input, max length, zero, negative, off-by-one ranges)
-- Adversarial inputs (malicious strings, SQL/HTML injection attempts, oversized payloads, unicode edge cases, unauthorized actors)
-- Silent failure modes (functions that "succeed" but produce wrong output — e.g., returns empty array instead of throwing on invalid query)
-- Concurrency/race conditions if relevant
+1. Data safety / production safety
+2. Architectural invariants
+3. `PROJECT_SPEC.md`
+4. `CLAUDE.md`
+5. `HANDOFF.md`
+6. User request
+7. Convenience / optimization
 
-Show this list to the user before writing tests. Don't skip this step. The default mode of testing only happy paths is forbidden in this project.
-
-### Step 2 — Write failing tests
-
-Write tests covering the cases from Step 1.
-
-### Step 3 — Verify tests fail correctly (in a subagent)
-
-Spawn a Task subagent with the instruction: "Run the tests in [path]. Report which tests fail and the exact failure messages. Do not modify any code. Do not implement anything."
-
-The subagent's job is purely to confirm the tests fail for the _right reason_ (e.g., "function not implemented" or "assertion not met"), not for the wrong reason (e.g., "import error," "syntax error in test"). If a test fails for the wrong reason, fix it before proceeding.
-
-### Step 4 — Implement
-
-Write the minimum code to make the tests pass.
-
-### Step 5 — Verify tests pass (in a fresh subagent)
-
-Spawn a _new_ Task subagent: "Run the tests in [path]. Report all results. Do not modify any code." Fresh context matters — your reasoning during implementation should not bias the verification.
-
-### Step 6 — Report back to the user
-
-Show the user the test results from step 5. If anything failed, debug and loop. If all green, summarize what was built and what was tested.
+Never violate a higher-priority rule to satisfy a lower-priority one.
 
 ---
 
-## Environment files — never touch
+# Source-of-Truth Files
 
-- **Never edit `.env`, `.env.local`, or any `.env.*` file directly.**
-- If a new environment variable is needed:
-  1. Add it to `.env.example` with a placeholder value and a comment explaining it.
-  2. Tell the user explicitly: "I've added `FOO_BAR` to `.env.example`. Please add the real value to your `.env` file before we continue."
-  3. Don't proceed with code that depends on it until the user confirms.
+## `PROJECT_SPEC.md`
+
+Canonical source for:
+
+- scope
+- architecture
+- domain rules
+- data model
+- phase planning
+
+If implementation changes architecture or semantics, update the spec immediately.
 
 ---
 
-## UI verification
+## `CLAUDE.md`
 
-- For backend/API/data work: tests are sufficient.
-- For UI changes: after building, take a screenshot using Playwright (already a dev dep, or install if not) so the user can see what was rendered. Don't claim a UI works without visual verification.
+Canonical source for:
+
+- engineering workflow
+- architectural invariants
+- coding standards
+- operational rules
 
 ---
 
-## Code style
+## `HANDOFF.md`
 
-- TypeScript strict mode, always.
-- Explicit types on function signatures and exports; inference for the rest.
-- Zod schemas for all user input and tRPC procedure inputs/outputs.
-- Prisma 6 (`prisma-client-js`) for all database access. Instantiate with plain `new PrismaClient()` — no driver adapter needed. `DATABASE_URL` is read from the environment via the datasource block. No raw SQL unless explicitly justified.
-- Use the standard Prisma generator (`provider = "prisma-client-js"`) with **no custom `output` path**. All Prisma types come from `@prisma/client`. Never add a custom output path — it generates Node-specific imports that break in Edge runtime contexts (Next.js middleware especially).
-- Next.js App Router conventions (server components by default, "use client" only when needed).
-- shadcn/ui (Radix-based) components for UI; Tailwind for styling. No other CSS or component libraries.
-- shadcn components must always be added via `npx shadcn@latest add <component>`, never hand-written. If a needed component isn't in the shadcn registry, ask before creating it.
-- Run `npm run check` before committing — it runs typecheck, lint, and format check in sequence.
-- Code must pass `npm run lint` and `npm run format:check` to be considered done. Don't claim a task is complete if either fails.
-- Use `npm run lint:fix` and `npm run format` to auto-fix issues. Don't manually fix what tools can fix.
-- Tailwind classes are auto-sorted by `prettier-plugin-tailwindcss`. Don't manually reorder them.
-- Unused variables prefixed with `_` are intentional (signals "intentionally discarded"). Use this convention rather than disabling lint rules. For destructuring out a field to exclude it from a rest spread, prefer `const { foo, ...rest } = obj` — the rest-sibling rule allows it without underscore.
+Canonical source for:
 
-## Architecture rules
+- current session state
+- unfinished work
+- blockers
+- next steps
 
-- tRPC routers: `src/server/api/routers/`
-- Prisma schema: `prisma/schema.prisma`
-- Background jobs (BullMQ): `src/server/jobs/`
-- Email templates: `src/server/emails/`
-- Shared Zod schemas: `src/lib/schemas/`
-- Tests: `__tests__/` co-located with source, or `*.test.ts` next to the file.
-- No business logic in React components — call tRPC procedures.
+Always update before ending a session.
 
-## Database operations — user runs these manually
+---
 
-Never run autonomously:
+# Architectural Invariants
+
+These rules are non-negotiable.
+
+## Auth
+
+- Middleware is the ONLY auth redirect layer
+- No auth redirects in React components
+- Middleware must remain Edge-safe
+- Middleware must never import Prisma
+- Session strategy must be JWT
+
+---
+
+## Database
+
+- Prisma schema is the canonical database contract
+- Prisma enums are the canonical enum source
+- Do not duplicate Prisma enums as TypeScript unions
+- Zod enums should derive from Prisma enums via `z.nativeEnum`
+- Never bypass schema drift with `as any`
+
+---
+
+## Business Logic
+
+- tRPC procedures own business logic
+- React components are presentation-only
+- No business logic inside client components
+- Prefer derived permissions over destructive cascades
+
+---
+
+## Messaging
+
+- Conversations persist after job closure
+- Pausing jobs must not auto-close conversations
+- Reports do not directly enforce moderation
+- Conversation restrictions are conversation-scoped
+- Global moderation is separate from conversation state
+
+---
+
+## Infrastructure
+
+- Background jobs run as Vercel Cron routes in `src/app/api/cron/`
+- No raw SQL unless explicitly justified
+
+---
+
+# Domain Semantics
+
+## JobStatus
+
+### ACTIVE
+
+- visible
+- searchable
+- accepts applications
+- messaging enabled
+
+### PAUSED
+
+- blocks new applications
+- preserves applications/conversations
+- should not mutate related entities
+
+### CLOSED
+
+- hiring completed
+- historical data preserved
+- may freeze workflows, but should not destroy data
+
+---
+
+## Applications
+
+Application status is independent from job status.
+
+Closing a job must not automatically reject applications.
+
+Application lifecycle is explicit and controlled.
+
+Terminal states are terminal.
+
+---
+
+## Conversations
+
+Conversations are long-lived records.
+
+Job state changes must not automatically mutate conversations.
+
+Messaging permissions should usually be derived dynamically.
+
+Prefer:
+
+```ts
+if (job.status !== "ACTIVE") blockAction();
+```
+
+Avoid:
+
+```ts
+update all related conversations/applications
+```
+
+---
+
+## Reports and Moderation
+
+Reports are NOT moderation actions.
+
+Reports are evidence/input.
+
+Moderation actions are separate enforcement decisions.
+
+Do not block messaging purely because a report exists.
+
+---
+
+# Mutation Philosophy
+
+Prefer:
+
+- derived permissions
+- soft restrictions
+- reversible states
+- explicit transitions
+
+Avoid:
+
+- cascading destructive mutations
+- hidden side effects
+- silent cross-entity mutations
+
+Examples:
+
+GOOD:
+- checking status before allowing actions
+
+BAD:
+- pausing jobs auto-closes conversations
+- reports auto-suspend users
+
+---
+
+# Workflow Rules
+
+## Before Starting Work
+
+Always explain:
+
+- what will be changed
+- which files will be touched
+- architectural impact if relevant
+
+Pause for confirmation before:
+
+- adding dependencies
+- changing schema semantics
+- changing auth flows
+- introducing infrastructure
+- modifying architecture significantly
+
+Do NOT pause for straightforward implementation work already agreed upon.
+
+---
+
+# Context Management and Auto-Compact
+
+Claude should proactively compact conversation context at logical completion points instead of waiting for context exhaustion.
+
+Good compact points include:
+
+- after completing a feature
+- after finishing a debugging session
+- after finishing a migration or schema change
+- after completing a UI implementation
+- after resolving a blocker
+- before switching to a new subsystem/domain
+- after updating documentation/spec files
+- whenever conversation history contains large amounts of stale implementation detail
+
+Before compacting, Claude must:
+
+1. Update `HANDOFF.md`
+2. Ensure all architectural decisions are documented
+3. Summarize:
+   - completed work
+   - current state
+   - pending work
+   - important invariants
+   - open questions
+4. Verify no critical implementation context would be lost
+
+Claude should prefer frequent clean compaction over operating near maximum context size.
+
+Do not wait for context exhaustion before compacting.
+
+# Context Preservation Priority
+
+When compacting context, preserve:
+
+1. Architectural decisions
+2. Domain semantics
+3. Current blockers
+4. Active TODOs
+5. Schema assumptions
+6. API contracts
+7. In-progress migrations
+8. User preferences and constraints
+
+Discard:
+
+- repetitive logs
+- stale debugging attempts
+- superseded implementations
+- redundant explanations
+- temporary experimentation
+
+# Efficient Response Rules
+
+Prefer:
+
+- focused diffs over full-file rewrites
+- incremental edits over regenerating large files
+- concise explanations after implementation stabilizes
+- referencing existing architecture instead of repeating it
+
+Avoid:
+
+- repeating unchanged code
+- re-explaining established decisions
+- generating large boilerplate unnecessarily
+
+# TDD Workflow (Mandatory)
+
+Every feature follows this order:
+
+## 1. Plan adversarial cases
+
+List:
+
+- happy path
+- edge cases
+- adversarial inputs
+- unauthorized actors
+- race conditions
+- silent failure modes
+
+Do this before writing tests.
+
+---
+
+## 2. Write failing tests
+
+Tests must fail for the correct reason.
+
+---
+
+## 3. Verify failing state
+
+Use isolated verification when possible.
+
+Tests must fail because functionality is missing — not because setup/imports are broken.
+
+---
+
+## 4. Implement minimum solution
+
+Prefer simple solutions.
+
+Avoid speculative abstractions.
+
+---
+
+## 5. Verify passing state
+
+Run tests in fresh context when possible.
+
+---
+
+## 6. Report results
+
+Summarize:
+
+- what was built
+- what was tested
+- what edge cases were covered
+
+---
+
+# Simplicity Rules
+
+- Prefer direct implementations
+- Avoid premature abstractions
+- Avoid helper utilities used once
+- Avoid generic systems without proven reuse
+- Default to boring solutions
+
+---
+
+# Known Anti-Patterns
+
+Never introduce:
+
+- client-side auth redirects
+- duplicated Prisma enums
+- business logic inside components
+- middleware importing Prisma
+- raw SQL without justification
+- cascading destructive updates
+- inline color styles
+- alternate UI libraries
+- custom auth systems
+
+---
+
+# Environment Rules
+
+Never edit:
+
+- `.env`
+- `.env.local`
+- `.env.*`
+
+If a new env variable is needed:
+
+1. Add it to `.env.example`
+2. Add explanatory comment
+3. Tell the user explicitly
+4. Wait for confirmation before relying on it
+
+---
+
+# Database Operations
+
+Never autonomously run:
 
 - `prisma migrate dev`
 - `prisma migrate reset`
 - `prisma migrate deploy`
 - `prisma db push`
 - `prisma db seed`
-- Any direct `psql` command that modifies data
-- Whenever you modify `prisma/schema.prisma`, immediately tell the user the exact migration command to run, formatted as a copy-pasteable code block, with a descriptive `--name` argument. Do this before writing any code that depends on the new schema, so the user can run the migration in parallel with you continuing to write code.
+- destructive `psql` commands
 
-Instead: write the schema changes, generate the migration with `--create-only` if needed, then _tell the user_ the exact command to run and what to expect.
+When modifying `schema.prisma`:
 
-## Auth.js
-
-- Auth.js v5 (`next-auth@beta`) is correct despite the "beta" label. Don't downgrade to v4.
-- Use the official Prisma adapter (`@auth/prisma-adapter`).
-- Auth.js must use the split config pattern: `auth.config.ts` (Edge-safe, no Prisma) and `auth.ts` (Node, full config with adapter). Middleware imports only `auth.config.ts`. This is required to keep middleware Edge-compatible.
-- Session strategy must be `jwt`, not `database`, so middleware can verify sessions without database access.
-- `sendVerificationRequest` lives on the Resend provider in `auth.ts` (not in `auth.config.ts`). In development it logs the magic link to the console; in production it calls the Resend REST API directly.
-- After a mutation that changes session data (e.g. `setRole`), call `useSession().update({ ... })` client-side to refresh the JWT cookie immediately. Without this, middleware reads stale role data until the next sign-in.
-
-### Split config — hard rules
-
-- **`middleware.ts`** must never import from `db.ts`, `auth.ts`, `@prisma/client`, or any generated Prisma path. It may only import from `auth.config.ts` and Next.js built-ins. Enforce with the comment at the top of that file.
-- **`auth.config.ts`** must have zero Prisma imports — not even `import type`. The `Role` type lives in `src/types/role.ts` (a plain string union) so auth.config stays Prisma-free.
-- Violating either of these will silently work in dev (Node runtime) but break at build/deploy time on Vercel (Edge runtime).
-
----
-
-## Routing and auth guards — middleware is the only place
-
-All auth-based redirects live exclusively in `src/middleware.ts`. **Never add auth redirects inside page components.**
-
-### What middleware handles
-
-| Condition                                                                        | Redirect                          |
-| -------------------------------------------------------------------------------- | --------------------------------- |
-| Unauthenticated, non-public path                                                 | → `/sign-in` (with `callbackUrl`) |
-| Authenticated, no role, not on `/role-select`                                    | → `/role-select`                  |
-| Authenticated, has role, on `/` or `/sign-in`                                    | → role dashboard (see below)      |
-| Non-EMPLOYER on `/employer/dashboard`, `/employer/jobs/*`, `/employer/profile/*` | → `/jobs`                         |
-| Non-SEEKER on `/seeker/applications`, `/seeker/profile/*`                        | → `/jobs`                         |
-
-**Role dashboards**: EMPLOYER → `/employer/dashboard`; SEEKER → `/jobs` (no seeker dashboard yet).
-
-### What pages must NOT do
-
-These patterns are forbidden in page components:
-
-```tsx
-// FORBIDDEN — auth redirect in useEffect
-useEffect(() => {
-  if (!session || session.user.role !== "EMPLOYER") router.push("/");
-}, [session]);
-
-// FORBIDDEN — auth-based null return while session loads
-if (status === "loading" || status === "unauthenticated") return null;
-if (session?.user?.role !== "EMPLOYER") return null;
-```
-
-Middleware fires before React renders. If a page is reachable, the user is already authenticated and has the right role — these checks are redundant and cause flicker.
-
-### What IS still allowed in pages
-
-```tsx
-// Fine — conditional UI based on role (not a redirect)
-const { data: session } = useSession();
-if (session?.user?.role === "EMPLOYER") {
-  /* show employer button */
-}
-
-// Fine — JWT refresh after a role mutation
-const { update } = useSession();
-await update({ role: "SEEKER" });
-
-// Fine — post-mutation navigation (business logic, not auth)
-const createProfile = trpc.employer.createProfile.useMutation({
-  onSuccess: () => router.push("/jobs"),
-});
-
-// Fine — business-logic redirect (profile doesn't exist yet)
-if (!profileLoading && !profile) {
-  router.replace("/employer/profile/new");
-}
-```
-
-### Adding new protected routes
-
-To protect a new route, add its path prefix to the correct array in `src/middleware.ts`:
-
-```ts
-const EMPLOYER_ONLY_PREFIXES = [
-  "/employer/dashboard",
-  "/employer/jobs",
-  "/employer/profile" /* add here */,
-];
-const SEEKER_ONLY_PREFIXES = ["/seeker/applications", "/seeker/profile" /* add here */];
-```
-
-Do not add client-side guards as a fallback — one place only.
-
-## BullMQ worker process
-
-The freshness background job runs as a **separate process**, not inside Next.js:
+Immediately provide the exact migration command:
 
 ```bash
-npm run worker   # alongside npm run dev
+npx prisma migrate dev --name descriptive_name
 ```
 
-The worker entry point is `src/server/jobs/worker.ts`, executed via `tsx`. It:
-
-- Registers a BullMQ repeatable job (daily cron, midnight UTC)
-- Loads env vars via `dotenv/config` (standalone Node process, not Next.js)
-- Uses `@/` path aliases (tsx reads tsconfig paths automatically)
-
-In dev, emails log to console instead of calling Resend. In prod, a process manager (PM2, Render worker, etc.) keeps the worker alive.
+Do this BEFORE writing dependent code.
 
 ---
 
-## What NOT to do
+# Prisma Rules
 
-- Don't add dependencies without explaining why and what the alternatives were.
-- Don't suggest out-of-scope features (mobile, SMS, real-time messaging, message attachments — see PROJECT_SPEC.md "Out of scope").
-- Don't collect or expose protected characteristics (age, marital status, religion, disability, photos pre-hire) — see PROJECT_SPEC.md.
-- Don't add education filtering on job postings — by design, education is visible but not filterable.
-- Don't roll your own auth.
-- Don't auto-delete user data — paused, never deleted.
-- Don't introduce alternative headless UI libraries (Base UI, Headless UI, etc.) — Radix-based shadcn only.
-- Don't import `dotenv` in Next.js application code (`src/app/`, `src/server/api/`, etc.) — Next.js loads env vars natively. `dotenv` is only acceptable in standalone Node scripts run outside Next.js (e.g., `prisma.config.ts`, `prisma/seed.ts`, BullMQ worker entry points).
+Use:
 
-## Git — never run git commands
+```prisma
+provider = "prisma-client-js"
+```
 
-- **Never run any `git` commands** (commit, add, push, status, log, etc.).
-- Instead, at the end of each working step, tell the user exactly what to run and provide a ready-to-paste commit message.
-- Format the suggestion as a code block the user can copy directly.
+Never:
 
-## Working style
+- custom Prisma output paths
+- duplicate enums manually
+- use `as any` to bypass schema mismatches
 
-- Always explain what you're about to do before doing it. For multi-file changes, list files first.
-- Pause for confirmation at major decision points; don't blast through a whole phase in one go.
-- At the end of each working step, suggest a commit by giving the user the exact commands to run, not by running them yourself.
-- When in doubt, default to the simpler / more boring solution.
-- If something in PROJECT_SPEC.md seems wrong or incomplete, flag it — don't silently work around it.
-- If you're about to install a major version of a library, check that it's compatible with the rest of the stack first. (Bitten by Base UI and Prisma 7 already.)
+Always import Prisma types from:
 
-## DESIGN SYSTEM
+```ts
+@prisma/client
+```
 
-Before writing ANY UI component or page, read `DESIGN_SYSTEM.md` in the repo root.
+---
 
-### Non-negotiable rules
+# Auth.js Rules
 
-- No `tailwind.config.js` — all theme config is in `globals.css` via `@theme inline`
-- No raw hex colors in className or style props — semantic tokens only
-- No `style={{ ... }}` for colors — always Tailwind classes
-- One accent: `text-primary` / `bg-primary` / `border-primary` only
-- No second accent color ever
-- Transitions: `transition-colors duration-100` only — no movement on hover
-- Surface layers: `bg-background` → `bg-card` (or `bg-blue-dark-2`) → `bg-blue-dark-3` (max 3, never deeper). There is no `bg-popover`.
-- Avoid borders at all costs
-- Font weights: `font-normal` body, `font-medium` labels/headings, `font-bold` only for h1 page titles, `font-semibold` badges only
-- Radius: `rounded-full` (pills) · `rounded-md` (buttons/inputs) · `rounded-lg` (cards)
-- Min font size: `text-xs` — never `text-[10px]` or smaller
-- Design is glassmorphism over blurred photo — never use solid opaque backgrounds on `body`/`html`
+- Auth.js v5 is mandatory
+- Do not downgrade to v4
+- Use split config pattern
 
-### Status colors
+## `auth.config.ts`
 
-| Status | Classes |
-|---|---|
-| ACTIVE | `bg-success/15 text-success` |
-| DRAFT | `bg-blue-dark-3 text-muted-foreground` |
-| PAUSED | `bg-warning/15 text-warning` |
-| FILLED | `bg-primary/15 text-primary` |
-| EXPIRED / CLOSED | `bg-danger/15 text-danger` |
+- Edge-safe only
+- no Prisma imports
+- no `@prisma/client`
+- no adapter
 
-### Custom components to use (do not re-implement)
+## `auth.ts`
 
-- `StatusBadge` — for any job status display
-- `ResponsiveBadge` — for user responsiveness
-- `JobCard` — for job listings
-- `StatCard` — for dashboard metrics
-- `PageHeader` — for page titles with optional actions
-- `EmptyState` — for empty lists
-- `InboxRow` — for message threads
-- `Divider` — for horizontal rules
+- full Node config
+- Prisma adapter
+- Resend provider
 
-### shadcn components to use for primitives
+## Middleware
 
-Button, Input, Textarea, Label, Select, Card, Pill, Badge, Dialog, Sheet, Tooltip, Separator, Skeleton, Sonner (not Toast).
-Always customize with Tailwind classes — never override with inline styles.
+Must import ONLY:
+
+- `auth.config.ts`
+- Next.js built-ins
+
+Never Prisma.
+
+---
+
+# Routing and Authorization
+
+All auth redirects belong exclusively in middleware.
+
+Pages must NOT:
+
+- redirect based on auth
+- render null during auth loading
+- duplicate middleware authorization
+
+Allowed in pages:
+
+- conditional UI
+- post-mutation navigation
+- business-state redirects
+
+---
+
+# UI Rules
+
+Before UI work:
+
+Read `DESIGN_SYSTEM.md`
+
+---
+
+# Design Invariants
+
+- No raw hex colors
+- No inline color styles
+- No `tailwind.config.js`
+- Semantic tokens only
+- One accent color only
+- No hover movement animations
+- Avoid borders aggressively
+- Max 3 surface layers
+- Glassmorphism aesthetic only
+
+---
+
+# Component Rules
+
+Use existing shared components whenever possible:
+
+- `StatusBadge`
+- `ResponsiveBadge`
+- `JobCard`
+- `StatCard`
+- `PageHeader`
+- `EmptyState`
+- `InboxRow`
+- `Divider`
+
+Use shadcn primitives only.
+
+Never hand-roll existing primitives.
+
+Install via:
+
+```bash
+npx shadcn@latest add <component>
+```
+
+---
+
+# Code Style
+
+- TypeScript strict mode
+- Explicit exported types
+- Zod for all input validation
+- App Router conventions
+- Server components by default
+- `"use client"` only when required
+
+Run before completion:
+
+```bash
+npm run check
+```
+
+Code is not complete unless:
+
+- lint passes
+- typecheck passes
+- formatting passes
+
+Use:
+
+```bash
+npm run lint:fix
+npm run format
+```
+
+before manual fixes.
+
+---
+
+# File Structure
+
+## Routers
+
+```text
+src/server/api/routers/
+```
+
+## Prisma
+
+```text
+prisma/schema.prisma
+```
+
+## Jobs
+
+```text
+src/server/jobs/
+```
+
+## Emails
+
+```text
+src/server/emails/
+```
+
+## Shared Schemas
+
+```text
+src/lib/schemas/
+```
+
+## Tests
+
+Co-located or:
+
+```text
+__tests__/
+```
+
+---
+
+# Background Jobs (Vercel Cron)
+
+Background jobs run as Vercel Cron API routes. No separate worker process.
+
+| Route | Schedule | Purpose |
+|-------|----------|---------|
+| `src/app/api/cron/freshness/route.ts` | Daily 9am UTC | Freshness pings + auto-pause |
+| `src/app/api/cron/responsiveness/route.ts` | Every 2 days 3am UTC | Responsiveness badge computation |
+| `src/app/api/cron/digest/route.ts` | Daily 6pm UTC | Daily digest emails |
+
+Each route requires `Authorization: Bearer <CRON_SECRET>` — Vercel injects this automatically.
+
+Message and application notifications are sent immediately (inline, fire-and-forget) when a message is sent or an application is submitted. There is no debouncing queue.
+
+---
+
+# Git Rules
+
+NEVER execute any git command under any circumstance.
+
+Forbidden commands include, but are not limited to:
+
+```bash
+git add
+git commit
+git push
+git pull
+git merge
+git rebase
+git checkout
+git switch
+git reset
+git restore
+git stash
+git tag
+git branch
+git cherry-pick
+git revert
+git fetch
+git clean
+git status
+git log
+```
+
+This prohibition applies even if the user asks indirectly or implies permission.
+
+Claude may ONLY:
+
+- suggest git commands
+- provide copy-pasteable command blocks
+- recommend commit messages
+
+Claude must never interact with git state directly.
+
+Instead provide exact commands for the user.
+
+Always provide:
+
+```bash
+git add .
+git commit -m "message"
+```
+
+at meaningful checkpoints.
+
+---
+
+# Session Handoff Protocol
+
+Before ending a session:
+
+Update `HANDOFF.md` with:
+
+- current phase
+- completed work
+- in-progress work
+- next steps
+- blockers/questions
+- uncommitted changes
+- commands user should run
+
+Then explicitly tell the user:
+
+> Handoff written to HANDOFF.md. Safe to `/clear` and start a fresh session.
+
+---
+
+# Documentation Expectations
+
+When architecture or semantics change:
+
+Update documentation immediately.
+
+Never silently diverge from the spec.
+
+Important changes should include:
+
+- what changed
+- why
+- affected systems
+
+---
+
+# Decision-Making Heuristics
+
+When uncertain:
+
+1. Choose simpler architecture
+2. Prefer explicitness over cleverness
+3. Prefer reversible decisions
+4. Preserve data
+5. Avoid hidden coupling
+6. Keep domain semantics consistent
+7. Optimize for maintainability over novelty

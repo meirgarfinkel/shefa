@@ -4,8 +4,8 @@ import { messageRouter } from "../message";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/server/jobs/schedule-message-notify", () => ({
-  scheduleMessageNotify: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/server/jobs/message-notify.job", () => ({
+  runMessageNotifyJob: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ── Mock helpers ───────────────────────────────────────────────────────────────
@@ -19,6 +19,12 @@ function makeMockPrisma() {
     message: {
       create: vi.fn(),
       findMany: vi.fn(),
+    },
+    seekerProfile: {
+      findUnique: vi.fn(),
+    },
+    employerProfile: {
+      findUnique: vi.fn(),
     },
   };
 }
@@ -234,7 +240,7 @@ describe("send", () => {
     });
   });
 
-  it("scheduleMessageNotify called after successful send — caller is employer, recipient is seeker", async () => {
+  it("runMessageNotifyJob called after successful send — caller is employer, recipient is seeker", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue(CREATED_MESSAGE);
@@ -242,11 +248,14 @@ describe("send", () => {
 
     await caller.send({ conversationId: "conv-1", body: "Hello" });
 
-    const { scheduleMessageNotify } = await import("@/server/jobs/schedule-message-notify");
-    expect(vi.mocked(scheduleMessageNotify)).toHaveBeenCalledWith("conv-1", SEEKER_ID);
+    const { runMessageNotifyJob } = await import("@/server/jobs/message-notify.job");
+    expect(vi.mocked(runMessageNotifyJob)).toHaveBeenCalledWith({
+      conversationId: "conv-1",
+      recipientId: SEEKER_ID,
+    });
   });
 
-  it("scheduleMessageNotify called with recipientId = employer when caller is seeker", async () => {
+  it("runMessageNotifyJob called with recipientId = employer when caller is seeker", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma, SEEKER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);
     mockPrisma.message.create.mockResolvedValue({ ...CREATED_MESSAGE, senderId: SEEKER_ID });
@@ -254,13 +263,16 @@ describe("send", () => {
 
     await caller.send({ conversationId: "conv-1", body: "Hi back" });
 
-    const { scheduleMessageNotify } = await import("@/server/jobs/schedule-message-notify");
-    expect(vi.mocked(scheduleMessageNotify)).toHaveBeenCalledWith("conv-1", EMPLOYER_ID);
+    const { runMessageNotifyJob } = await import("@/server/jobs/message-notify.job");
+    expect(vi.mocked(runMessageNotifyJob)).toHaveBeenCalledWith({
+      conversationId: "conv-1",
+      recipientId: EMPLOYER_ID,
+    });
   });
 
-  it("scheduleMessageNotify failure does not propagate — message still returned", async () => {
-    const { scheduleMessageNotify } = await import("@/server/jobs/schedule-message-notify");
-    vi.mocked(scheduleMessageNotify).mockRejectedValueOnce(new Error("Redis down"));
+  it("runMessageNotifyJob failure does not propagate — message still returned", async () => {
+    const { runMessageNotifyJob } = await import("@/server/jobs/message-notify.job");
+    vi.mocked(runMessageNotifyJob).mockRejectedValueOnce(new Error("Resend down"));
 
     const caller = createCaller(makeCtx("EMPLOYER", mockPrisma, EMPLOYER_ID));
     mockPrisma.conversation.findUnique.mockResolvedValue(OPEN_CONV);

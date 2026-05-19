@@ -7,21 +7,23 @@
    ───────────────────────────────────────────── */
 :root {
   /* Neutrals */
-  --blue-dark-1: 10 51 78;
-  --blue-dark-2: 43 64 91;
-  --blue-dark-3: 68 94 124;
-  --blue-light-1: 139 165 193;
-  --blue-light-2: 174 206 253;
-  --gray-dark-1: 41 48 56;
-  --gray-light-1: 208 210 211;
+  --blue-dark-1: rgb(10, 51, 78);
+  --blue-dark-2: rgb(43, 64, 91);
+  --blue-dark-3: rgb(68, 94, 124);
+  --blue-light-1: rgb(139, 165, 193);
+  --blue-light-2: rgb(174, 206, 253);
+  --gray-dark-1: rgb(41, 48, 56);
+  --gray-light-1: rgb(208, 210, 211);
 
   /* Blues */
 
   /* Status */
-  --red: 156 20 45;
-  --orange: 217 119 87;
-  --yellow: 255 214 79;
-  --green: 85 180 45;
+  --red: rgb(156, 20, 45);
+  --orange: rgb(217, 119, 87);
+  --yellow: rgb(255, 214, 79);
+  --green: rgb(85, 180, 45);
+  --message-green: rgb(43, 121, 95);
+  --message-gray: rgb(59, 70, 85);
 
   /* Radius */
   --radius: 0.75rem;
@@ -33,39 +35,39 @@
    ───────────────────────────────────────────── */
 :root {
   /* Base app */
-  --background: rgb(var(--gray-light-1));
-  --foreground: rgb(var(--gray-dark-1));
+  --background: var(--gray-light-1);
+  --foreground: var(--gray-dark-1);
 
   /* Component tokens */
-  --card: rgb(var(--blue-light-1));
-  --popover: rgb(var(--blue-dark-1));
-  --muted: rgb(var(--blue-dark-2));
+  --card: var(--blue-light-1);
+  --popover: var(--blue-dark-1);
+  --muted: var(--blue-dark-2);
 
   /* Interactive */
-  --primary: rgb(var(--blue-light-2));
-  --secondary: rgb(var(--blue-light-1));
+  --primary: var(--blue-light-2);
+  --secondary: var(--blue-light-1);
   --accent: var(--color-green-300);
 
   /* States */
-  --success: rgb(var(--green));
-  --warning: rgb(var(--yellow));
-  --destructive: rgb(var(--red));
+  --success: var(--green);
+  --warning: var(--yellow);
+  --destructive: var(--red);
 
   /* Borders / inputs */
-  --border: rgb(var(--gray-light-1) / 0.6);
-  --input: rgb(var(--blue-dark-2));
-  --ring: rgb(var(--gray-light-1) / 0.6);
+  --border: var(--gray-light-1);
+  --input: var(--blue-dark-2);
+  --ring: var(--gray-light-1);
 
   /* Foregrounds */
-  --card-foreground: rgb(var(--gray-light-1));
-  --popover-foreground: rgb(var(--gray-light-1));
+  --card-foreground: var(--gray-light-1);
+  --popover-foreground: var(--gray-light-1);
 
-  --primary-foreground: rgb(var(--gray-dark-1));
-  --secondary-foreground: rgb(var(--gray-light-1));
-  --muted-foreground: rgb(var(--gray-light-2) / 0.7);
+  --primary-foreground: var(--gray-dark-1);
+  --secondary-foreground: var(--gray-light-1);
+  --muted-foreground: var(--gray-light-2);
 
-  --accent-foreground: rgb(var(--gray-light-1));
-  --destructive-foreground: rgb(var(--gray-light-1));
+  --accent-foreground: var(--gray-light-1);
+  --destructive-foreground: var(--gray-light-1);
 }
 
 /* ─────────────────────────────────────────────
@@ -114,21 +116,23 @@
      text-blue-light-2
      etc.
   */
-  --color-gray-light-1: rgb(var(--gray-light-1));
+  --color-gray-light-1: var(--gray-light-1);
 
-  --color-blue-light-1: rgb(var(--blue-light-1));
-  --color-blue-dark-3: rgb(var(--blue-dark-3));
-  --color-blue-dark-2: rgb(var(--blue-dark-2));
+  --color-blue-light-1: var(--blue-light-1);
+  --color-blue-dark-3: var(--blue-dark-3);
+  --color-blue-dark-2: var(--blue-dark-2);
 
-  --color-blue-light-2: rgb(var(--blue-light-2));
-  --color-blue-dark-1: rgb(var(--blue-dark-1));
+  --color-blue-light-2: var(--blue-light-2);
+  --color-blue-dark-1: var(--blue-dark-1);
 
-  --color-gray-dark-1: rgb(var(--gray-dark-1));
+  --color-gray-dark-1: var(--gray-dark-1);
 
-  --color-danger: rgb(var(--red));
-  --color-accent-orange: rgb(var(--orange));
-  --color-warning: rgb(var(--yellow));
-  --color-success: rgb(var(--green));
+  --color-danger: var(--red);
+  --color-accent-orange: var(--orange);
+  --color-warning: var(--yellow);
+  --color-success: var(--green);
+  --color-message-green: var(--message-green);
+  --color-message-gray: var(--message-gray);
 
   /* Radius */
   --radius-sm: calc(var(--radius) - 4px);

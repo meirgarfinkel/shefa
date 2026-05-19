@@ -4,8 +4,8 @@ import { applicationRouter } from "../application";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/server/jobs/schedule-application-notify", () => ({
-  scheduleApplicationNotify: vi.fn().mockResolvedValue(undefined),
+vi.mock("@/server/jobs/application-notify.job", () => ({
+  runApplicationNotifyJob: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
@@ -176,7 +176,7 @@ describe("submit", () => {
     await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
-  it("scheduleApplicationNotify called with jobId and employerId after successful submit", async () => {
+  it("runApplicationNotifyJob called with jobId and employerId after successful submit", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockPrisma));
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);
     mockPrisma.jobPosting.findUnique.mockResolvedValue(ACTIVE_JOB);
@@ -184,13 +184,16 @@ describe("submit", () => {
 
     await caller.submit({ jobId: "job-1" });
 
-    const { scheduleApplicationNotify } = await import("@/server/jobs/schedule-application-notify");
-    expect(vi.mocked(scheduleApplicationNotify)).toHaveBeenCalledWith("job-1", "employer-1");
+    const { runApplicationNotifyJob } = await import("@/server/jobs/application-notify.job");
+    expect(vi.mocked(runApplicationNotifyJob)).toHaveBeenCalledWith({
+      jobId: "job-1",
+      employerId: "employer-1",
+    });
   });
 
-  it("scheduleApplicationNotify failure does not propagate — application still returned", async () => {
-    const { scheduleApplicationNotify } = await import("@/server/jobs/schedule-application-notify");
-    vi.mocked(scheduleApplicationNotify).mockRejectedValueOnce(new Error("Redis down"));
+  it("runApplicationNotifyJob failure does not propagate — application still returned", async () => {
+    const { runApplicationNotifyJob } = await import("@/server/jobs/application-notify.job");
+    vi.mocked(runApplicationNotifyJob).mockRejectedValueOnce(new Error("Resend down"));
 
     const caller = createCaller(makeCtx("SEEKER", mockPrisma));
     mockPrisma.seekerProfile.findUnique.mockResolvedValue(SEEKER_PROFILE);

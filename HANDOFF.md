@@ -2,7 +2,7 @@
 
 ## Current phase
 
-**Phase 8 (polish) — application status schema refined**
+**Phase 8 (polish) — BullMQ/Redis removed, Vercel Cron implemented**
 
 ---
 
@@ -23,94 +23,37 @@
 
 ## What was just completed
 
-### Application status schema refinement
+### BullMQ/Redis → Vercel Cron migration
 
-**Schema changes:**
-- `ApplicationStatus` enum: removed `RESPONDED`, added `REJECTED`
-  - `SUBMITTED` — default; employer hasn't opened/reviewed
-  - `VIEWED` — employer opened the application
-  - `REJECTED` — explicit employer rejection (terminal)
-  - `CLOSED` — terminal non-rejection (seeker withdrew, job closed/paused/filled)
-- `Application` model gains `closedAt DateTime?` — set when status transitions to `CLOSED`
+**Removed entirely:**
+- `bullmq` and `ioredis` packages
+- `src/server/jobs/redis.ts`
+- `src/server/jobs/queue.ts`
+- `src/server/jobs/worker.ts`
+- `src/server/jobs/schedule-message-notify.ts`
+- `src/server/jobs/schedule-application-notify.ts`
+- Redis service from `docker-compose.yml`
+- `REDIS_URL` from `.env.example`
+- `npm run worker` script from `package.json`
 
-**Backend:**
-- `UpdateApplicationStatusSchema` (Zod): `z.enum(["VIEWED", "REJECTED", "CLOSED"])` (replaced `RESPONDED` with `REJECTED`)
-- `application.updateStatus` tRPC procedure: sets `closedAt: new Date()` when transitioning to `CLOSED`; `REJECTED` does not set `closedAt`
-- Temporary `as any` casts in `application.ts` — will resolve after migration
+**Created (Vercel Cron routes):**
+- `src/app/api/cron/freshness/route.ts` — daily 9am UTC, wraps `runFreshnessCheck()`
+- `src/app/api/cron/responsiveness/route.ts` — every 2 days 3am UTC, wraps `runResponsivenessJob()`
+- `src/app/api/cron/digest/route.ts` — daily 6pm UTC, wraps `runDailyDigestJob()`
+- All routes require `Authorization: Bearer <CRON_SECRET>` header (Vercel injects automatically)
 
-**UI:**
-- Employer applications page (`/employer/jobs/[id]/applications`): replaced "Mark responded" button with "Reject" button; buttons hidden once REJECTED or CLOSED (both terminal)
-- Status badge colors updated: REJECTED → danger, CLOSED → muted (neutral)
-- Seeker applications page (`/seeker/applications`): REJECTED label = "Not selected"
-- Job detail page (`/jobs/[id]`): updated status labels/styles for new enum
+**Updated:**
+- `vercel.json` — added `crons` array with 3 schedules
+- `src/server/api/routers/message.ts` — now calls `runMessageNotifyJob()` immediately inline instead of scheduling via BullMQ
+- `src/server/api/routers/application.ts` — now calls `runApplicationNotifyJob()` immediately inline instead of scheduling via BullMQ
+- `.env.example` — removed `REDIS_URL`, added `CRON_SECRET`
+- `CLAUDE.md`, `PROJECT_SPEC.md` — architecture updated
 
 **Tests:**
-- 36/36 passing in `application.test.ts`
-- New tests: CLOSED sets `closedAt`, REJECTED does NOT set `closedAt`, RESPONDED rejected by Zod
-
-**⚠️ TypeScript type casts:** Two `as any` casts in `src/server/api/routers/application.ts` (line ~148) — `status` and `closedAt` field on the update — will resolve automatically after migration.
-
----
-
-## Commands the user MUST run before testing
-
-**Run the migration (required for both jobs and applications schema changes):**
-
-```bash
-npx prisma migrate dev --create-only --name application_status_refine
-```
-
-Then **edit the generated migration file** to add a data migration BEFORE the enum alteration. Insert this SQL:
-
-```sql
--- Data migration: convert legacy RESPONDED applications to VIEWED
-UPDATE "Application" SET status = 'VIEWED'::"ApplicationStatus" WHERE status = 'RESPONDED';
-```
-
-Then apply and regenerate:
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-After `prisma generate`, the `as any` casts in these files can be removed:
-- `src/server/api/routers/application.ts` (line ~148)
-
----
-
-## Previous pending migration (job closure reason — still needed if not yet run)
-
-If you haven't yet run the job closure reason migration from the previous session, run it first:
-
-```bash
-npx prisma migrate dev --create-only --name job_closure_reason
-```
-
-Edit the generated file to add before the enum alteration:
-
-```sql
--- Data migration: convert legacy FILLED jobs to CLOSED with closure reason
-UPDATE "JobPosting" SET "closureReason" = 'FILLED_ON_SHEFA'::"JobClosureReason", "closedAt" = NOW() WHERE status = 'FILLED';
-
--- Data migration: convert legacy EXPIRED jobs to CLOSED
-UPDATE "JobPosting" SET "closedAt" = NOW() WHERE status = 'EXPIRED';
-```
-
-Then:
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-After `prisma generate`, the `as any` casts can be removed from:
-- `src/server/api/routers/jobPosting.ts`
-- `src/server/jobs/redeem.ts`
-- `src/app/employer/(needs-company)/jobs/page.tsx`
-- `src/app/employer/(needs-company)/jobs/[id]/edit/page.tsx`
-- `src/app/jobs/page.tsx`
-- `src/components/ui/job-card.tsx`
-- `src/components/ui/status-badge.tsx`
-- `src/app/employer/(needs-company)/dashboard/_client.tsx`
+- Deleted: `schedule-message-notify.test.ts`, `schedule-application-notify.test.ts` (BullMQ-specific)
+- Updated: `message.test.ts`, `application.test.ts` (mocks updated to `message-notify.job` / `application-notify.job`)
+- Fixed pre-existing `message.test.ts` failures: added `seekerProfile` and `employerProfile` to `makeMockPrisma`
+- 363/366 passing (3 pre-existing failures in `redeem.test.ts` × 2, `conversation.test.ts` × 1 — unrelated to this work)
 
 ---
 
@@ -122,12 +65,23 @@ None.
 
 ## What's next
 
-1. **Run migrations** (above commands)
-2. **Remove `as any` casts** post-`prisma generate`
-3. **Production deploy checklist** — verify all env vars on Vercel + Neon + Upstash + Railway
-4. **Email templates** — verify magic link and notification emails render correctly in prod
-5. **BullMQ worker** — ensure Railway worker process is running `npm run worker`
-6. **Final QA pass** — test full employer + seeker flows end-to-end in production
+1. **Run npm install** to remove `bullmq` and `ioredis` from `node_modules`:
+   ```bash
+   npm install
+   ```
+2. **Update Docker** — remove old Redis container and data volume:
+   ```bash
+   docker-compose down -v && docker-compose up -d
+   ```
+3. **Run migrations** (see above)
+4. **Generate `CRON_SECRET`**:
+   ```bash
+   openssl rand -hex 32
+   ```
+   Add to Vercel env vars as `CRON_SECRET`. Vercel automatically sends it as `Authorization: Bearer <secret>` to cron routes.
+5. **Production deploy checklist** — verify env vars on Vercel + Neon + Resend (no more Upstash/Railway needed)
+6. **Email templates** — verify magic link and notification emails render correctly in prod
+7. **Final QA pass** — test full employer + seeker flows end-to-end in production
 
 ---
 
@@ -136,13 +90,13 @@ None.
 All files modified since last commit. Suggested commit message:
 
 ```
-Refine ApplicationStatus: replace RESPONDED with REJECTED, add closedAt
+Replace BullMQ/Redis with Vercel Cron and immediate notifications
 
-- ApplicationStatus enum: SUBMITTED | VIEWED | REJECTED | CLOSED
-- REJECTED = explicit employer rejection (terminal, no closedAt)
-- CLOSED = terminal non-rejection (seeker withdrew, job closed); sets closedAt
-- updateStatus procedure sets closedAt when transitioning to CLOSED
-- Employer UI: "Reject" replaces "Mark responded"; both terminal states hide action buttons
-- Seeker UI: REJECTED shows "Not selected"
-- 36 tests passing
+- Remove bullmq, ioredis packages and all queue/worker files
+- Add Vercel Cron routes: /api/cron/freshness, /api/cron/responsiveness, /api/cron/digest
+- Message and application notifications now fire immediately inline (no debounce queue)
+- All cron routes protected by CRON_SECRET bearer token
+- Remove Redis from docker-compose.yml; remove REDIS_URL from .env.example; add CRON_SECRET
+- Update PROJECT_SPEC.md and CLAUDE.md to reflect Vercel + Neon + Resend stack
+- Fix pre-existing message.test.ts failures (missing seekerProfile/employerProfile mocks)
 ```

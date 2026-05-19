@@ -6,7 +6,7 @@ import {
   ListForJobSchema,
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
-import { scheduleApplicationNotify } from "@/server/jobs/schedule-application-notify";
+import { runApplicationNotifyJob } from "@/server/jobs/application-notify.job";
 import { ApplicationStatus } from "@prisma/client";
 
 export const applicationRouter = createTRPCRouter({
@@ -56,9 +56,11 @@ export const applicationRouter = createTRPCRouter({
     }
 
     // Fire-and-forget — notification failure must not fail the submit
-    scheduleApplicationNotify(input.jobId, job.employerId).catch((err: unknown) => {
-      console.error("[application.submit] Failed to schedule notification:", err);
-    });
+    runApplicationNotifyJob({ jobId: input.jobId, employerId: job.employerId }).catch(
+      (err: unknown) => {
+        console.error("[application.submit] Failed to send notification:", err);
+      },
+    );
 
     return application;
   }),

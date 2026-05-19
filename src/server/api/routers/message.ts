@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
-import { scheduleMessageNotify } from "@/server/jobs/schedule-message-notify";
+import { runMessageNotifyJob } from "@/server/jobs/message-notify.job";
 
 const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 
@@ -96,8 +96,8 @@ export const messageRouter = createTRPCRouter({
       });
 
       // Fire-and-forget — notification failure must not fail the send
-      scheduleMessageNotify(conversationId, recipientId).catch((err: unknown) => {
-        console.error("[message.send] Failed to schedule notification:", err);
+      runMessageNotifyJob({ conversationId, recipientId }).catch((err: unknown) => {
+        console.error("[message.send] Failed to send notification:", err);
       });
 
       return message;

@@ -11,20 +11,18 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **Database**: PostgreSQL
 - **ORM**: Prisma 6 (`prisma-client-js`, standard output — no driver adapter, `DATABASE_URL` via datasource block)
 - **Auth**: Auth.js v5 (`next-auth@beta`) with Google OAuth + email magic links via Resend; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with Prisma adapter)
-- **Background jobs**: BullMQ + Redis
+- **Background jobs**: Vercel Cron (API routes in `src/app/api/cron/`)
 - **Email**: Resend
 - **Validation**: Zod
 - **UI**: Tailwind + shadcn/ui
-- **Local dev**: Docker Compose for Postgres + Redis
+- **Local dev**: Docker Compose for Postgres only
 - **Linting/formatting**: ESLint (next config) + Prettier with Tailwind plugin. Husky + lint-staged for pre-commit hooks.
 - **Mobile (later, not now)**: React Native, sharing the same tRPC API
 
 ## Hosting
 
-- **Web app**: Vercel (Next.js)
+- **Web app + cron jobs**: Vercel (Next.js + Vercel Cron)
 - **Database**: Neon (PostgreSQL, serverless) — uses standard `postgres:16-alpine` locally via Docker Compose
-- **Redis / queues**: Upstash (serverless Redis, ioredis-compatible)
-- **BullMQ worker**: Railway (persistent background process — Vercel cannot host long-lived processes)
 - **Email**: Resend
 - Chosen for nonprofit-friendly pricing and generous free tiers.
 
@@ -189,9 +187,10 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 ### Notifications (email)
 
-- **12-minute debounced batching per conversation**: when a message arrives, schedule notification email 12 min from now. New message in same conversation cancels and reschedules. Active conversations naturally batch.
+- **Immediate per-message**: when a message is sent, notification email fires immediately inline (fire-and-forget). No debouncing — active conversations may result in multiple emails.
 - Same pattern for application notifications to employers.
 - User settings: PER_MESSAGE (default) / DAILY_DIGEST / OFF.
+- DAILY_DIGEST users receive one summary email per day via the `/api/cron/digest` Vercel Cron job.
 
 ### Responsiveness badge
 

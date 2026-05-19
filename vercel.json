@@ -1,3 +1,18 @@
 {
-  "buildCommand": "prisma generate && prisma migrate deploy && next build"
+  "regions": ["iad1"],
+  "buildCommand": "prisma generate && prisma migrate deploy && next build",
+  "crons": [
+    {
+      "path": "/api/cron/freshness",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/responsiveness",
+      "schedule": "0 3 */2 * *"
+    },
+    {
+      "path": "/api/cron/digest",
+      "schedule": "0 18 * * *"
+    }
+  ]
 }
