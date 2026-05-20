@@ -79,26 +79,32 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     let geoIds: string[] | undefined;
+
     if (input.radiusMiles && input.city && input.state) {
       const coords = await lookupCityCoords(ctx.db, input.city, input.state);
+
       if (coords) {
-        const rows = await ctx.db.execute(
-          sql`SELECT id FROM (
-            SELECT id,
-              3959 * acos(
-                LEAST(1.0, GREATEST(-1.0,
-                  sin(radians(${coords.lat})) * sin(radians(lat)) +
-                  cos(radians(${coords.lat})) * cos(radians(lat)) *
-                  cos(radians(lon) - radians(${coords.lon}))
-                ))
-              ) AS dist
-            FROM "JobPosting"
-            WHERE lat IS NOT NULL AND lon IS NOT NULL
-          ) _sub
-          WHERE dist <= ${input.radiusMiles}
-          ORDER BY dist`,
+        const result = await ctx.db.execute<{ id: string }>(
+          sql`
+        SELECT id FROM (
+          SELECT id,
+            3959 * acos(
+              LEAST(1.0, GREATEST(-1.0,
+                sin(radians(${coords.lat})) * sin(radians(lat)) +
+                cos(radians(${coords.lat})) * cos(radians(lat)) *
+                cos(radians(lon) - radians(${coords.lon}))
+              ))
+            ) AS dist
+          FROM "JobPosting"
+          WHERE lat IS NOT NULL
+            AND lon IS NOT NULL
+        ) _sub
+        WHERE dist <= ${input.radiusMiles}
+        ORDER BY dist
+      `,
         );
-        geoIds = (rows as unknown as { id: string }[]).map((r) => r.id);
+
+        geoIds = result.rows.map((r) => r.id);
       }
     }
 
