@@ -4,7 +4,6 @@ import type { Role } from "@/types/role";
 export const authConfig = {
   pages: {
     signIn: "/sign-in",
-    verifyRequest: "/verify-request",
   },
   callbacks: {
     jwt({ token, user, trigger, session: updatedSession }) {

@@ -1,5 +1,5 @@
 {
-  "id": "20d4be8b-cf2b-42ea-aae0-850fef2b7e5a",
+  "id": "98e6ce1c-f733-45b3-b858-4415306817a9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -431,48 +431,6 @@
           "name": "User_email_unique",
           "nullsNotDistinct": false,
           "columns": ["email"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.VerificationToken": {
-      "name": "VerificationToken",
-      "schema": "",
-      "columns": {
-        "identifier": {
-          "name": "identifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "token": {
-          "name": "token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "expires": {
-          "name": "expires",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "VerificationToken_token_unique": {
-          "name": "VerificationToken_token_unique",
-          "nullsNotDistinct": false,
-          "columns": ["token"]
-        },
-        "VerificationToken_identifier_token_key": {
-          "name": "VerificationToken_identifier_token_key",
-          "nullsNotDistinct": false,
-          "columns": ["identifier", "token"]
         }
       },
       "policies": {},
@@ -1116,7 +1074,12 @@
         "JobPosting_status_idx": {
           "name": "JobPosting_status_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1126,9 +1089,24 @@
         "JobPosting_employerId_status_createdAt_idx": {
           "name": "JobPosting_employerId_status_createdAt_idx",
           "columns": [
-            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "employerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1138,8 +1116,18 @@
         "JobPosting_status_jobType_idx": {
           "name": "JobPosting_status_jobType_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "jobType", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "jobType",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1149,8 +1137,18 @@
         "JobPosting_status_workArrangement_idx": {
           "name": "JobPosting_status_workArrangement_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "workArrangement", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "workArrangement",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1160,8 +1158,18 @@
         "JobPosting_status_createdAt_idx": {
           "name": "JobPosting_status_createdAt_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1171,7 +1179,12 @@
         "JobPosting_employerId_idx": {
           "name": "JobPosting_employerId_idx",
           "columns": [
-            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "employerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1181,7 +1194,12 @@
         "JobPosting_companyId_idx": {
           "name": "JobPosting_companyId_idx",
           "columns": [
-            { "expression": "companyId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "companyId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1191,8 +1209,18 @@
         "JobPosting_lat_lon_idx": {
           "name": "JobPosting_lat_lon_idx",
           "columns": [
-            { "expression": "lat", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "lon", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "lat",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lon",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1202,7 +1230,12 @@
         "JobPosting_closedAt_idx": {
           "name": "JobPosting_closedAt_idx",
           "columns": [
-            { "expression": "closedAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "closedAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1240,9 +1273,24 @@
       "name": "Application",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
-        "seekerId": { "name": "seekerId", "type": "text", "primaryKey": false, "notNull": true },
-        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "seekerId": {
+          "name": "seekerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "jobId": {
+          "name": "jobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "message": {
           "name": "message",
           "type": "varchar(500)",
@@ -1282,8 +1330,18 @@
         "Application_jobId_createdAt_idx": {
           "name": "Application_jobId_createdAt_idx",
           "columns": [
-            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "jobId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1293,7 +1351,12 @@
         "Application_jobId_idx": {
           "name": "Application_jobId_idx",
           "columns": [
-            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "jobId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1303,7 +1366,12 @@
         "Application_status_idx": {
           "name": "Application_status_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1347,15 +1415,30 @@
       "name": "Conversation",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
-        "seekerId": { "name": "seekerId", "type": "text", "primaryKey": false, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "seekerId": {
+          "name": "seekerId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "employerId": {
           "name": "employerId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": false },
+        "jobId": {
+          "name": "jobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "lastMessageAt": {
           "name": "lastMessageAt",
           "type": "timestamp with time zone",
@@ -1401,7 +1484,12 @@
         "Conversation_seekerId_idx": {
           "name": "Conversation_seekerId_idx",
           "columns": [
-            { "expression": "seekerId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "seekerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1411,7 +1499,12 @@
         "Conversation_employerId_idx": {
           "name": "Conversation_employerId_idx",
           "columns": [
-            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "employerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1421,8 +1514,18 @@
         "Conversation_seekerId_lastMessageAt_idx": {
           "name": "Conversation_seekerId_lastMessageAt_idx",
           "columns": [
-            { "expression": "seekerId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "seekerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lastMessageAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1432,8 +1535,18 @@
         "Conversation_employerId_lastMessageAt_idx": {
           "name": "Conversation_employerId_lastMessageAt_idx",
           "columns": [
-            { "expression": "employerId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "employerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lastMessageAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1443,7 +1556,12 @@
         "Conversation_lastMessageAt_idx": {
           "name": "Conversation_lastMessageAt_idx",
           "columns": [
-            { "expression": "lastMessageAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "lastMessageAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1496,15 +1614,30 @@
       "name": "Message",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
         "conversationId": {
           "name": "conversationId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "senderId": { "name": "senderId", "type": "text", "primaryKey": false, "notNull": true },
-        "body": { "name": "body", "type": "varchar(5000)", "primaryKey": false, "notNull": true },
+        "senderId": {
+          "name": "senderId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "varchar(5000)",
+          "primaryKey": false,
+          "notNull": true
+        },
         "readAt": {
           "name": "readAt",
           "type": "timestamp with time zone",
@@ -1523,8 +1656,18 @@
         "Message_conversationId_createdAt_idx": {
           "name": "Message_conversationId_createdAt_idx",
           "columns": [
-            { "expression": "conversationId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "createdAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "conversationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1534,8 +1677,18 @@
         "Message_conversationId_readAt_idx": {
           "name": "Message_conversationId_readAt_idx",
           "columns": [
-            { "expression": "conversationId", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "readAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "conversationId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "readAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1573,15 +1726,30 @@
       "name": "FreshnessToken",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
-        "token": { "name": "token", "type": "text", "primaryKey": false, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "targetType": {
           "name": "targetType",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "targetId": { "name": "targetId", "type": "text", "primaryKey": false, "notNull": true },
+        "targetId": {
+          "name": "targetId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "action": {
           "name": "action",
           "type": "PingResponse",
@@ -1589,7 +1757,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "pingId": { "name": "pingId", "type": "text", "primaryKey": false, "notNull": false },
+        "pingId": {
+          "name": "pingId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "expiresAt": {
           "name": "expiresAt",
           "type": "timestamp with time zone",
@@ -1607,8 +1780,18 @@
         "FreshnessToken_targetType_targetId_idx": {
           "name": "FreshnessToken_targetType_targetId_idx",
           "columns": [
-            { "expression": "targetType", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "targetId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "targetType",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "targetId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1618,7 +1801,12 @@
         "FreshnessToken_expiresAt_idx": {
           "name": "FreshnessToken_expiresAt_idx",
           "columns": [
-            { "expression": "expiresAt", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "expiresAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1653,7 +1841,12 @@
       "name": "VerificationPing",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
         "type": {
           "name": "type",
           "type": "PingType",
@@ -1681,20 +1874,35 @@
           "primaryKey": false,
           "notNull": false
         },
-        "userId": { "name": "userId", "type": "text", "primaryKey": false, "notNull": false },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "seekerProfileId": {
           "name": "seekerProfileId",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "jobId": { "name": "jobId", "type": "text", "primaryKey": false, "notNull": false }
+        "jobId": {
+          "name": "jobId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
       },
       "indexes": {
         "VerificationPing_userId_idx": {
           "name": "VerificationPing_userId_idx",
           "columns": [
-            { "expression": "userId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1704,7 +1912,12 @@
         "VerificationPing_jobId_idx": {
           "name": "VerificationPing_jobId_idx",
           "columns": [
-            { "expression": "jobId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "jobId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1751,8 +1964,18 @@
       "name": "NotificationPreferences",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
-        "userId": { "name": "userId", "type": "text", "primaryKey": false, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "messageNotifications": {
           "name": "messageNotifications",
           "type": "NotificationFrequency",
@@ -1805,7 +2028,12 @@
       "name": "Report",
       "schema": "",
       "columns": {
-        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
         "reporterId": {
           "name": "reporterId",
           "type": "text",
@@ -1819,8 +2047,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "targetId": { "name": "targetId", "type": "text", "primaryKey": false, "notNull": true },
-        "reason": { "name": "reason", "type": "text", "primaryKey": false, "notNull": true },
+        "targetId": {
+          "name": "targetId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "status": {
           "name": "status",
           "type": "ReportStatus",
@@ -1841,7 +2079,12 @@
         "Report_status_idx": {
           "name": "Report_status_idx",
           "columns": [
-            { "expression": "status", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,
@@ -1851,8 +2094,18 @@
         "Report_targetType_targetId_idx": {
           "name": "Report_targetType_targetId_idx",
           "columns": [
-            { "expression": "targetType", "isExpression": false, "asc": true, "nulls": "last" },
-            { "expression": "targetId", "isExpression": false, "asc": true, "nulls": "last" }
+            {
+              "expression": "targetType",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "targetId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
           ],
           "isUnique": false,
           "concurrently": false,

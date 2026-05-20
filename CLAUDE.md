@@ -102,11 +102,11 @@ These rules are non-negotiable.
 
 ## Auth
 
-- Middleware is the ONLY auth redirect layer
-- No auth redirects in React components
-- Middleware must remain Edge-safe
+- Middleware does ONE thing: checks if a session exists. Unauthenticated → redirect to `/sign-in`. No role logic, no profile checks, no onboarding redirects.
+- Middleware must remain Edge-safe (split config pattern — imports `auth.config.ts` only)
 - Middleware must never import the db client (Drizzle/Neon are Node-only)
-- Session strategy must be JWT
+- JWT strategy is required — Edge middleware cannot query the DB, so sessions must be verifiable from the cookie alone
+- Role checks and onboarding redirects live in server component layouts and page wrappers, not middleware
 
 ---
 
@@ -485,7 +485,7 @@ Never:
 
 - full Node config
 - DrizzleAdapter (from `@auth/drizzle-adapter`)
-- Resend provider
+- Google provider only — no email/magic link providers
 
 ## Middleware
 
@@ -500,19 +500,49 @@ Never import `@/db` or `drizzle-orm`.
 
 # Routing and Authorization
 
-All auth redirects belong exclusively in middleware.
+## Middleware (Edge — `src/middleware.ts`)
 
-Pages must NOT:
+Single responsibility: if no session exists, redirect to `/sign-in`. Nothing else.
 
-- redirect based on auth
-- render null during auth loading
-- duplicate middleware authorization
+Must import only `auth.config.ts` and Next.js built-ins. Never import `@/auth` or `@/db`.
 
-Allowed in pages:
+## Server Component Layouts and Page Wrappers
 
-- conditional UI
-- post-mutation navigation
-- business-state redirects
+Role checks and onboarding redirects live here — not in middleware, not in client components.
+
+Current gatekeepers:
+
+| File | What it checks |
+|------|----------------|
+| `app/employer/layout.tsx` | authenticated + role === EMPLOYER |
+| `app/seeker/layout.tsx` | authenticated + role === SEEKER |
+| `app/role-select/page.tsx` | redirects to dashboard if role already set |
+| `app/sign-in/page.tsx` | redirects authenticated users to their dashboard |
+
+Pattern:
+
+```ts
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+
+export default async function Layout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
+  if (!session) redirect("/sign-in");
+  if (!session.user.role) redirect("/role-select");
+  if (session.user.role !== "EMPLOYER") redirect("/jobs");
+  return <>{children}</>;
+}
+```
+
+`auth()` from `auth.ts` may only be called in server components, layouts, and API routes — never in client components or middleware.
+
+## Client Components
+
+Must NOT:
+
+- redirect based on auth or role
+- call `useSession()` for routing decisions
+- render null while waiting for auth state
 
 ---
 

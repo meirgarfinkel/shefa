@@ -1,9 +1,8 @@
 import NextAuth from "next-auth";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import Google from "next-auth/providers/google";
-import Resend from "next-auth/providers/resend";
 import { db } from "@/db";
-import { users, accounts, sessions, verificationTokens } from "@/db/schema";
+import { users, accounts, sessions } from "@/db/schema";
 import { authConfig } from "./auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -12,42 +11,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     usersTable: users,
     accountsTable: accounts,
     sessionsTable: sessions,
-    verificationTokensTable: verificationTokens,
   }),
   session: { strategy: "jwt" },
   providers: [
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    Resend({
-      apiKey: process.env.RESEND_API_KEY,
-      from: "Shefa <noreply@shefa.jobs>",
-      sendVerificationRequest: async ({ identifier: email, url }) => {
-        if (process.env.NODE_ENV !== "production") {
-          console.log(
-            `\n${"─".repeat(60)}\n🔐  MAGIC LINK  →  ${email}\n\n   ${url}\n${"─".repeat(60)}\n`,
-          );
-          return;
-        }
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: "Shefa <noreply@shefa.jobs>",
-            to: [email],
-            subject: "Sign in to Shefa",
-            html: `<p>Sign in to <strong>Shefa</strong>.</p><p><a href="${url}">Click here to sign in</a></p><p>This link expires in 24 hours. If you didn't request this, ignore this email.</p>`,
-            text: `Sign in to Shefa\n\n${url}\n\nThis link expires in 24 hours.`,
-          }),
-        });
-        if (!res.ok) {
-          throw new Error(`Resend API error ${res.status}: ${await res.text()}`);
-        }
-      },
     }),
   ],
 });

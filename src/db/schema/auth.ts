@@ -61,13 +61,3 @@ export const sessions = pgTable(
   },
   (t) => [index("Session_userId_idx").on(t.userId)],
 );
-
-export const verificationTokens = pgTable(
-  "VerificationToken",
-  {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull().unique(),
-    expires: timestamp("expires", { withTimezone: true, mode: "date" }).notNull(),
-  },
-  (t) => [unique("VerificationToken_identifier_token_key").on(t.identifier, t.token)],
-);

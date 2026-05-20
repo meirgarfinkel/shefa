@@ -75,14 +75,6 @@ CREATE TABLE "User" (
 	CONSTRAINT "User_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
-CREATE TABLE "VerificationToken" (
-	"identifier" text NOT NULL,
-	"token" text NOT NULL,
-	"expires" timestamp with time zone NOT NULL,
-	CONSTRAINT "VerificationToken_token_unique" UNIQUE("token"),
-	CONSTRAINT "VerificationToken_identifier_token_key" UNIQUE("identifier","token")
-);
---> statement-breakpoint
 CREATE TABLE "SeekerLanguage" (
 	"seekerProfileId" text NOT NULL,
 	"languageId" text NOT NULL,

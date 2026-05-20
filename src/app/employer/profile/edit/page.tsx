@@ -37,9 +37,6 @@ export default function EmployerProfileEditPage() {
   const { data: profile, isLoading } = trpc.employer.getProfile.useQuery();
 
   const [saved, setSaved] = useState(false);
-  const [emailInput, setEmailInput] = useState("");
-  const [showEmailForm, setShowEmailForm] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
 
   const form = useForm<UpdateEmployerProfileInput>({
@@ -60,14 +57,6 @@ export default function EmployerProfileEditPage() {
     onSuccess: () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    },
-  });
-
-  const requestEmailChange = trpc.user.requestEmailChange.useMutation({
-    onSuccess: () => {
-      setEmailSent(true);
-      setShowEmailForm(false);
-      setEmailInput("");
     },
   });
 
@@ -108,67 +97,8 @@ export default function EmployerProfileEditPage() {
           <div className="bg-popover text-popover-foreground mb-8 space-y-4 rounded-md px-3 py-5">
             <div className="flex flex-wrap items-center gap-2 md:flex">
               <p className="text-sm font-medium">Email:</p>
-
               <p className="bg-secondary/20 rounded px-2 py-1 text-sm">{session?.user?.email}</p>
-
-              {!showEmailForm && !emailSent && (
-                <Button
-                  className="ml-auto"
-                  type="button"
-                  variant="destructive"
-                  onClick={() => setShowEmailForm(true)}
-                >
-                  Change email
-                </Button>
-              )}
             </div>
-
-            {showEmailForm && (
-              <div className="space-y-3">
-                <p className="text-muted-foreground text-xs">
-                  Enter your new email. We&apos;ll send a confirmation link — your address only
-                  changes when you click it.
-                </p>
-                <div className="flex gap-2">
-                  <Input
-                    variant="secondary"
-                    type="email"
-                    placeholder="new@example.com"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                  />
-                  <Button
-                    variant="secondary"
-                    type="button"
-                    disabled={!emailInput || requestEmailChange.isPending}
-                    onClick={() => requestEmailChange.mutate({ newEmail: emailInput })}
-                  >
-                    {requestEmailChange.isPending ? "Sending…" : "Send link"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => {
-                      setShowEmailForm(false);
-                      setEmailInput("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-                {requestEmailChange.isError && (
-                  <p className="text-danger text-xs">
-                    {requestEmailChange.error.message ?? "Something went wrong."}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {emailSent && (
-              <p className="text-success text-xs">
-                Confirmation link sent. Check your new inbox and click the link to confirm.
-              </p>
-            )}
           </div>
 
           <Form {...form}>
