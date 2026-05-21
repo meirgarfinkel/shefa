@@ -8,9 +8,11 @@ export const userRouter = createTRPCRouter({
     .input(z.object({ role: z.enum(["SEEKER", "EMPLOYER"]) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.update(users).set({ role: input.role }).where(eq(users.id, ctx.user.id));
+      return { success: true };
     }),
 
   deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
     await ctx.db.delete(users).where(eq(users.id, ctx.user.id));
+    return { success: true };
   }),
 });

@@ -238,6 +238,7 @@ export const conversationRouter = createTRPCRouter({
           isNull(message.readAt),
         ),
       );
+    return { success: true };
   }),
 
   block: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {
@@ -257,6 +258,7 @@ export const conversationRouter = createTRPCRouter({
       .update(conversation)
       .set(isSeeker ? { seekerBlocked: true } : { employerBlocked: true })
       .where(eq(conversation.id, input.conversationId));
+    return { success: true };
   }),
 
   unblock: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {
@@ -276,5 +278,6 @@ export const conversationRouter = createTRPCRouter({
       .update(conversation)
       .set(isSeeker ? { seekerBlocked: false } : { employerBlocked: false })
       .where(eq(conversation.id, input.conversationId));
+    return { success: true };
   }),
 });

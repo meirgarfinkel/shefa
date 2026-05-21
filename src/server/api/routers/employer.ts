@@ -7,9 +7,10 @@ import { employerProfile, users, application, jobPosting } from "@/db/schema";
 export const employerRouter = createTRPCRouter({
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    return ctx.db.query.employerProfile.findFirst({
+    const profile = await ctx.db.query.employerProfile.findFirst({
       where: eq(employerProfile.userId, ctx.user.id),
     });
+    return profile ?? null;
   }),
 
   createProfile: protectedProcedure

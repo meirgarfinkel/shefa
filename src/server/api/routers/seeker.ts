@@ -28,10 +28,11 @@ export const seekerRouter = createTRPCRouter({
     if (ctx.user.role !== "SEEKER") {
       throw new TRPCError({ code: "FORBIDDEN" });
     }
-    return ctx.db.query.seekerProfile.findFirst({
+    const profile = await ctx.db.query.seekerProfile.findFirst({
       where: eq(seekerProfile.userId, ctx.user.id),
       columns: { id: true, city: true, state: true },
     });
+    return profile ?? null;
   }),
 
   getMyFullProfile: protectedProcedure.query(async ({ ctx }) => {

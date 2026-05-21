@@ -330,44 +330,6 @@ export default function SeekerProfileEditPage() {
 
             <FormField
               control={form.control}
-              name="otherLanguages"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Other languages</FormLabel>
-                  <FormDescription>Languages not listed above.</FormDescription>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="e.g. Tigrinya, Wolof"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="otherSkills"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Other skills</FormLabel>
-                  <FormDescription>Skills not listed above, comma-separated.</FormDescription>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="e.g. Knitting, Beekeeping"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="about"
               render={({ field }) => (
                 <FormItem>
@@ -400,7 +362,6 @@ export default function SeekerProfileEditPage() {
       <Separator className="my-10" />
 
       <div className="space-y-3">
-        <h2 className="font-medium">Danger zone</h2>
         <p className="text-muted-foreground text-sm">
           Permanently delete your account and all associated data.
         </p>

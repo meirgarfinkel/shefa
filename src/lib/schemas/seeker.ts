@@ -28,7 +28,7 @@ export const CreateSeekerProfileSchema = z.object({
   otherSkills: z.string().max(500).optional(),
   otherLanguages: z.string().max(500).optional(),
   about: z.string().max(1000).optional(),
-  languageIds: z.array(z.string().cuid()).optional(),
+  languageIds: z.array(z.string().min(1)).optional(),
 });
 
 export type CreateSeekerProfileInput = z.infer<typeof CreateSeekerProfileSchema>;
@@ -45,7 +45,7 @@ export const UpdateSeekerProfileSchema = z.object({
   otherSkills: z.string().max(500).optional(),
   otherLanguages: z.string().max(500).optional(),
   about: z.string().max(1000).optional(),
-  languageIds: z.array(z.string().cuid()).optional(),
+  languageIds: z.array(z.string().min(1)).optional(),
 });
 
 export type UpdateSeekerProfileInput = z.infer<typeof UpdateSeekerProfileSchema>;

@@ -170,9 +170,10 @@ export const applicationRouter = createTRPCRouter({
     .input(z.object({ jobId: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "SEEKER") return null;
-      return ctx.db.query.application.findFirst({
+      const app = await ctx.db.query.application.findFirst({
         where: and(eq(application.seekerId, ctx.user.id), eq(application.jobId, input.jobId)),
         columns: { id: true, status: true },
       });
+      return app ?? null;
     }),
 });

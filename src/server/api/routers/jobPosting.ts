@@ -256,7 +256,7 @@ export const jobPostingRouter = createTRPCRouter({
   search: publicProcedure
     .input(z.object({ q: z.string().min(1).max(200).trim() }))
     .query(async ({ ctx, input }) => {
-      const rows = await ctx.db.execute(
+      const result = await ctx.db.execute<{ id: string; rank: number }>(
         sql`SELECT id,
                (
                  word_similarity(${input.q}, title) * 2.0 +
@@ -272,7 +272,7 @@ export const jobPostingRouter = createTRPCRouter({
         LIMIT 100`,
       );
 
-      const rawRows = rows as unknown as { id: string; rank: number }[];
+      const rawRows = result.rows;
       if (rawRows.length === 0) return [];
 
       const rankMap: Record<string, number> = Object.fromEntries(

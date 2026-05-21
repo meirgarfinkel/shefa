@@ -297,4 +297,7 @@ CREATE INDEX "FreshnessToken_expiresAt_idx" ON "FreshnessToken" USING btree ("ex
 CREATE INDEX "VerificationPing_userId_idx" ON "VerificationPing" USING btree ("userId");--> statement-breakpoint
 CREATE INDEX "VerificationPing_jobId_idx" ON "VerificationPing" USING btree ("jobId");--> statement-breakpoint
 CREATE INDEX "Report_status_idx" ON "Report" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "Report_targetType_targetId_idx" ON "Report" USING btree ("targetType","targetId");
+CREATE INDEX "Report_targetType_targetId_idx" ON "Report" USING btree ("targetType","targetId");--> statement-breakpoint
+CREATE EXTENSION IF NOT EXISTS pg_trgm;--> statement-breakpoint
+CREATE INDEX "JobPosting_title_trgm_idx" ON "JobPosting" USING gin (title gin_trgm_ops);--> statement-breakpoint
+CREATE INDEX "JobPosting_description_trgm_idx" ON "JobPosting" USING gin (description gin_trgm_ops);
