@@ -161,9 +161,6 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
                 </span>
               ))}
             </div>
-            {profile.otherLanguages && (
-              <p className="text-muted-foreground mt-2 text-sm">Also: {profile.otherLanguages}</p>
-            )}
           </div>
         </>
       )}

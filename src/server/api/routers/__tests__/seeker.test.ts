@@ -49,8 +49,6 @@ function makePublicSeekerProfile(overrides: Record<string, unknown> = {}) {
     availableDays: ["MON", "TUE"],
     jobSeekText: "I want to learn to cook.",
     educationLevel: null,
-    otherSkills: null,
-    otherLanguages: null,
     about: null,
     userId: "user-secret",
     status: "ACTIVE",

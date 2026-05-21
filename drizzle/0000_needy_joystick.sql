@@ -92,8 +92,6 @@ CREATE TABLE "SeekerProfile" (
 	"availableDays" "DayOfWeek"[] NOT NULL,
 	"jobSeekText" varchar(1000) NOT NULL,
 	"educationLevel" "EducationLevel",
-	"otherSkills" text,
-	"otherLanguages" text,
 	"about" varchar(1000),
 	"resumeUrl" text,
 	"status" "ProfileStatus" DEFAULT 'ACTIVE' NOT NULL,

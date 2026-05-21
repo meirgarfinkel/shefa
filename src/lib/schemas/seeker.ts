@@ -25,8 +25,6 @@ export const CreateSeekerProfileSchema = z.object({
   jobSeekText: z.string().min(1).max(1000),
   // Optional
   educationLevel: EducationLevel.optional(),
-  otherSkills: z.string().max(500).optional(),
-  otherLanguages: z.string().max(500).optional(),
   about: z.string().max(1000).optional(),
   languageIds: z.array(z.string().min(1)).optional(),
 });
@@ -42,8 +40,6 @@ export const UpdateSeekerProfileSchema = z.object({
   availableDays: z.array(DayOfWeek).transform((days) => [...new Set(days)]),
   jobSeekText: z.string().min(1).max(1000),
   educationLevel: EducationLevel.optional(),
-  otherSkills: z.string().max(500).optional(),
-  otherLanguages: z.string().max(500).optional(),
   about: z.string().max(1000).optional(),
   languageIds: z.array(z.string().min(1)).optional(),
 });

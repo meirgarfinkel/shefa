@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,33 +64,37 @@ const INDUSTRIES = [
   { value: "OTHER", label: "Other" },
 ] as const;
 
-export default function CompanyEditPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const router = useRouter();
-  const { data: company, isLoading } = trpc.company.getById.useQuery({ id });
+type CompanyRecord = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  website: string | null;
+  industry: string | null;
+  companySize: string | null;
+  aboutCompany: string | null;
+  missionText: string | null;
+};
 
+function CompanyEditForm({ company }: { company: CompanyRecord }) {
+  const router = useRouter();
   const [saved, setSaved] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const form = useForm<UpdateCompanyInput>({
     resolver: zodResolver(UpdateCompanySchema),
-    defaultValues: { id: "", name: "", city: "", state: "" },
-  });
-
-  useEffect(() => {
-    if (!company) return;
-    form.reset({
+    defaultValues: {
       id: company.id,
       name: company.name,
       city: company.city,
       state: company.state,
       website: company.website ?? undefined,
-      industry: company.industry ?? undefined,
-      companySize: company.companySize ?? undefined,
+      industry: (company.industry ?? undefined) as UpdateCompanyInput["industry"],
+      companySize: (company.companySize ?? undefined) as UpdateCompanyInput["companySize"],
       aboutCompany: company.aboutCompany ?? undefined,
       missionText: company.missionText ?? undefined,
-    });
-  }, [company, form]);
+    },
+  });
 
   const updateCompany = trpc.company.update.useMutation({
     onSuccess: () => {
@@ -106,16 +110,6 @@ export default function CompanyEditPage({ params }: { params: Promise<{ id: stri
   function onSubmit(data: UpdateCompanyInput) {
     setSaved(false);
     updateCompany.mutate(data);
-  }
-
-  if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
-  }
-
-  if (!company) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Company not found.</div>
-    );
   }
 
   return (
@@ -334,4 +328,21 @@ export default function CompanyEditPage({ params }: { params: Promise<{ id: stri
       </Dialog>
     </div>
   );
+}
+
+export default function CompanyEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { data: company, isLoading } = trpc.company.getById.useQuery({ id });
+
+  if (isLoading) {
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+  }
+
+  if (!company) {
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Company not found.</div>
+    );
+  }
+
+  return <CompanyEditForm company={company} />;
 }

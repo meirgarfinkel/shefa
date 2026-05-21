@@ -275,44 +275,6 @@ export default function SeekerProfileNewPage() {
 
             <FormField
               control={form.control}
-              name="otherLanguages"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg font-medium">Other languages</FormLabel>
-                  <FormDescription>Languages not listed above.</FormDescription>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="e.g. Tigrinya, Wolof"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="otherSkills"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-lg font-medium">Other skills</FormLabel>
-                  <FormDescription>Skills not listed above, comma-separated.</FormDescription>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      placeholder="e.g. Knitting, Beekeeping"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="about"
               render={({ field }) => (
                 <FormItem>

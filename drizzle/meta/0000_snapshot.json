@@ -552,18 +552,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "otherSkills": {
-          "name": "otherSkills",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "otherLanguages": {
-          "name": "otherLanguages",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "about": {
           "name": "about",
           "type": "varchar(1000)",

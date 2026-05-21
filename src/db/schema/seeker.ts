@@ -22,8 +22,6 @@ export const seekerProfile = pgTable(
     availableDays: dayOfWeekEnum("availableDays").array().notNull(),
     jobSeekText: varchar("jobSeekText", { length: 1000 }).notNull(),
     educationLevel: educationLevelEnum("educationLevel"),
-    otherSkills: text("otherSkills"),
-    otherLanguages: text("otherLanguages"),
     about: varchar("about", { length: 1000 }),
     resumeUrl: text("resumeUrl"),
     status: profileStatusEnum("status").notNull().default("ACTIVE"),

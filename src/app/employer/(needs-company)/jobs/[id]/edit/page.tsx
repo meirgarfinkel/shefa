@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -34,7 +34,6 @@ import { LocationPicker } from "@/components/ui/location-picker";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 
-// Edit form only carries the fields the employer can change; id is injected before submission
 type EditFormValues = z.input<typeof UpdateJobPostingSchema>;
 
 const DAYS = [
@@ -52,60 +51,54 @@ const USER_SETTABLE_STATUSES = [
   { value: "PAUSED", label: "Paused" },
 ] as const;
 
-export default function JobEditPage() {
-  const params = useParams<{ id: string }>();
-  const jobId = params.id;
+type JobRecord = {
+  id: string;
+  title: string;
+  description: string;
+  jobType: string;
+  workArrangement: string;
+  city: string;
+  state: string;
+  minHourlyRate: string | number;
+  payNotes: string | null;
+  workDays: string[];
+  scheduleNotes: string | null;
+  workAuthRequired: boolean;
+  whatWeTeach: string | null;
+  whatWereLookingFor: string | null;
+  status: string;
+  requiredLanguages: { languageId: string }[];
+};
 
-  const { data: job, isLoading } = trpc.jobPosting.getById.useQuery({ id: jobId });
-  const { data: languages } = trpc.taxonomy.languages.useQuery();
-
+function JobEditForm({
+  job,
+  languages,
+}: {
+  job: JobRecord;
+  languages: { id: string; name: string }[] | undefined;
+}) {
   const [saved, setSaved] = useState(false);
-
-  // Memoized so the form only resets when the job data reference actually changes,
-  // not on every render. Using `values` (not defaultValues) is the RHF-recommended
-  // pattern for edit forms backed by async data.
-  const formValues = useMemo(
-    () =>
-      job
-        ? {
-            id: job.id,
-            title: job.title,
-            description: job.description,
-            jobType: job.jobType,
-            workArrangement: job.workArrangement,
-            city: job.city,
-            state: job.state,
-            minHourlyRate: Number(job.minHourlyRate),
-            payNotes: job.payNotes ?? undefined,
-            workDays: job.workDays as EditFormValues["workDays"],
-            scheduleNotes: job.scheduleNotes ?? undefined,
-            workAuthRequired: job.workAuthRequired,
-            whatWeTeach: job.whatWeTeach ?? undefined,
-            whatWereLookingFor: job.whatWereLookingFor ?? undefined,
-            status: job.status as EditFormValues["status"],
-            requiredLanguageIds: job.requiredLanguages.map((l) => l.languageId),
-          }
-        : undefined,
-    [job],
-  );
 
   const form = useForm<EditFormValues>({
     resolver: zodResolver(UpdateJobPostingSchema),
     defaultValues: {
-      id: jobId,
-      title: "",
-      description: "",
-      city: "",
-      state: "",
-      payNotes: "",
-      workDays: [],
-      scheduleNotes: "",
-      workAuthRequired: false,
-      whatWeTeach: "",
-      whatWereLookingFor: "",
-      requiredLanguageIds: [],
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      jobType: job.jobType as EditFormValues["jobType"],
+      workArrangement: job.workArrangement as EditFormValues["workArrangement"],
+      city: job.city,
+      state: job.state,
+      minHourlyRate: Number(job.minHourlyRate),
+      payNotes: job.payNotes ?? "",
+      workDays: job.workDays as EditFormValues["workDays"],
+      scheduleNotes: job.scheduleNotes ?? "",
+      workAuthRequired: job.workAuthRequired,
+      whatWeTeach: job.whatWeTeach ?? "",
+      whatWereLookingFor: job.whatWereLookingFor ?? "",
+      status: job.status as EditFormValues["status"],
+      requiredLanguageIds: job.requiredLanguages.map((l) => l.languageId),
     },
-    values: formValues,
   });
 
   const updatePosting = trpc.jobPosting.update.useMutation({
@@ -118,16 +111,6 @@ export default function JobEditPage() {
   function onSubmit(data: EditFormValues) {
     setSaved(false);
     updatePosting.mutate(data as Parameters<typeof updatePosting.mutate>[0]);
-  }
-
-  if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
-  }
-
-  if (!job) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Job not found.</div>
-    );
   }
 
   const isClosed = job.status === "CLOSED";
@@ -530,4 +513,24 @@ export default function JobEditPage() {
       </Form>
     </div>
   );
+}
+
+export default function JobEditPage() {
+  const params = useParams<{ id: string }>();
+  const jobId = params.id;
+
+  const { data: job, isLoading } = trpc.jobPosting.getById.useQuery({ id: jobId });
+  const { data: languages } = trpc.taxonomy.languages.useQuery();
+
+  if (isLoading) {
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+  }
+
+  if (!job) {
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Job not found.</div>
+    );
+  }
+
+  return <JobEditForm job={job} languages={languages} />;
 }

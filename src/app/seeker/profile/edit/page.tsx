@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { UpdateSeekerProfileSchema, type UpdateSeekerProfileInput } from "@/lib/schemas/seeker";
 import {
@@ -60,7 +60,6 @@ const EDUCATION_OPTIONS = [
 ] as const;
 
 export default function SeekerProfileEditPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const { data: profile, isLoading } = trpc.seeker.getMyFullProfile.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
@@ -93,8 +92,6 @@ export default function SeekerProfileEditPage() {
       availableDays: profile.availableDays as UpdateSeekerProfileInput["availableDays"],
       jobSeekText: profile.jobSeekText,
       educationLevel: profile.educationLevel ?? undefined,
-      otherSkills: profile.otherSkills ?? undefined,
-      otherLanguages: profile.otherLanguages ?? undefined,
       about: profile.about ?? undefined,
       languageIds: profile.languageIds,
     });
@@ -132,276 +129,277 @@ export default function SeekerProfileEditPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-3 px-3 py-8">
-      <PageHeader title="Edit profile" description="Keep your profile up to date." />
+    <div className="px-3">
+      <div className="bg-card/30 mx-auto mt-8 max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+        <div className="p-5">
+          <PageHeader title="Edit Profile" description="Update your personal information." />
 
-      {/* Email section */}
-      <div className="bg-popover mb-8 rounded-md bg-linear-to-b from-white/15 via-transparent to-transparent p-5">
-        <p className="text-muted-foreground mb-1 text-xs font-medium">Email address</p>
-        <p className="text-sm">{session?.user?.email}</p>
-      </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {/* Name */}
+              <div className="space-y-4">
+                <h2 className="font-medium">About you</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First name *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last name *</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          {/* Name */}
-          <div className="space-y-4">
-            <h2 className="font-medium">About you</h2>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First name *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last name *</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
+              <Separator />
 
-          <Separator />
+              {/* Location */}
+              <div>
+                <h2 className="font-medium">Location</h2>
+                <LocationPicker />
+              </div>
 
-          {/* Location */}
-          <div>
-            <h2 className="font-medium">Location</h2>
-            <LocationPicker />
-          </div>
+              <Separator />
 
-          <Separator />
+              {/* Work preferences */}
+              <div className="space-y-4">
+                <h2 className="font-medium">Work preferences</h2>
 
-          {/* Work preferences */}
-          <div className="space-y-4">
-            <h2 className="font-medium">Work preferences</h2>
-
-            <FormField
-              control={form.control}
-              name="workAuthorization"
-              render={({ field }) => (
-                <FormItem className="bg-popover flex flex-row space-y-0 space-x-3 rounded-md p-3">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(checked) => field.onChange(!!checked)}
-                    />
-                  </FormControl>
-                  <FormLabel className="font-normal">
-                    I am authorized to work in the United States *
-                  </FormLabel>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="availableDays"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="space-y-4 text-2xl">Available days *</FormLabel>
-                  <FormDescription>Select all days you can work.</FormDescription>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {DAYS.map((day) => (
-                      <label
-                        key={day.value}
-                        className={`bg-primary-muted/50 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
-                          field.value?.includes(day.value)
-                            ? "bg-blue-dark-3"
-                            : "hover:bg-blue-dark-3/50"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="sr-only"
-                          checked={field.value?.includes(day.value) ?? false}
-                          onChange={(e) => {
-                            const current = field.value ?? [];
-                            field.onChange(
-                              e.target.checked
-                                ? [...current, day.value]
-                                : current.filter((d) => d !== day.value),
-                            );
-                          }}
+                <FormField
+                  control={form.control}
+                  name="workAuthorization"
+                  render={({ field }) => (
+                    <FormItem className="bg-popover flex flex-row space-y-0 space-x-3 rounded-md p-3">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(!!checked)}
                         />
-                        {day.label}
-                      </label>
-                    ))}
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+                      </FormControl>
+                      <FormLabel className="font-normal">
+                        I am authorized to work in the United States *
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
 
-          <Separator />
+                <FormField
+                  control={form.control}
+                  name="availableDays"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="space-y-4 text-2xl">Available days *</FormLabel>
+                      <FormDescription>Select all days you can work.</FormDescription>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {DAYS.map((day) => (
+                          <label
+                            key={day.value}
+                            className={`bg-primary-muted/50 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                              field.value?.includes(day.value)
+                                ? "bg-blue-dark-3"
+                                : "hover:bg-blue-dark-3/50"
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              className="sr-only"
+                              checked={field.value?.includes(day.value) ?? false}
+                              onChange={(e) => {
+                                const current = field.value ?? [];
+                                field.onChange(
+                                  e.target.checked
+                                    ? [...current, day.value]
+                                    : current.filter((d) => d !== day.value),
+                                );
+                              }}
+                            />
+                            {day.label}
+                          </label>
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          {/* Job seek text */}
-          <FormField
-            control={form.control}
-            name="jobSeekText"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-2xl">What kind of job are you seeking? *</FormLabel>
-                <FormDescription>max 1000 characters</FormDescription>
-                <FormControl>
-                  <Textarea {...field} rows={4} maxLength={1000} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <Separator />
 
-          <Separator />
-
-          {/* Optional fields */}
-          <div className="space-y-6">
-            <h2 className="font-medium">Optional details</h2>
-
-            <FormField
-              control={form.control}
-              name="educationLevel"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Highest education level</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select…" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {EDUCATION_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {languages && languages.length > 0 && (
+              {/* Job seek text */}
               <FormField
                 control={form.control}
-                name="languageIds"
+                name="jobSeekText"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Languages spoken</FormLabel>
-                    <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                      {languages.map((lang) => (
-                        <label key={lang.id} className="flex cursor-pointer items-center space-x-2">
-                          <Checkbox
-                            checked={field.value?.includes(lang.id) ?? false}
-                            onCheckedChange={(checked) => {
-                              const current = field.value ?? [];
-                              field.onChange(
-                                checked
-                                  ? [...current, lang.id]
-                                  : current.filter((id) => id !== lang.id),
-                              );
-                            }}
-                          />
-                          <span className="text-sm">{lang.name}</span>
-                        </label>
-                      ))}
-                    </div>
+                    <FormLabel className="text-2xl">What kind of job are you seeking? *</FormLabel>
+                    <FormDescription>max 1000 characters</FormDescription>
+                    <FormControl>
+                      <Textarea {...field} rows={4} maxLength={1000} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            )}
 
-            <FormField
-              control={form.control}
-              name="about"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>About yourself</FormLabel>
-                  <FormDescription>max 1000 characters</FormDescription>
-                  <FormControl>
-                    <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              <Separator />
+
+              {/* Optional fields */}
+              <div className="space-y-6">
+                <h2 className="font-medium">Optional details</h2>
+
+                <FormField
+                  control={form.control}
+                  name="educationLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Highest education level</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {EDUCATION_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {languages && languages.length > 0 && (
+                  <FormField
+                    control={form.control}
+                    name="languageIds"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Languages spoken</FormLabel>
+                        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                          {languages.map((lang) => (
+                            <label
+                              key={lang.id}
+                              className="flex cursor-pointer items-center space-x-2"
+                            >
+                              <Checkbox
+                                checked={field.value?.includes(lang.id) ?? false}
+                                onCheckedChange={(checked) => {
+                                  const current = field.value ?? [];
+                                  field.onChange(
+                                    checked
+                                      ? [...current, lang.id]
+                                      : current.filter((id) => id !== lang.id),
+                                  );
+                                }}
+                              />
+                              <span className="text-sm">{lang.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <FormField
+                  control={form.control}
+                  name="about"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>About yourself</FormLabel>
+                      <FormDescription>max 1000 characters</FormDescription>
+                      <FormControl>
+                        <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {updateProfile.isError && (
+                <p className="text-danger text-sm">
+                  {updateProfile.error.message ?? "Something went wrong. Please try again."}
+                </p>
               )}
-            />
-          </div>
 
-          {updateProfile.isError && (
-            <p className="text-danger text-sm">
-              {updateProfile.error.message ?? "Something went wrong. Please try again."}
+              <div className="flex items-center gap-3">
+                <Button type="submit" disabled={updateProfile.isPending}>
+                  {updateProfile.isPending ? "Saving…" : "Save changes"}
+                </Button>
+                {saved && <p className="text-success text-sm">Saved.</p>}
+              </div>
+            </form>
+          </Form>
+
+          <Separator className="my-10" />
+
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-sm">
+              Permanently delete your account and all associated data.
             </p>
-          )}
-
-          <div className="flex items-center gap-3">
-            <Button type="submit" disabled={updateProfile.isPending}>
-              {updateProfile.isPending ? "Saving…" : "Save changes"}
+            <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
+              Delete account
             </Button>
-            {saved && <p className="text-success text-sm">Saved.</p>}
           </div>
-        </form>
-      </Form>
 
-      <Separator className="my-10" />
-
-      <div className="space-y-3">
-        <p className="text-muted-foreground text-sm">
-          Permanently delete your account and all associated data.
-        </p>
-        <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
-          Delete account
-        </Button>
+          <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Delete account?</DialogTitle>
+                <DialogDescription>
+                  This will permanently delete your profile and all your applications. This cannot
+                  be undone.
+                </DialogDescription>
+              </DialogHeader>
+              {deleteAccount.isError && (
+                <p className="text-danger text-sm">
+                  {deleteAccount.error.message ?? "Something went wrong."}
+                </p>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteAccountOpen(false)}
+                  disabled={deleteAccount.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteAccount.mutate()}
+                  disabled={deleteAccount.isPending}
+                >
+                  {deleteAccount.isPending ? "Deleting…" : "Yes, delete everything"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
-
-      <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete account?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete your profile and all your applications. This cannot be
-              undone.
-            </DialogDescription>
-          </DialogHeader>
-          {deleteAccount.isError && (
-            <p className="text-danger text-sm">
-              {deleteAccount.error.message ?? "Something went wrong."}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteAccountOpen(false)}
-              disabled={deleteAccount.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteAccount.mutate()}
-              disabled={deleteAccount.isPending}
-            >
-              {deleteAccount.isPending ? "Deleting…" : "Yes, delete everything"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
