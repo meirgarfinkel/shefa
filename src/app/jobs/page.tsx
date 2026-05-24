@@ -69,6 +69,8 @@ const SORT_LABELS: Record<SortValue, string> = {
   pay: "Salary",
 };
 
+const FILTER_KEY = "jobs_params";
+
 function approxDistanceSq(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const dx = (lon2 - lon1) * Math.cos((lat1 * Math.PI) / 180);
   const dy = lat2 - lat1;
@@ -206,6 +208,46 @@ function JobsContent() {
   const profileCity = seekerProfile?.city ?? employerProfile?.city;
   const profileState = seekerProfile?.state ?? employerProfile?.state;
 
+  // On mount: if URL has no params, restore all filters from sessionStorage.
+  // Runs before the profile-init effect so it can set locationInitialized first.
+  useEffect(() => {
+    if (searchParamsRef.current.get("state")) {
+      locationInitialized.current = true;
+      return;
+    }
+    const savedQS = sessionStorage.getItem(FILTER_KEY);
+    if (!savedQS) return;
+    const saved = new URLSearchParams(savedQS);
+    setStateAbbrState(saved.get("state") ?? "");
+    setCityState(saved.get("city") ?? "");
+    setRadiusState(saved.get("radius") ?? "any");
+    setJobTypeState(saved.get("jobType") ?? "any");
+    const savedArr = saved.get("arrangements");
+    setArrangementsState(
+      savedArr ? (savedArr.split(",").filter(Boolean) as ArrangementValue[]) : [],
+    );
+    const savedDays = saved.get("days");
+    setWorkDaysState(savedDays ? (savedDays.split(",").filter(Boolean) as DayValue[]) : []);
+    setSortByState(parseSortParam(saved.get("sortBy"), !!saved.get("q")));
+    const savedQ = saved.get("q");
+    if (savedQ) {
+      setSearchQuery(savedQ);
+      setDebouncedQuery(savedQ);
+    }
+    router.replace(`${pathname}?${savedQS}`, { scroll: false });
+    locationInitialized.current = true;
+    // pathname and router are stable Next.js refs — safe to omit from deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist filter state: save URL params to sessionStorage on every change.
+  useEffect(() => {
+    const qs = searchParams.toString();
+    if (qs) sessionStorage.setItem(FILTER_KEY, qs);
+  }, [searchParams]);
+
+  // First-time setup: auto-fill location from user profile when no URL params
+  // and no sessionStorage data exists.
   useEffect(() => {
     if (locationInitialized.current) return;
     if (searchParamsRef.current.get("state")) {
@@ -304,6 +346,7 @@ function JobsContent() {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     setSearchQuery("");
     setDebouncedQuery("");
+    sessionStorage.removeItem(FILTER_KEY);
     const hasProfileLocation = !!(profileCity && profileState);
     if (hasProfileLocation) {
       setStateAbbrState(profileState);
@@ -345,7 +388,7 @@ function JobsContent() {
   return (
     <div className="mx-auto max-w-6xl px-4 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
       {/* ── Mobile sticky filter bar ── */}
-      <div className="bg-background/80 sticky top-16 z-10 -mx-4 flex items-center gap-2 px-4 py-2 backdrop-blur-md md:hidden">
+      <div className="sticky top-16 z-10 -mx-4 flex items-center gap-2 px-4 py-2 backdrop-blur-md md:hidden">
         <Button
           variant="ghost"
           onClick={() => setFilterOpen(true)}
@@ -354,7 +397,7 @@ function JobsContent() {
           <SlidersHorizontalIcon className="size-3.5" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-primary/30 ml-0.5 rounded-full px-1.5 text-sm">
+            <span className="bg-popover ml-0.5 rounded-full px-1.5 text-sm text-white">
               {activeFilterCount}
             </span>
           )}
@@ -364,7 +407,7 @@ function JobsContent() {
           <DropdownMenuTrigger asChild>
             <FilterTrigger>{SORT_LABELS[sortBy]}</FilterTrigger>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="start">
             <DropdownMenuRadioGroup value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
               <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
@@ -404,7 +447,7 @@ function JobsContent() {
                 placeholder="Search jobs…"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="pr-8 pl-9"
+                className="placeholder-popover-foreground/80 pr-8 pl-8"
               />
               {searchQuery && (
                 <button
@@ -541,39 +584,19 @@ function JobsContent() {
 
           <DialogFooter className="flex-row items-center">
             {hasFilters && (
-              <Button onClick={clearFilters} className="mr-auto">
+              <Button variant="ghost" onClick={clearFilters} className="mr-auto">
                 Clear all
               </Button>
             )}
             <DialogClose asChild>
-              <Button variant="secondary">Done</Button>
+              <Button>Done</Button>
             </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* ── Desktop page header ── */}
-      <div className="hidden shrink-0 items-center justify-between gap-4 py-3 md:flex">
-        <div className="relative w-52">
-          <SearchIcon className="text-popover-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
-
-          <Input
-            placeholder="Search jobs…"
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="pr-8 pl-7"
-          />
-
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={clearSearch}
-              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
-            >
-              <XIcon className="size-3.5" />
-            </button>
-          )}
-        </div>
+      <div className="hidden shrink-0 items-center justify-between gap-4 py-5 md:flex">
         <h1 className="text-2xl font-semibold">Job Listings</h1>
         {session?.user?.role === "EMPLOYER" && (
           <Button asChild>
@@ -583,9 +606,30 @@ function JobsContent() {
       </div>
 
       {/* ── Layout: sidebar + list ── */}
-      <div className="flex flex-col gap-6 pt-3 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
+      <div className="flex flex-col gap-6 pt-5 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
         {/* Desktop sidebar — sticky */}
         <aside className="hidden w-52 shrink-0 space-y-5 md:block md:overflow-y-auto md:pb-8">
+          <div className="relative w-52">
+            <SearchIcon className="text-popover-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
+
+            <Input
+              placeholder="Search jobs…"
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="placeholder-popover-foreground/80 pr-8 pl-8"
+            />
+
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
+              >
+                <XIcon className="size-3.5" />
+              </button>
+            )}
+          </div>
+
           {/* Location */}
           <div>
             <div className="flex justify-between">

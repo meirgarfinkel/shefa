@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { trpc } from "@/lib/trpc/provider";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "./form";
@@ -13,18 +12,6 @@ interface LocationPickerProps {
 export function LocationPicker({ required = true }: LocationPickerProps) {
   const { control, setValue } = useFormContext();
   const stateAbbr = (useWatch({ control, name: "state" }) as string) ?? "";
-
-  // Track previous stateAbbr so we only clear city when state genuinely
-  // changes from one selection to another — not on initial mount or during
-  // form.reset() where both state and city are set simultaneously.
-  const prevStateRef = useRef(stateAbbr);
-  useEffect(() => {
-    const prev = prevStateRef.current;
-    prevStateRef.current = stateAbbr;
-    if (prev && stateAbbr && prev !== stateAbbr) {
-      setValue("city", "", { shouldValidate: false });
-    }
-  }, [stateAbbr, setValue]);
 
   const { data: states = [] } = trpc.location.states.useQuery();
   const { data: cities = [], isFetching: citiesFetching } = trpc.location.citiesByState.useQuery(
@@ -43,16 +30,19 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
               State
               {required && <span className="ml-.5 text-danger">*</span>}
             </FormLabel>
-            <Select onValueChange={field.onChange} value={field.value ?? ""}>
+            <Select
+              onValueChange={(val) => {
+                field.onChange(val);
+                setValue("city", "", { shouldValidate: false });
+              }}
+              value={field.value ?? ""}
+            >
               <FormControl>
                 <SelectTrigger>
                   <SelectValue placeholder="Select state…" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent align="start">
-                {field.value && !states.some((s) => s.abbr === field.value) && (
-                  <SelectItem value={field.value}>{field.value}</SelectItem>
-                )}
                 {states.map((s) => (
                   <SelectItem key={s.abbr} value={s.abbr}>
                     {s.name}
@@ -72,7 +62,6 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
           <FormItem>
             <FormLabel>City{required && <span className="ml-.5 text-danger">*</span>}</FormLabel>
             <Select
-              key={citiesFetching ? "loading" : stateAbbr || "empty"}
               onValueChange={field.onChange}
               value={field.value ?? ""}
               disabled={!stateAbbr || citiesFetching}

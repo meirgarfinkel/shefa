@@ -148,24 +148,20 @@ function JobDetailCard({ job }: { job: ConvJob }) {
         </div>
 
         <h2>📄 About the role</h2>
-        <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">{job.description}</div>
+        <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.description}</div>
 
         {(job.whatWeTeach || job.whatWereLookingFor) && (
           <div className="my-5 space-y-4">
             {job.whatWeTeach && (
               <div>
                 <h2>🎓 We&apos;ll teach you</h2>
-                <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">
-                  {job.whatWeTeach}
-                </div>
+                <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWeTeach}</div>
               </div>
             )}
             {job.whatWereLookingFor && (
               <div>
                 <h2>🔍 What we&apos;re looking for</h2>
-                <div className="bg-primary-muted/20 rounded-sm p-4 shadow-xl">
-                  {job.whatWereLookingFor}
-                </div>
+                <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWereLookingFor}</div>
               </div>
             )}
           </div>

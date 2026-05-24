@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "@radix-ui/react-slot";
 
 const inputVariants = cva(
-  "flex h-8 w-full rounded-md px-3 py-1 text-sm transition-colors duration-100 aria-invalid:border-danger/60 aria-invalid:ring-danger/20 aria-invalid:ring-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+  "flex h-8 w-full rounded-md px-3 py-1 shadow-md text-sm transition-colors duration-100 aria-invalid:border-danger/60 aria-invalid:ring-danger/20 aria-invalid:ring-1 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
   {
     variants: {
       variant: {

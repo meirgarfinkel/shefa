@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,9 +59,22 @@ const EDUCATION_OPTIONS = [
   { value: "GRADUATE", label: "Graduate degree" },
 ] as const;
 
-export default function SeekerProfileEditPage() {
+type SeekerProfileData = {
+  firstName: string;
+  lastName: string;
+  city: string;
+  state: string;
+  workAuthorization: boolean;
+  availableDays: string[];
+  jobSeekText: string;
+  educationLevel: string | null;
+  about: string | null;
+  languageIds: string[];
+};
+
+function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
   const router = useRouter();
-  const { data: profile, isLoading } = trpc.seeker.getMyFullProfile.useQuery();
+  const utils = trpc.useUtils();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const [saved, setSaved] = useState(false);
@@ -70,20 +83,6 @@ export default function SeekerProfileEditPage() {
   const form = useForm<UpdateSeekerProfileInput>({
     resolver: zodResolver(UpdateSeekerProfileSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      city: "",
-      state: "",
-      workAuthorization: false,
-      availableDays: [],
-      jobSeekText: "",
-      languageIds: [],
-    },
-  });
-
-  useEffect(() => {
-    if (!profile) return;
-    form.reset({
       firstName: profile.firstName,
       lastName: profile.lastName,
       city: profile.city,
@@ -91,14 +90,16 @@ export default function SeekerProfileEditPage() {
       workAuthorization: profile.workAuthorization,
       availableDays: profile.availableDays as UpdateSeekerProfileInput["availableDays"],
       jobSeekText: profile.jobSeekText,
-      educationLevel: profile.educationLevel ?? undefined,
+      educationLevel: (profile.educationLevel ??
+        undefined) as UpdateSeekerProfileInput["educationLevel"],
       about: profile.about ?? undefined,
       languageIds: profile.languageIds,
-    });
-  }, [profile, form]);
+    },
+  });
 
   const updateProfile = trpc.seeker.updateProfile.useMutation({
     onSuccess: () => {
+      void utils.seeker.getMyFullProfile.invalidate();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     },
@@ -116,38 +117,27 @@ export default function SeekerProfileEditPage() {
     updateProfile.mutate(data);
   }
 
-  if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
-  }
-
-  if (!profile) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
-        No profile found. Please complete your profile first.
-      </div>
-    );
-  }
-
   return (
-    <div className="px-3">
-      <div className="bg-card/30 mx-auto mt-8 max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+    <div className="p-3">
+      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
-          <PageHeader title="Edit Profile" description="Update your personal information." />
+          <PageHeader title="Edit Profile" />
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {/* Name */}
               <div className="space-y-4">
-                <h2 className="font-medium">About you</h2>
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="firstName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>First name *</FormLabel>
+                        <FormLabel className="text-md">
+                          First Name <span className="text-danger">*</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input variant="secondary" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -158,9 +148,11 @@ export default function SeekerProfileEditPage() {
                     name="lastName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Last name *</FormLabel>
+                        <FormLabel className="text-md">
+                          Last Name <span className="text-danger">*</span>
+                        </FormLabel>
                         <FormControl>
-                          <Input {...field} />
+                          <Input variant="secondary" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -169,25 +161,18 @@ export default function SeekerProfileEditPage() {
                 </div>
               </div>
 
-              <Separator />
-
               {/* Location */}
               <div>
-                <h2 className="font-medium">Location</h2>
                 <LocationPicker />
               </div>
 
-              <Separator />
-
               {/* Work preferences */}
               <div className="space-y-4">
-                <h2 className="font-medium">Work preferences</h2>
-
                 <FormField
                   control={form.control}
                   name="workAuthorization"
                   render={({ field }) => (
-                    <FormItem className="bg-popover flex flex-row space-y-0 space-x-3 rounded-md p-3">
+                    <FormItem className="bg-secondary flex flex-row space-y-0 space-x-3 rounded-md p-3">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -195,7 +180,8 @@ export default function SeekerProfileEditPage() {
                         />
                       </FormControl>
                       <FormLabel className="font-normal">
-                        I am authorized to work in the United States *
+                        I am authorized to work in the United States{" "}
+                        <span className="text-danger">*</span>
                       </FormLabel>
                     </FormItem>
                   )}
@@ -206,16 +192,17 @@ export default function SeekerProfileEditPage() {
                   name="availableDays"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="space-y-4 text-2xl">Available days *</FormLabel>
-                      <FormDescription>Select all days you can work.</FormDescription>
+                      <FormLabel className="text-md mt-8 space-y-4">
+                        Select all days you can work.
+                      </FormLabel>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {DAYS.map((day) => (
                           <label
                             key={day.value}
-                            className={`bg-primary-muted/50 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            className={`bg-muted/10 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
                               field.value?.includes(day.value)
-                                ? "bg-blue-dark-3"
-                                : "hover:bg-blue-dark-3/50"
+                                ? "bg-popover text-white"
+                                : "hover:bg-popover/30"
                             }`}
                           >
                             <input
@@ -241,20 +228,22 @@ export default function SeekerProfileEditPage() {
                 />
               </div>
 
-              <Separator />
-
               {/* Job seek text */}
               <FormField
                 control={form.control}
                 name="jobSeekText"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-2xl">What kind of job are you seeking? *</FormLabel>
-                    <FormDescription>max 1000 characters</FormDescription>
+                    <FormLabel className="text-md">
+                      What kind of job are you seeking? <span className="text-danger">*</span>
+                    </FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={4} maxLength={1000} />
                     </FormControl>
                     <FormMessage />
+                    <FormDescription className="text-muted/50 text-end">
+                      (max 1000 characters)
+                    </FormDescription>
                   </FormItem>
                 )}
               />
@@ -263,14 +252,12 @@ export default function SeekerProfileEditPage() {
 
               {/* Optional fields */}
               <div className="space-y-6">
-                <h2 className="font-medium">Optional details</h2>
-
                 <FormField
                   control={form.control}
                   name="educationLevel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Highest education level</FormLabel>
+                      <FormLabel className="text-md">Highest education level</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
@@ -296,7 +283,7 @@ export default function SeekerProfileEditPage() {
                     name="languageIds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Languages spoken</FormLabel>
+                        <FormLabel className="text-md">Languages spoken</FormLabel>
                         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
                           {languages.map((lang) => (
                             <label
@@ -329,12 +316,14 @@ export default function SeekerProfileEditPage() {
                   name="about"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>About yourself</FormLabel>
-                      <FormDescription>max 1000 characters</FormDescription>
+                      <FormLabel className="text-md">About yourself</FormLabel>
                       <FormControl>
                         <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
                       </FormControl>
                       <FormMessage />
+                      <FormDescription className="text-muted/50 text-end">
+                        (max 1000 characters)
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
@@ -355,9 +344,7 @@ export default function SeekerProfileEditPage() {
             </form>
           </Form>
 
-          <Separator className="my-10" />
-
-          <div className="space-y-3">
+          <div className="bg-blue-dark-3/50 -mx-5 mt-8 -mb-5 space-y-3 rounded-b-md p-5">
             <p className="text-muted-foreground text-sm">
               Permanently delete your account and all associated data.
             </p>
@@ -402,4 +389,22 @@ export default function SeekerProfileEditPage() {
       </div>
     </div>
   );
+}
+
+export default function SeekerProfileEditPage() {
+  const { data: profile, isLoading } = trpc.seeker.getMyFullProfile.useQuery();
+
+  if (isLoading) {
+    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+  }
+
+  if (!profile) {
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
+        No profile found. Please complete your profile first.
+      </div>
+    );
+  }
+
+  return <SeekerProfileEditForm profile={profile} />;
 }

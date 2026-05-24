@@ -97,7 +97,6 @@ function CloseJobModal({
                 value={opt.value}
                 checked={reason === opt.value}
                 onChange={() => setReason(opt.value)}
-                className="accent-primary"
               />
               <span className="text-sm">{opt.label}</span>
             </label>

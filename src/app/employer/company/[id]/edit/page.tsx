@@ -78,6 +78,7 @@ type CompanyRecord = {
 
 function CompanyEditForm({ company }: { company: CompanyRecord }) {
   const router = useRouter();
+  const utils = trpc.useUtils();
   const [saved, setSaved] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
@@ -98,6 +99,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
 
   const updateCompany = trpc.company.update.useMutation({
     onSuccess: () => {
+      void utils.company.getById.invalidate({ id: company.id });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     },

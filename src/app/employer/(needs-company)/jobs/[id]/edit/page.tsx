@@ -77,6 +77,7 @@ function JobEditForm({
   job: JobRecord;
   languages: { id: string; name: string }[] | undefined;
 }) {
+  const utils = trpc.useUtils();
   const [saved, setSaved] = useState(false);
 
   const form = useForm<EditFormValues>({
@@ -103,6 +104,7 @@ function JobEditForm({
 
   const updatePosting = trpc.jobPosting.update.useMutation({
     onSuccess: () => {
+      void utils.jobPosting.getById.invalidate({ id: job.id });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     },
