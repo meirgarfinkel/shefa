@@ -16,6 +16,8 @@ import {
 import type { z } from "zod";
 import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
 import type { JobStatus } from "@/db/schema";
+import { CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -35,17 +37,6 @@ const CLOSURE_OPTIONS: { value: JobClosureReason; label: string }[] = [
 ];
 
 const FRESHNESS_DAYS = 7;
-
-function timeAgo(date: Date | string): string {
-  const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (seconds < 60) return "just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 function CloseJobModal({
   jobId,
@@ -152,85 +143,69 @@ export default function EmployerJobsPage() {
   const pageSubtitle = multiCompany ? "All companies" : (companies?.[0]?.companyName ?? undefined);
 
   return (
-    <div className="mx-auto max-w-3xl px-3 py-8 md:px-8">
-      <PageHeader
-        title="Job postings"
-        description={pageSubtitle}
-        actions={
-          <Button asChild>
-            <Link href="/employer/jobs/new">Post a job</Link>
-          </Button>
-        }
-      />
+    <div className="p-5">
+      <div className="mx-auto max-w-3xl">
+        <PageHeader
+          title="Job postings"
+          description={pageSubtitle}
+          actions={
+            <Button asChild>
+              <Link href="/employer/jobs/new">Post a job</Link>
+            </Button>
+          }
+        />
 
-      {/* Filter tabs */}
-      <div className="mb-4 flex gap-1">
-        {FILTER_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setStatusFilter(tab.value)}
-            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
-              statusFilter === tab.value ? "bg-popover text-white" : "hover:bg-popover/30"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {isLoading && <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>}
-
-      {!isLoading && jobs?.length === 0 && (
-        <div className="bg-secondary text-muted-foreground rounded-lg py-16 text-center">
-          {statusFilter !== "all"
-            ? `No ${statusFilter.toLowerCase()} job postings.`
-            : "No job postings yet."}
+        {/* Filter tabs */}
+        <div className="mb-4 flex gap-2">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setStatusFilter(tab.value)}
+              className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                statusFilter === tab.value
+                  ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
+                  : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-      )}
 
-      {!isLoading && jobs && jobs.length > 0 && (
-        <div className="space-y-3">
-          {jobs.map((job) => {
-            const isClosed = job.status === "CLOSED";
-            const isActive = job.status === "ACTIVE";
-            const daysSinceVerified = Math.floor(
-              (Date.now() - new Date(job.lastVerifiedAt).getTime()) / (1000 * 60 * 60 * 24),
-            );
-            const showFreshnessBanner = isActive && daysSinceVerified >= FRESHNESS_DAYS;
+        {isLoading && (
+          <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>
+        )}
 
-            return (
-              <div key={job.id} className="bg-secondary overflow-hidden rounded-lg">
-                {/* Freshness banner */}
-                {showFreshnessBanner && (
-                  <div className="border-warning/20 bg-warning/10 flex items-center justify-between gap-3 border-b px-4 py-2.5">
-                    <p className="text-warning text-xs font-medium">Is this job still open?</p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-success/15 text-success hover:bg-success/25 h-6 px-2 text-xs transition-colors duration-100"
-                        disabled={isPending}
-                        onClick={() => confirmFreshness.mutate({ id: job.id })}
-                      >
-                        Yes, still hiring
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-muted-foreground hover:bg-blue-dark-3 h-6 px-2 text-xs transition-colors duration-100"
-                        disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
-                      >
-                        Pause job
-                      </Button>
-                    </div>
-                  </div>
-                )}
+        {!isLoading && jobs?.length === 0 && (
+          <div className="bg-secondary text-muted-foreground rounded-lg py-16 text-center">
+            {statusFilter !== "all"
+              ? `No ${statusFilter.toLowerCase()} job postings.`
+              : "No job postings yet."}
+          </div>
+        )}
 
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-medium">{job.title}</p>
+        {!isLoading && jobs && jobs.length > 0 && (
+          <div className="space-y-3">
+            {jobs.map((job) => {
+              const isClosed = job.status === "CLOSED";
+              const isActive = job.status === "ACTIVE";
+              const daysSinceVerified = Math.floor(
+                (Date.now() - new Date(job.lastVerifiedAt).getTime()) / (1000 * 60 * 60 * 24),
+              );
+              const showFreshnessBanner = isActive && daysSinceVerified >= FRESHNESS_DAYS;
+              const daysUntilAutoPause = isActive ? Math.max(0, 28 - daysSinceVerified) : null;
+
+              return (
+                <div
+                  key={job.id}
+                  className="bg-primary/30 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                >
+                  <div className="space-y-2 md:flex md:items-start md:justify-between md:space-y-0">
+                    {/* Mobile: title + status on same row */}
+                    <div className="flex items-start justify-between gap-3 md:block">
+                      <CardTitle className="min-w-0 text-lg md:text-xl">{job.title}</CardTitle>
+
+                      <div className="shrink-0 md:hidden">
                         <StatusBadge
                           status={job.status as JobStatus}
                           closureReason={
@@ -238,96 +213,137 @@ export default function EmployerJobsPage() {
                           }
                         />
                       </div>
-                      <p className="text-muted-foreground mt-0.5 text-xs">
-                        {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
-                        {multiCompany && <> · {job.company.name}</>}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {job._count.applications} applicant
-                        {job._count.applications !== 1 ? "s" : ""} · posted {timeAgo(job.createdAt)}
-                      </p>
+                    </div>
+
+                    {/* Freshness banner */}
+                    {showFreshnessBanner && (
+                      <div className="flex items-center gap-2 md:mx-auto md:gap-3">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          className="text-success w-fit"
+                          disabled={isPending}
+                          onClick={() => confirmFreshness.mutate({ id: job.id })}
+                        >
+                          I confirm job is still open
+                        </Button>
+
+                        {daysUntilAutoPause !== null && (
+                          <span
+                            className={cn(
+                              "text-xs md:text-sm",
+                              daysUntilAutoPause <= 7
+                                ? "text-danger"
+                                : daysUntilAutoPause <= 14
+                                  ? "text-orange"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            auto-pauses in {daysUntilAutoPause}d
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Desktop status badge */}
+                    <div className="hidden md:block">
+                      <StatusBadge
+                        status={job.status as JobStatus}
+                        closureReason={
+                          (job as { closureReason?: JobClosureReason | null }).closureReason
+                        }
+                      />
                     </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {!isClosed && (
-                      <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                        <Link href={`/employer/jobs/${job.id}/applications`}>
-                          Applicants ({job._count.applications})
-                        </Link>
-                      </Button>
-                    )}
-                    {!isClosed && (
-                      <Button asChild variant="ghost" size="sm" className="h-7 text-xs">
-                        <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
-                      </Button>
-                    )}
-                    {isActive && (
+                  <p className="text-muted-foreground mt-0.5 text-xs">
+                    {multiCompany && <>{job.company.name}</>} · {job.city}, {job.state} · $
+                    {Number(job.minHourlyRate).toFixed(0)}/hr
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap justify-between">
+                    <div className="flex gap-1.5">
+                      {!isClosed && (
+                        <Button asChild variant="light" size="sm" className="h-7 text-xs">
+                          <Link href={`/employer/jobs/${job.id}/applications`}>
+                            Applicants ({job._count.applications})
+                          </Link>
+                        </Button>
+                      )}
+                      {!isClosed && (
+                        <Button asChild variant="light" size="sm" className="h-7 text-xs">
+                          <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
+                        </Button>
+                      )}
+                      {isActive && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={isPending}
+                          onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
+                        >
+                          Pause
+                        </Button>
+                      )}
+                      {job.status === "PAUSED" && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={isPending}
+                          onClick={() => updateJob.mutate({ id: job.id, status: "ACTIVE" })}
+                        >
+                          Unpause
+                        </Button>
+                      )}
                       <Button
-                        variant="ghost"
+                        variant="light"
                         size="sm"
                         className="h-7 text-xs"
                         disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
+                        onClick={() => duplicateJob.mutate({ id: job.id })}
                       >
-                        Pause
+                        Duplicate
                       </Button>
-                    )}
-                    {job.status === "PAUSED" && (
                       <Button
-                        variant="ghost"
+                        asChild
+                        variant="light"
                         size="sm"
-                        className="h-7 text-xs"
-                        disabled={isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: "ACTIVE" })}
+                        className="text-muted-foreground h-7 text-xs"
                       >
-                        Unpause
+                        <Link href={`/jobs/${job.id}`}>Preview</Link>
                       </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs"
-                      disabled={isPending}
-                      onClick={() => duplicateJob.mutate({ id: job.id })}
-                    >
-                      Duplicate
-                    </Button>
-                    {!isClosed && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
-                        disabled={isPending}
-                        onClick={() => setClosingJob({ id: job.id, title: job.title })}
-                      >
-                        Close listing
-                      </Button>
-                    )}
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground h-7 text-xs"
-                    >
-                      <Link href={`/jobs/${job.id}`}>Preview</Link>
-                    </Button>
+                    </div>
+                    <div>
+                      {!isClosed && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+                          disabled={isPending}
+                          onClick={() => setClosingJob({ id: job.id, title: job.title })}
+                        >
+                          Close listing
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
 
-      {closingJob && (
-        <CloseJobModal
-          jobId={closingJob.id}
-          jobTitle={closingJob.title}
-          open={true}
-          onClose={() => setClosingJob(null)}
-        />
-      )}
+        {closingJob && (
+          <CloseJobModal
+            jobId={closingJob.id}
+            jobTitle={closingJob.title}
+            open={true}
+            onClose={() => setClosingJob(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }

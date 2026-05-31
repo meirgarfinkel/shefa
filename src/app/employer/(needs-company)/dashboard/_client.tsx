@@ -24,6 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import type { z } from "zod";
 import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
+import { CardTitle } from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -66,7 +68,7 @@ function CloseJobModal({
       <DialogTrigger asChild>
         <Button
           size="sm"
-          variant="ghost"
+          variant="light"
           className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
           disabled={disabled}
         >
@@ -174,6 +176,7 @@ export function EmployerDashboardClient({
   const appFeed = recentApps ?? [];
   const multiCompany = companies.length > 1;
   const allSelected = selectedIds.size === companies.length;
+  const router = useRouter();
 
   const filteredJobs = allSelected
     ? activeJobs
@@ -229,7 +232,7 @@ export function EmployerDashboardClient({
             Messages
           </Link>
         </Button>
-        <Button asChild variant="ghost">
+        <Button asChild variant="light">
           <Link href="/employer/company/new">
             <PlusIcon className="mr-1 size-4" />
             Add Company
@@ -239,7 +242,7 @@ export function EmployerDashboardClient({
         {/* My companies modal */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="ghost">
+            <Button variant="light">
               <BuildingIcon className="mr-1 size-4" />
               My Companies
             </Button>
@@ -278,14 +281,17 @@ export function EmployerDashboardClient({
             <div className="flex items-center gap-2">
               <h2 className="font-medium">
                 Active Jobs{" "}
-                <span className="bg-primary/30 text-popover rounded-full p-2">
+                <span className="bg-primary/30 text-popover rounded-full px-2 py-1.5 text-center">
                   {filteredJobs.length}
                 </span>
               </h2>
 
               {multiCompany && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
+                  <DropdownMenuTrigger
+                    asChild
+                    className="from-primary/40 bg-linear-to-t via-transparent to-transparent"
+                  >
                     <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
                       Companies
                     </FilterTrigger>
@@ -309,7 +315,7 @@ export function EmployerDashboardClient({
 
             <Link
               href="/employer/jobs"
-              className="text-muted-foreground hover:text-popover-foreground text-xs transition-colors duration-100"
+              className="hover:text-orange text-sm transition-colors duration-100"
             >
               View All →
             </Link>
@@ -328,37 +334,46 @@ export function EmployerDashboardClient({
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="bg-primary/30 hover:bg-primary/10 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-4 transition-colors duration-100"
+                    className="bg-primary/30 cursor-pointer rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                    onClick={() => router.push(`/jobs/${job.id}`)}
                   >
                     <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate font-medium">{job.title}</p>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <CardTitle className="text-lg">{job.title}</CardTitle>
+                        <Button asChild size="sm" variant="light">
+                          <Link href={`/employer/jobs/${job.id}/applications`}>
+                            Applicants ({job._count.applications})
+                          </Link>
+                        </Button>
                       </div>
                       <p className="text-muted-foreground mt-0.5 text-xs">
-                        {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr ·{" "}
-                        {job._count.applications} applicant
-                        {job._count.applications !== 1 ? "s" : ""}
-                        {multiCompany && <> · {job.company.name}</>}
+                        {multiCompany && <> {job.company.name}</>}
+                        {" · "} {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
                       </p>
                     </div>
 
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={`/employer/jobs/${job.id}/applications`}>
-                          Applicants ({job._count.applications})
-                        </Link>
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={updateJob.isPending}
-                        onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
-                      >
-                        Pause
-                      </Button>
-                      <Button asChild size="sm" variant="ghost">
-                        <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
-                      </Button>
+                    <div className="mt-3 flex justify-between">
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="light"
+                          disabled={updateJob.isPending}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            updateJob.mutate({
+                              id: job.id,
+                              status: "PAUSED",
+                            });
+                          }}
+                        >
+                          Pause
+                        </Button>
+                        <Button asChild size="sm" variant="light">
+                          <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
+                        </Button>
+                      </div>
                       <CloseJobModal
                         jobId={job.id}
                         jobTitle={job.title}
@@ -399,7 +414,7 @@ export function EmployerDashboardClient({
                         {timeAgo(app.createdAt)}
                       </p>
                     </div>
-                    <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 text-xs">
+                    <Button asChild size="sm" variant="light" className="h-7 shrink-0 text-xs">
                       <Link href={`/employer/jobs/${app.jobId}/applications`}>View</Link>
                     </Button>
                   </div>

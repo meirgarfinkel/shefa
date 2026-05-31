@@ -140,7 +140,7 @@ export default function CompanyNewPage() {
                             <SelectValue placeholder="Select…" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent align="start">
+                        <SelectContent>
                           {COMPANY_SIZES.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
                               {opt.label}

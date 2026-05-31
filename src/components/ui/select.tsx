@@ -37,7 +37,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex h-8 cursor-pointer items-center justify-between gap-1 rounded-md bg-white/60 px-3 text-sm whitespace-nowrap shadow-lg hover:bg-white/80",
+        "from-primary/40 hover:from-orange/10 flex h-8 cursor-pointer items-center justify-between gap-1 rounded-md bg-white/70 bg-linear-to-t via-transparent to-transparent px-3 text-sm shadow-lg hover:bg-white hover:shadow-none",
         className,
       )}
       {...props}
@@ -54,7 +54,7 @@ function SelectContent({
   className,
   children,
   position = "popper",
-  align = "center",
+  align = "start",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
@@ -62,7 +62,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover relative z-50 max-h-(--radix-select-content-available-height) w-fit space-y-1 overflow-auto rounded-md p-1 text-white shadow-md",
+          "bg-popover relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md p-1 text-white shadow-md",
           // Animations
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",

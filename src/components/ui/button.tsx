@@ -4,15 +4,20 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg hover:shadow-none rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-primary hover:bg-popover/90 hover:text-white",
+        // default: "bg-primary hover:bg-popover/90 hover:text-white from-white/40 bg-linear-to-b via-transparent to-transparent",
+        default:
+          "bg-primary hover:bg-popover/90 hover:text-white from-popover/20 bg-linear-to-t via-transparent to-transparent",
         secondary: "bg-secondary/40 text-popover hover:bg-secondary/80 hover:text-popover",
         ghost: "bg-white/20 hover:bg-white/70",
-        destructive: "bg-white/80 text-danger hover:bg-white/90",
+        destructive:
+          "bg-white/80 text-danger hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",
         link: "underline-offset-4 hover:underline",
+        light:
+          "from-primary/40 bg-white/70 bg-linear-to-t via-transparent to-transparent hover:bg-white hover:from-orange/10",
       },
       size: {
         default: "h-8 px-3",

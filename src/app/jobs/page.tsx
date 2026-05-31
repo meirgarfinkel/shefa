@@ -21,6 +21,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -401,6 +402,7 @@ function JobsContent() {
             <FilterTrigger>{SORT_LABELS[sortBy]}</FilterTrigger>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
             <DropdownMenuRadioGroup value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
               <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
@@ -462,9 +464,10 @@ function JobsContent() {
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent className="max-h-80">
+                <DropdownMenuLabel>State</DropdownMenuLabel>
                 {states.map((s) => (
                   <SelectItem key={s.abbr} value={s.abbr}>
-                    {s.abbr} — {s.name}
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -475,6 +478,7 @@ function JobsContent() {
                 <SelectValue placeholder={stateAbbr ? "City" : "State first"} />
               </SelectTrigger>
               <SelectContent className="max-h-64">
+                <DropdownMenuLabel>City</DropdownMenuLabel>
                 {cities.map((c) => (
                   <SelectItem key={c.name} value={c.name}>
                     {c.name}
@@ -488,6 +492,7 @@ function JobsContent() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <DropdownMenuLabel>Distance</DropdownMenuLabel>
                 <SelectItem value="any">Any distance</SelectItem>
                 {RADIUS_OPTIONS.map((r) => (
                   <SelectItem key={r.value} value={r.value}>
@@ -632,7 +637,7 @@ function JobsContent() {
                 <DropdownMenuTrigger asChild>
                   <FilterTrigger className="w-full justify-between">
                     {stateAbbr
-                      ? `${stateAbbr} — ${states.find((s) => s.abbr === stateAbbr)?.name ?? stateAbbr}`
+                      ? (states.find((s) => s.abbr === stateAbbr)?.name ?? stateAbbr)
                       : "State"}
                   </FilterTrigger>
                 </DropdownMenuTrigger>

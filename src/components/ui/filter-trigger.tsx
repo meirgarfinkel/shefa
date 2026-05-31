@@ -11,13 +11,13 @@ export const FilterTrigger = forwardRef<HTMLButtonElement, FilterTriggerProps>(
   ({ children, activeCount, className = "", ...props }, ref) => (
     <Button
       ref={ref}
-      variant="ghost"
-      className={`bg-primary/20 hover:bg-primary/30 flex h-8 items-center gap-1.5 rounded-md px-3 text-sm shadow-lg ${className}`}
+      variant="light"
+      className={`flex items-center gap-1.5 ${className}`}
       {...props} // ← Spread all props (onClick, etc.)
     >
       {children}
       {activeCount !== undefined && activeCount > 0 && (
-        <span className="bg-popover text-popover-foreground ml-auto rounded-full px-1.5 text-xs font-medium">
+        <span className="bg-popover ml-auto rounded-full px-1.5 text-xs font-medium text-white/80">
           {activeCount}
         </span>
       )}

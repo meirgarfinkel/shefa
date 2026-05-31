@@ -23,7 +23,7 @@ function DropdownMenuTrigger({
 
 function DropdownMenuContent({
   className,
-  align = "center",
+  align = "start",
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-[calc(var(--radix-dropdown-menu-trigger-width)-20px)] space-y-1 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) space-y-1 overflow-auto rounded-md p-1 shadow-md",
           className,
         )}
         {...props}
@@ -141,16 +141,15 @@ function DropdownMenuLabel({
   inset?: boolean;
 }) {
   return (
-    <DropdownMenuPrimitive.Label
-      data-slot="dropdown-menu-label"
-      data-inset={inset}
-      className={cn(
-        "text-muted-foreground px-1.5 py-1 text-xs font-medium",
-        inset && "pl-7",
-        className,
-      )}
-      {...props}
-    />
+    <>
+      <DropdownMenuPrimitive.Label
+        data-slot="dropdown-menu-label"
+        data-inset={inset}
+        className={cn("text-muted-foreground px-2 text-xs font-medium", inset && "pl-7", className)}
+        {...props}
+      />
+      <DropdownMenuSeparator />
+    </>
   );
 }
 
