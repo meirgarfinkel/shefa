@@ -186,7 +186,9 @@ export const jobPostingRouter = createTRPCRouter({
             owner: {
               columns: { id: true },
               with: {
-                employerProfile: { columns: { isResponsive: true } },
+                employerProfile: {
+                  columns: { isResponsive: true, responsivenessUpdatedAt: true },
+                },
               },
             },
           },
@@ -196,13 +198,26 @@ export const jobPostingRouter = createTRPCRouter({
 
     if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
 
-    if (posting.status === "ACTIVE") return posting;
-
-    if (ctx.session?.user?.id !== posting.employerId) {
+    if (posting.status !== "ACTIVE" && ctx.session?.user?.id !== posting.employerId) {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
-    return posting;
+    const { company: co, ...rest } = posting;
+    return {
+      ...rest,
+      company: {
+        id: co.id,
+        name: co.name,
+        city: co.city,
+        state: co.state,
+        industry: co.industry,
+        employer: {
+          isResponsive: co.owner.employerProfile?.isResponsive ?? false,
+          isNew:
+            !co.owner.employerProfile || co.owner.employerProfile.responsivenessUpdatedAt === null,
+        },
+      },
+    };
   }),
 
   update: protectedProcedure.input(UpdateJobPostingSchema).mutation(async ({ ctx, input }) => {

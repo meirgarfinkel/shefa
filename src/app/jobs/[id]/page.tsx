@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Pencil, Building, Car, Clock, MapPin, Info, Check, SearchCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CardTitle, CardContent } from "@/components/ui/card";
@@ -177,64 +176,64 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="flex flex-wrap items-start justify-between gap-2">
             <CardTitle>{job.title}</CardTitle>
             <div className="flex items-center gap-2">
+              <ResponsiveBadge
+                isResponsive={job.company.employer.isResponsive}
+                isNew={job.company.employer.isNew}
+              />
               {isOwner && (
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="gap-1">
                   <Link href={`/employer/jobs/${id}/edit`}>
-                    <Pencil className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+                    <Pencil className="text-message-green size-4" strokeWidth={2.5} />
                     Edit
                   </Link>
                 </Button>
               )}
-              <ResponsiveBadge
-                isResponsive={job.company.owner.employerProfile?.isResponsive ?? false}
-                isNew={false}
-              />
             </div>
           </div>
+
           <div className="my-5">
             <Link
               href={`/company/${job.company.id}`}
-              className="hover:text-orange flex items-center font-medium"
+              className="hover:text-orange flex items-center gap-1 font-medium"
             >
-              <Building className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+              <Building className="text-message-green size-4" strokeWidth={2.5} />
               {job.company.name}
             </Link>
           </div>
+
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              <Pill className="text-popover bg-white/40">
-                <div className="flex items-center">
-                  <MapPin className="text-message-green mr-1 size-4" strokeWidth={2.5} /> {job.city}
-                  , {job.state}
+            <div className="relative flex flex-wrap gap-2">
+              <Pill variant="light">
+                <div className="flex items-center gap-1">
+                  <MapPin className="text-message-green size-4" strokeWidth={2.5} /> {job.city},{" "}
+                  {job.state}
                 </div>
               </Pill>
-              <Pill className="text-popover bg-white/40">
-                <div className="flex items-center">
-                  <Clock className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+              <Pill variant="light">
+                <div className="flex items-center gap-1">
+                  <Clock className="text-message-green size-4" strokeWidth={2.5} />
                   {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
                 </div>
               </Pill>
-              <Pill className="text-popover bg-white/40">
-                <div className="flex items-center">
-                  <Car className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+              <Pill variant="light">
+                <div className="flex items-center gap-1">
+                  <Car className="text-message-green size-4" strokeWidth={2.5} />
                   {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}
                 </div>
               </Pill>
               {job.workAuthRequired && (
-                <Pill className="text-popover bg-white/40">
-                  <div className="flex items-center">
-                    <Check className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+                <Pill variant="light">
+                  <div className="flex items-center gap-1">
+                    <Check className="text-message-green size-4" strokeWidth={2.5} />
                     Work auth required
                   </div>
                 </Pill>
               )}
             </div>
 
-            <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div className="my-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div>
-                <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                  Pay
-                </p>
+                <p className="text-md font-medium tracking-wide">Pay</p>
                 <p className="text-muted mt-1 text-sm font-medium">
                   From ${Number(job.minHourlyRate).toFixed(2)}/hr
                 </p>
@@ -243,8 +242,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
               {sortedDays.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium tracking-wide uppercase">Work days</p>
-                  <p className="text-popover mt-1 text-sm">
+                  <p className="text-md font-medium tracking-wide">Work days</p>
+                  <p className="text-muted mt-1 text-sm font-medium">
                     {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                   </p>
                   {job.scheduleNotes && (
@@ -255,10 +254,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
               {job.requiredLanguages.length > 0 && (
                 <div>
-                  <p className="text-muted text-xs font-medium tracking-wide uppercase">
-                    Languages
-                  </p>
-                  <p className="mt-1 text-sm">
+                  <p className="text-md font-medium tracking-wide">Languages</p>
+                  <p className="text-muted mt-1 text-sm font-medium">
                     {job.requiredLanguages.map((l) => l.language.name).join(", ")}
                   </p>
                 </div>
@@ -266,25 +263,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
 
             {/* Description */}
-            <div className="flex items-center font-medium">
-              <Info className="text-message-green mr-1 size-4" strokeWidth={2.5} />
-              About the role
+            <div>
+              <div className="mb-1 flex items-center gap-1 font-medium">
+                <Info className="text-message-green size-4" strokeWidth={2.5} />
+                About the role
+              </div>
+              <div className="rounded-sm bg-white/70 p-3 shadow-xl">{job.description}</div>
             </div>
-            <div className="rounded-sm bg-white/40 p-4 shadow-xl">{job.description}</div>
 
             {job.whatWereLookingFor && (
-              <>
-                <div className="mt-5 flex items-center font-medium">
-                  <SearchCheck className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+              <div className="my-8">
+                <div className="mb-1 flex items-center gap-1 font-medium">
+                  <SearchCheck className="text-message-green size-4" strokeWidth={2.5} />
                   What we&apos;re looking for
                 </div>
-                <div className="rounded-sm bg-white/40 p-4 shadow-xl">{job.whatWereLookingFor}</div>
-              </>
+                <div className="rounded-sm bg-white/70 p-3 shadow-xl">{job.whatWereLookingFor}</div>
+              </div>
             )}
 
             {/* Apply CTA */}
-            <Separator />
-            <div className="mt-8">
+            <div>
               {!isSeeker && <p className="text-muted text-sm">Sign in as a job seeker to apply.</p>}
 
               {noProfile && (
@@ -297,9 +295,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               )}
 
               {hasProfile && !hasApplied && myStatus?.status !== "CLOSED" && (
-                <Button className="w-full sm:w-auto" onClick={() => setDialogOpen(true)}>
-                  Apply for this job
-                </Button>
+                <Button onClick={() => setDialogOpen(true)}>Apply for this job</Button>
               )}
 
               {hasProfile && hasApplied && currentStatus !== "CLOSED" && (

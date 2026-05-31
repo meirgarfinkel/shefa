@@ -79,7 +79,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
                   />
                 </SelectTrigger>
               </FormControl>
-              <SelectContent align="end">
+              <SelectContent align="start">
                 {/* Ensure the current value is always a valid option while the list
                     is loading — otherwise Radix can't match the value and shows the
                     placeholder even after cities arrive. */}

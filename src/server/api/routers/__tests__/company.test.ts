@@ -52,6 +52,7 @@ function makePublicCompany(overrides: Record<string, unknown> = {}) {
     aboutCompany: "We do things.",
     missionText: "Give people a chance.",
     owner: {
+      id: "owner-1",
       employerProfile: {
         isResponsive: true,
         responsivenessUpdatedAt: new Date("2026-01-01"),
@@ -110,7 +111,6 @@ describe("company.getPublic", () => {
       companyName: "Acme Corp",
       city: "New York",
       state: "NY",
-      isResponsive: true,
     });
   });
 
@@ -138,32 +138,35 @@ describe("company.getPublic", () => {
     expect(result._count.jobs).toBe(5);
   });
 
-  it("returns isResponsive: false and isNew: true when owner has no employerProfile", async () => {
+  it("returns employer.isResponsive: false and employer.isNew: true when owner has no employerProfile", async () => {
     mockDb.query.company.findFirst.mockResolvedValue(
-      makePublicCompany({ owner: { employerProfile: null } }),
+      makePublicCompany({ owner: { id: "owner-1", employerProfile: null } }),
     );
     const caller = createCaller(makeCtx(null, mockDb));
     const result = await caller.getPublic({ id: "company-1" });
-    expect(result.isResponsive).toBe(false);
-    expect(result.isNew).toBe(true);
+    expect(result.employer.isResponsive).toBe(false);
+    expect(result.employer.isNew).toBe(true);
   });
 
-  it("returns isNew: true when responsivenessUpdatedAt is null", async () => {
+  it("returns employer.isNew: true when responsivenessUpdatedAt is null", async () => {
     mockDb.query.company.findFirst.mockResolvedValue(
       makePublicCompany({
-        owner: { employerProfile: { isResponsive: false, responsivenessUpdatedAt: null } },
+        owner: {
+          id: "owner-1",
+          employerProfile: { isResponsive: false, responsivenessUpdatedAt: null },
+        },
       }),
     );
     const caller = createCaller(makeCtx(null, mockDb));
     const result = await caller.getPublic({ id: "company-1" });
-    expect(result.isNew).toBe(true);
+    expect(result.employer.isNew).toBe(true);
   });
 
-  it("returns isNew: false when responsivenessUpdatedAt is set", async () => {
+  it("returns employer.isNew: false when responsivenessUpdatedAt is set", async () => {
     mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
     const caller = createCaller(makeCtx(null, mockDb));
     const result = await caller.getPublic({ id: "company-1" });
-    expect(result.isNew).toBe(false);
+    expect(result.employer.isNew).toBe(false);
   });
 
   it("does NOT expose responseRate or medianResponseHours", async () => {

@@ -6,7 +6,6 @@ import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import Link from "next/link";
 
 const DAY_LABELS: Record<string, string> = {
@@ -78,7 +77,6 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
             </p>
           </div>
           <div className="flex flex-col items-end gap-2">
-            <ResponsiveBadge isResponsive={false} isNew={false} />
             {profile.status === "PAUSED" && (
               <span className="border-warning/25 bg-warning/15 text-warning rounded-full px-3 py-1 text-xs">
                 Not currently active

@@ -40,7 +40,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <h1
       data-slot="card-title"
-      className={cn("truncate text-xl font-medium", className)}
+      className={cn("truncate text-2xl font-medium capitalize", className)}
       {...props}
     />
   );

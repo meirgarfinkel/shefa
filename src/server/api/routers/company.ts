@@ -46,8 +46,11 @@ export const companyRouter = createTRPCRouter({
       website: co.website,
       aboutCompany: co.aboutCompany,
       missionText: co.missionText,
-      isResponsive: co.owner.employerProfile?.isResponsive ?? false,
-      isNew: !co.owner.employerProfile || co.owner.employerProfile.responsivenessUpdatedAt === null,
+      employer: {
+        isResponsive: co.owner.employerProfile?.isResponsive ?? false,
+        isNew:
+          !co.owner.employerProfile || co.owner.employerProfile.responsivenessUpdatedAt === null,
+      },
       _count: { jobs: activeJobsRow?.count ?? 0 },
     };
   }),

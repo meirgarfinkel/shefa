@@ -11,8 +11,8 @@ export function ResponsiveBadge({ isResponsive, isNew, className }: ResponsiveBa
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-          "bg-blue-dark-3 text-muted-foreground",
+          "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium",
+          "text-success from-primary/40 bg-white bg-linear-to-t via-transparent to-transparent shadow-lg",
           className,
         )}
       >
@@ -25,12 +25,12 @@ export function ResponsiveBadge({ isResponsive, isNew, className }: ResponsiveBa
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium",
-          "bg-primary/15 text-success",
+          "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium",
+          "text-success from-primary/40 bg-white bg-linear-to-t via-transparent to-transparent shadow-lg",
           className,
         )}
       >
-        <span className="size-1.5 rounded-full bg-current" />
+        <span className="bg-success size-2 rounded-full" />
         Responsive
       </span>
     );

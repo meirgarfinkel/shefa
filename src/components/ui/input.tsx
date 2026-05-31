@@ -8,9 +8,8 @@ const inputVariants = cva(
     variants: {
       variant: {
         default: "bg-popover/90 text-white hover:bg-popover/80 focus:bg-popover/90",
-        light:
-          "bg-popover-foreground hover:bg-popover-foreground/80 focus:popover-foreground/80 text-popover",
-        secondary: "bg-secondary/80 focus:bg-secondary/40 text-black placeholder:text-popover/50",
+        light: "bg-white/70 hover:bg-white/80 focus:bg-white",
+        secondary: "bg-secondary/50 focus:bg-secondary/40 placeholder:text-popover/50",
       },
     },
     defaultVariants: {

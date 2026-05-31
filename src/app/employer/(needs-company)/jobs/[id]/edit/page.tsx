@@ -221,7 +221,7 @@ function JobEditForm({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/80 text-end">
-                        (max 5000 characters)
+                        {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
                   )}
@@ -337,7 +337,7 @@ function JobEditForm({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/80 text-end">
-                        (max 500 characters)
+                        {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
                   )}
@@ -403,7 +403,7 @@ function JobEditForm({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/80 text-end">
-                        (max 500 characters)
+                        {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
                   )}
@@ -484,7 +484,7 @@ function JobEditForm({
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/80 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
                   )}

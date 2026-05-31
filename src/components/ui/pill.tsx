@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 type PillProps = React.ComponentProps<"span"> & {
-  variant?: "default" | "dark" | "success" | "warning" | "danger";
+  variant?: "default" | "dark" | "success" | "warning" | "danger" | "light";
 };
 
 export function Pill({ className, variant = "default", ...props }: PillProps) {
@@ -17,6 +17,8 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
         variant === "success" && "bg-success/50",
         variant === "warning" && "bg-warning/70",
         variant === "danger" && "bg-danger/50",
+        variant === "light" &&
+          "text-popover from-primary/40 bg-white/80 bg-linear-to-t via-transparent to-transparent",
 
         className,
       )}

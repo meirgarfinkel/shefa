@@ -239,7 +239,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                     </FormControl>
                     <FormMessage />
                     <FormDescription className="text-muted/50 text-end">
-                      (max 1000 characters)
+                      {field.value?.length ?? 0}/1000
                     </FormDescription>
                   </FormItem>
                 )}
@@ -321,7 +321,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
                   )}

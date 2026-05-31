@@ -99,7 +99,7 @@ export default function CompanyNewPage() {
                         Company Name <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input variant="secondary" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -115,7 +115,7 @@ export default function CompanyNewPage() {
                     <FormLabel>Website</FormLabel>
                     <FormControl>
                       <Input
-                        variant="secondary"
+                        variant="light"
                         {...field}
                         value={field.value ?? ""}
                         type="url"
@@ -140,7 +140,7 @@ export default function CompanyNewPage() {
                             <SelectValue placeholder="Select…" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent align="start">
                           {COMPANY_SIZES.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
                               {opt.label}
@@ -165,7 +165,7 @@ export default function CompanyNewPage() {
                             <SelectValue placeholder="Select…" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent align="start">
                           {INDUSTRIES.map((opt) => (
                             <SelectItem key={opt.value} value={opt.value}>
                               {opt.label}
@@ -199,7 +199,7 @@ export default function CompanyNewPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 2000 characters)
+                        {field.value?.length ?? 0}/2000
                       </FormDescription>
                     </FormItem>
                   )}
@@ -224,7 +224,7 @@ export default function CompanyNewPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
                   )}

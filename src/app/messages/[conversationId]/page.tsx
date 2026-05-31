@@ -63,9 +63,7 @@ type ConvJob = {
   company: {
     id: string;
     name: string;
-    owner: {
-      employerProfile: { isResponsive: boolean } | null;
-    };
+    employer: { isResponsive: boolean; isNew: boolean };
   };
   requiredLanguages: { language: { name: string } }[];
 };
@@ -78,8 +76,8 @@ function JobDetailCard({ job }: { job: ConvJob }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <CardTitle>{job.title}</CardTitle>
         <ResponsiveBadge
-          isResponsive={job.company.owner.employerProfile?.isResponsive ?? false}
-          isNew={false}
+          isResponsive={job.company.employer.isResponsive}
+          isNew={job.company.employer.isNew}
         />
       </div>
       <CardDescription>

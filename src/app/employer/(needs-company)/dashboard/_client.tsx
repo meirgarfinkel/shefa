@@ -290,7 +290,7 @@ export function EmployerDashboardClient({
                       Companies
                     </FilterTrigger>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
+                  <DropdownMenuContent>
                     <DropdownMenuLabel>Filter by Company</DropdownMenuLabel>
                     {companies.map((c) => (
                       <DropdownMenuCheckboxItem

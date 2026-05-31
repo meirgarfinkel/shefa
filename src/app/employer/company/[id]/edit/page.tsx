@@ -232,7 +232,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 2000 characters)
+                        {field.value?.length ?? 0}/2000
                       </FormDescription>
                     </FormItem>
                   )}
@@ -257,7 +257,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
                   )}

@@ -186,7 +186,9 @@ export const conversationRouter = createTRPCRouter({
                 owner: {
                   columns: { id: true },
                   with: {
-                    employerProfile: { columns: { isResponsive: true } },
+                    employerProfile: {
+                      columns: { isResponsive: true, responsivenessUpdatedAt: true },
+                    },
                   },
                 },
               },
@@ -209,7 +211,29 @@ export const conversationRouter = createTRPCRouter({
           .then((a) => a?.status ?? null)
       : null;
 
-    return { ...conv, applicationStatus };
+    const { job, ...convRest } = conv;
+    return {
+      ...convRest,
+      applicationStatus,
+      job: job
+        ? (() => {
+            const { company: co, ...jobRest } = job;
+            return {
+              ...jobRest,
+              company: {
+                id: co.id,
+                name: co.name,
+                employer: {
+                  isResponsive: co.owner.employerProfile?.isResponsive ?? false,
+                  isNew:
+                    !co.owner.employerProfile ||
+                    co.owner.employerProfile.responsivenessUpdatedAt === null,
+                },
+              },
+            };
+          })()
+        : null,
+    };
   }),
 
   markRead: protectedProcedure.input(ConversationIdInput).mutation(async ({ ctx, input }) => {

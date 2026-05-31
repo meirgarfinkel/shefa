@@ -124,7 +124,7 @@ export default function PostJobPage() {
                                 <SelectValue placeholder="Select..." />
                               </SelectTrigger>
                             </FormControl>
-                            <SelectContent align="start">
+                            <SelectContent>
                               {companies?.map((c) => (
                                 <SelectItem key={c.id} value={c.id}>
                                   {c.companyName}
@@ -175,7 +175,7 @@ export default function PostJobPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/5000
                       </FormDescription>
                     </FormItem>
                   )}
@@ -197,7 +197,7 @@ export default function PostJobPage() {
                             <SelectValue placeholder="Select..." />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent align="start">
+                        <SelectContent>
                           <SelectItem value="FULL_TIME">Full-time</SelectItem>
                           <SelectItem value="PART_TIME">Part-time</SelectItem>
                           <SelectItem value="EITHER">Either</SelectItem>
@@ -285,7 +285,7 @@ export default function PostJobPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 500 characters)
+                        {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
                   )}
@@ -350,7 +350,7 @@ export default function PostJobPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 500 characters)
+                        {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
                   )}
@@ -429,7 +429,7 @@ export default function PostJobPage() {
                       </FormControl>
                       <FormMessage />
                       <FormDescription className="text-muted/50 text-end">
-                        (max 1000 characters)
+                        {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
                   )}

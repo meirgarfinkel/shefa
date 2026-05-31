@@ -23,7 +23,7 @@ function DropdownMenuTrigger({
 
 function DropdownMenuContent({
   className,
-  align = "end",
+  align = "center",
   sideOffset = 4,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-fit min-w-32 space-y-1 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) w-[calc(var(--radix-dropdown-menu-trigger-width)-20px)] space-y-1 overflow-auto rounded-md p-1 shadow-md",
           className,
         )}
         {...props}

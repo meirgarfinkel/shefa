@@ -52,7 +52,7 @@ export function JobCard({
       <div className="bg-primary/30 hover:bg-primary/5 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm">
         <div className="mb-3 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h3 className="truncate text-lg font-medium">{title}</h3>
+            <h3 className="truncate text-lg font-medium capitalize">{title}</h3>
             <p className="mt-0.5 text-xs">{companyName}</p>
           </div>
           {applicationCount > 0 && <Pill>{applicationCount} Applied</Pill>}

@@ -16,14 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -407,7 +400,7 @@ function JobsContent() {
           <DropdownMenuTrigger asChild>
             <FilterTrigger>{SORT_LABELS[sortBy]}</FilterTrigger>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
+          <DropdownMenuContent>
             <DropdownMenuRadioGroup value={sortBy} onValueChange={(v) => setSortBy(v as SortValue)}>
               <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
               <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
@@ -523,13 +516,13 @@ function JobsContent() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger
-                  className="bg-gray-light-1/40 w-full justify-between font-normal"
+                  className="w-full justify-between bg-white/60 font-normal"
                   activeCount={arrangements.length}
                 >
                   Arrangement
                 </FilterTrigger>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent>
                 {ARRANGEMENT_OPTIONS.map((opt) => (
                   <DropdownMenuCheckboxItem
                     key={opt.value}
@@ -546,13 +539,13 @@ function JobsContent() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger
-                  className="bg-gray-light-1/40 w-full justify-between font-normal"
+                  className="w-full justify-between bg-white/60 font-normal"
                   activeCount={workDays.length}
                 >
                   Days
                 </FilterTrigger>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent>
                 {DAY_OPTIONS.map((day) => (
                   <DropdownMenuCheckboxItem
                     key={day.value}
@@ -582,16 +575,13 @@ function JobsContent() {
             </Select>
           </div>
 
-          <DialogFooter className="flex-row items-center">
+          <div>
             {hasFilters && (
-              <Button variant="ghost" onClick={clearFilters} className="mr-auto">
+              <Button variant="ghost" onClick={clearFilters}>
                 Clear all
               </Button>
             )}
-            <DialogClose asChild>
-              <Button>Done</Button>
-            </DialogClose>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -646,10 +636,7 @@ function JobsContent() {
                       : "State"}
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="max-h-64 overflow-y-auto whitespace-nowrap"
-                >
+                <DropdownMenuContent className="max-h-64 overflow-y-auto whitespace-nowrap">
                   <DropdownMenuRadioGroup value={stateAbbr} onValueChange={setStateAbbr}>
                     {states.map((s) => (
                       <DropdownMenuRadioItem key={s.abbr} value={s.abbr}>
@@ -666,7 +653,7 @@ function JobsContent() {
                     {city || (stateAbbr ? "City" : "State first")}
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="max-h-64 overflow-y-auto">
+                <DropdownMenuContent className="max-h-64 overflow-y-auto">
                   <DropdownMenuRadioGroup value={city} onValueChange={setCity}>
                     {cities.map((c) => (
                       <DropdownMenuRadioItem key={c.name} value={c.name}>
@@ -685,7 +672,7 @@ function JobsContent() {
                       : (RADIUS_OPTIONS.find((r) => r.value === radius)?.label ?? radius)}
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent>
                   <DropdownMenuRadioGroup value={radius} onValueChange={setRadius}>
                     <DropdownMenuRadioItem value="any">Any distance</DropdownMenuRadioItem>
                     {RADIUS_OPTIONS.map((opt) => (
@@ -713,7 +700,7 @@ function JobsContent() {
                         : "Part-time"}
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent>
                   <DropdownMenuRadioGroup value={jobType} onValueChange={setJobType}>
                     <DropdownMenuRadioItem value="any">Any type</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value="FULL_TIME">Full-time</DropdownMenuRadioItem>
@@ -731,7 +718,7 @@ function JobsContent() {
                     Arrangement
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent>
                   {ARRANGEMENT_OPTIONS.map((opt) => (
                     <DropdownMenuCheckboxItem
                       key={opt.value}
@@ -750,7 +737,7 @@ function JobsContent() {
                     Days
                   </FilterTrigger>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent>
                   {DAY_OPTIONS.map((day) => (
                     <DropdownMenuCheckboxItem
                       key={day.value}
@@ -774,7 +761,7 @@ function JobsContent() {
                   {SORT_LABELS[sortBy]}
                 </FilterTrigger>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent>
                 <DropdownMenuRadioGroup
                   value={sortBy}
                   onValueChange={(v) => setSortBy(v as SortValue)}

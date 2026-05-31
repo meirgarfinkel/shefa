@@ -193,7 +193,9 @@ export default function SeekerProfileNewPage() {
                       />
                     </FormControl>
                     <FormMessage />
-                    <FormDescription className="text-end">(max 1000 characters)</FormDescription>
+                    <FormDescription className="text-end">
+                      {field.value?.length ?? 0}/1000
+                    </FormDescription>
                   </FormItem>
                 )}
               />
@@ -278,7 +280,9 @@ export default function SeekerProfileNewPage() {
                         <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-end">(max 1000 characters)</FormDescription>
+                      <FormDescription className="text-end">
+                        {field.value?.length ?? 0}/1000
+                      </FormDescription>
                     </FormItem>
                   )}
                 />

@@ -177,7 +177,7 @@ body::before {
   background-image: url("/bg-image.jpg");
   background-size: cover;
   background-position: center;
-  filter: blur(70px);
+  filter: blur(10px);
 }
 
 /* Remove browser/radix focus rings */
