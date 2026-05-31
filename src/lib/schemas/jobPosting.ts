@@ -1,11 +1,11 @@
 import { z } from "zod";
+import { optionalTrimmedString, requiredTrimmedString } from "@/lib/utils";
 
 const DayOfWeek = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
+type DayOfWeekValue = z.infer<typeof DayOfWeek>;
 const JobType = z.enum(["FULL_TIME", "PART_TIME", "EITHER"]);
 const WorkArrangement = z.enum(["REMOTE", "ON_SITE", "HYBRID"]);
 export const JobStatusEnum = z.enum(["ACTIVE", "PAUSED", "CLOSED"]);
-// Status values an employer can set directly via the update procedure; CLOSED is handled by close procedure
-const UserSettableJobStatus = z.enum(["ACTIVE", "PAUSED"]);
 export const JobClosureReasonEnum = z.enum([
   "FILLED_ON_SHEFA",
   "FILLED_ELSEWHERE",
@@ -14,47 +14,45 @@ export const JobClosureReasonEnum = z.enum([
   "OTHER",
 ]);
 
-export const CreateJobPostingSchema = z.object({
-  companyId: z.string(),
-  title: z.string().min(1).max(255),
-  description: z.string().min(1).max(5000),
+const uniqueDaysTransform = (days: DayOfWeekValue[]) => [...new Set(days)];
+
+const JobPostingFields = {
+  title: requiredTrimmedString(255),
+  description: requiredTrimmedString(5000),
   jobType: JobType,
   workArrangement: WorkArrangement,
-  city: z.string().min(1).max(100),
-  state: z.string().min(1).max(100),
+  city: requiredTrimmedString(100),
+  state: requiredTrimmedString(100),
   minHourlyRate: z.number().positive(),
-  payNotes: z.string().max(500).optional(),
-  workDays: z
-    .array(DayOfWeek)
-    .default([])
-    .transform((days) => [...new Set(days)]),
-  scheduleNotes: z.string().max(500).optional(),
+  payNotes: optionalTrimmedString(500),
+  workDays: z.array(DayOfWeek).default([]).transform(uniqueDaysTransform),
+  scheduleNotes: optionalTrimmedString(500),
   workAuthRequired: z.boolean(),
-  whatWeTeach: z.string().max(1000).optional(),
-  whatWereLookingFor: z.string().max(1000).optional(),
+  whatWereLookingFor: optionalTrimmedString(1000),
   requiredLanguageIds: z.array(z.string()).default([]),
+};
+
+export const CreateJobPostingSchema = z.object({
+  companyId: z.string(),
+  ...JobPostingFields,
 });
 
 export const UpdateJobPostingSchema = z.object({
   id: z.string(),
-  title: z.string().min(1).max(255).optional(),
-  description: z.string().min(1).max(5000).optional(),
-  jobType: JobType.optional(),
-  workArrangement: WorkArrangement.optional(),
-  city: z.string().min(1).max(100).optional(),
-  state: z.string().min(1).max(100).optional(),
-  minHourlyRate: z.number().positive().optional(),
-  payNotes: z.string().max(500).optional(),
-  workDays: z
-    .array(DayOfWeek)
-    .transform((days) => [...new Set(days)])
-    .optional(),
-  scheduleNotes: z.string().max(500).optional(),
-  workAuthRequired: z.boolean().optional(),
-  whatWeTeach: z.string().max(1000).optional(),
-  whatWereLookingFor: z.string().max(1000).optional(),
-  requiredLanguageIds: z.array(z.string()).optional(),
-  status: UserSettableJobStatus.optional(),
+  title: JobPostingFields.title.optional(),
+  description: JobPostingFields.description.optional(),
+  jobType: JobPostingFields.jobType.optional(),
+  workArrangement: JobPostingFields.workArrangement.optional(),
+  city: JobPostingFields.city.optional(),
+  state: JobPostingFields.state.optional(),
+  minHourlyRate: JobPostingFields.minHourlyRate.optional(),
+  payNotes: JobPostingFields.payNotes,
+  workDays: JobPostingFields.workDays.optional(),
+  scheduleNotes: JobPostingFields.scheduleNotes,
+  workAuthRequired: JobPostingFields.workAuthRequired.optional(),
+  whatWereLookingFor: JobPostingFields.whatWereLookingFor,
+  requiredLanguageIds: JobPostingFields.requiredLanguageIds.optional(),
+  status: JobStatusEnum,
 });
 
 export const ListJobPostingsSchema = z.object({

@@ -59,7 +59,6 @@ type ConvJob = {
   workDays: string[];
   scheduleNotes: string | null;
   description: string;
-  whatWeTeach: string | null;
   whatWereLookingFor: string | null;
   company: {
     id: string;
@@ -86,7 +85,7 @@ function JobDetailCard({ job }: { job: ConvJob }) {
       <CardDescription>
         <span>🏢 </span>
         <Link
-          href={`/employer/${job.company.id}`}
+          href={`/company/${job.company.id}`}
           className="hover:text-popover-foreground font-medium"
         >
           {job.company.name}
@@ -150,20 +149,10 @@ function JobDetailCard({ job }: { job: ConvJob }) {
         <h2>📄 About the role</h2>
         <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.description}</div>
 
-        {(job.whatWeTeach || job.whatWereLookingFor) && (
-          <div className="my-5 space-y-4">
-            {job.whatWeTeach && (
-              <div>
-                <h2>🎓 We&apos;ll teach you</h2>
-                <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWeTeach}</div>
-              </div>
-            )}
-            {job.whatWereLookingFor && (
-              <div>
-                <h2>🔍 What we&apos;re looking for</h2>
-                <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWereLookingFor}</div>
-              </div>
-            )}
+        {job.whatWereLookingFor && (
+          <div className="my-5">
+            <h2>🔍 What we&apos;re looking for</h2>
+            <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWereLookingFor}</div>
           </div>
         )}
 

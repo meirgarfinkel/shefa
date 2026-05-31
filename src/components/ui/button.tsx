@@ -9,10 +9,9 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary hover:bg-popover/90 hover:text-popover-foreground",
-        secondary:
-          "bg-secondary/40 text-popover-foreground hover:bg-popover-foreground/80 hover:text-popover",
-        ghost: "bg-secondary/10 hover:bg-primary/20",
-        destructive: "bg-popover-foreground text-danger hover:bg-popover-foreground/90",
+        secondary: "bg-secondary/40 text-popover hover:bg-secondary/80 hover:text-popover",
+        ghost: "bg-white/20 hover:bg-white/70",
+        destructive: "bg-white/80 text-danger hover:bg-white/90",
         link: "underline-offset-4 hover:underline",
       },
       size: {

@@ -46,7 +46,6 @@ export const jobPosting = pgTable(
     workDays: dayOfWeekEnum("workDays").array().notNull(),
     scheduleNotes: text("scheduleNotes"),
     workAuthRequired: boolean("workAuthRequired").notNull(),
-    whatWeTeach: varchar("whatWeTeach", { length: 1000 }),
     whatWereLookingFor: varchar("whatWereLookingFor", { length: 1000 }),
     status: jobStatusEnum("status").notNull().default("ACTIVE"),
     closureReason: jobClosureReasonEnum("closureReason"),

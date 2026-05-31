@@ -102,7 +102,7 @@ These rules are non-negotiable.
 
 ## Auth
 
-- Middleware does ONE thing: checks if a session exists. Unauthenticated → redirect to `/sign-in`. No role logic, no profile checks, no onboarding redirects.
+- Middleware's single responsibility is auth gating: unauthenticated requests → redirect to `/sign-in`. The one exception is the root `/` path, which redirects authenticated users to their role's dashboard. No other role checks, profile checks, or onboarding redirects in middleware.
 - Middleware must remain Edge-safe (split config pattern — imports `auth.config.ts` only)
 - Middleware must never import the db client (Drizzle/Neon are Node-only)
 - JWT strategy is required — Edge middleware cannot query the DB, so sessions must be verifiable from the cookie alone

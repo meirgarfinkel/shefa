@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signOut, useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import {
   UpdateEmployerProfileSchema,
@@ -30,9 +29,9 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 
 export default function EmployerProfileEditPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const { data: profile, isLoading } = trpc.employer.getProfile.useQuery();
 
@@ -81,28 +80,20 @@ export default function EmployerProfileEditPage() {
       <div className="text-muted-foreground px-4 py-16 text-center text-sm">
         <p>Profile not found.</p>
         <Button asChild className="mt-4">
-          <Link href="/employer/profile/new">Create Profile</Link>
+          <Link href="/employer/profile/new">Create profile</Link>
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="px-3">
-      <div className="bg-card/30 mx-auto mt-8 max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+    <div className="p-5">
+      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
-          <PageHeader title="Edit Profile" description="Update your personal information." />
-
-          {/* Email section */}
-          <div className="bg-popover text-popover-foreground mb-8 space-y-4 rounded-md px-3 py-5">
-            <div className="flex flex-wrap items-center gap-2 md:flex">
-              <p className="text-sm font-medium">Email:</p>
-              <p className="bg-secondary/20 rounded px-2 py-1 text-sm">{session?.user?.email}</p>
-            </div>
-          </div>
+          <PageHeader title="Edit your profile" />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -145,10 +136,9 @@ export default function EmployerProfileEditPage() {
                     <FormLabel>Your role</FormLabel>
                     <FormControl>
                       <Input
-                        variant="secondary"
                         {...field}
                         value={field.value ?? ""}
-                        placeholder="e.g. Hiring Manager, CEO, Owner"
+                        placeholder="Hiring Manager, CEO, Owner"
                       />
                     </FormControl>
                     <FormMessage />
@@ -162,23 +152,19 @@ export default function EmployerProfileEditPage() {
                 </p>
               )}
 
-              <div className="flex items-center gap-3">
-                <Button type="submit" disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? "Saving…" : "Save changes"}
+              <div className="flex justify-between">
+                <span className="flex items-center gap-3">
+                  <Button type="submit" disabled={updateProfile.isPending}>
+                    {updateProfile.isPending ? "Saving…" : "Save changes"}
+                  </Button>
+                  {saved && <p className="text-success text-sm">Saved.</p>}
+                </span>
+                <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
+                  Delete account
                 </Button>
-                {saved && <p className="text-success text-sm">Saved.</p>}
               </div>
             </form>
           </Form>
-        </div>
-        <div className="bg-secondary space-y-4 rounded-b-md p-5">
-          <div className="text-sm font-medium">Delete account</div>
-          <div className="text-muted-foreground text-sm">
-            Permanently deletes your account, profile, companies, and all job postings.
-          </div>
-          <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
-            Delete account
-          </Button>
         </div>
 
         <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
@@ -186,8 +172,8 @@ export default function EmployerProfileEditPage() {
             <DialogHeader>
               <DialogTitle>Delete account?</DialogTitle>
               <DialogDescription>
-                This will permanently delete your account, all companies, and all job postings. This
-                cannot be undone.
+                This will permanently delete your account, profile, companies, job postings and all
+                your data (this cannot be undone!)
               </DialogDescription>
             </DialogHeader>
             {deleteAccount.isError && (

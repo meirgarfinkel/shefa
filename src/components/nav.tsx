@@ -38,7 +38,7 @@ export async function Nav() {
     <>
       <header className="bg-popover text-popover-foreground fixed top-0 right-0 left-0 z-50 h-16 shadow-md shadow-black/30">
         <div className="mx-auto flex h-full items-center justify-between px-6">
-          <Link href="/" className="text-2xl font-medium tracking-tight">
+          <Link href="/" className="text-2xl font-medium tracking-tight text-white">
             Shefa
           </Link>
 

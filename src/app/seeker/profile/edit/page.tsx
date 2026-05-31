@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -118,61 +117,59 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
   }
 
   return (
-    <div className="p-3">
+    <div className="p-5">
       <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
           <PageHeader title="Edit Profile" />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
               {/* Name */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-md">
-                          First Name <span className="text-danger">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input variant="secondary" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-md">
-                          Last Name <span className="text-danger">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input variant="secondary" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        First name <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input variant="secondary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Last name <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input variant="secondary" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Location */}
-              <div>
+              <div className="my-8">
                 <LocationPicker />
               </div>
 
-              {/* Work preferences */}
-              <div className="space-y-4">
+              {/* Work authorization */}
+              <div>
                 <FormField
                   control={form.control}
                   name="workAuthorization"
                   render={({ field }) => (
-                    <FormItem className="bg-secondary flex flex-row space-y-0 space-x-3 rounded-md p-3">
+                    <FormItem className="flex flex-row space-y-0 space-x-3 rounded-md bg-white/40 p-3">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -180,21 +177,21 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                         />
                       </FormControl>
                       <FormLabel className="font-normal">
-                        I am authorized to work in the United States{" "}
-                        <span className="text-danger">*</span>
+                        I am authorized to work in the United States
                       </FormLabel>
                     </FormItem>
                   )}
                 />
+              </div>
 
+              {/* Days available */}
+              <div className="my-8">
                 <FormField
                   control={form.control}
                   name="availableDays"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-md mt-8 space-y-4">
-                        Select all days you can work.
-                      </FormLabel>
+                      <FormLabel>Select all days you can work.</FormLabel>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {DAYS.map((day) => (
                           <label
@@ -234,7 +231,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 name="jobSeekText"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-md">
+                    <FormLabel>
                       What kind of job are you seeking? <span className="text-danger">*</span>
                     </FormLabel>
                     <FormControl>
@@ -248,16 +245,14 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 )}
               />
 
-              <Separator />
-
-              {/* Optional fields */}
-              <div className="space-y-6">
+              {/* Education */}
+              <div className="mt-4 mb-8">
                 <FormField
                   control={form.control}
                   name="educationLevel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-md">Highest education level</FormLabel>
+                      <FormLabel>Highest education level</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
@@ -276,14 +271,16 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div>
                 {languages && languages.length > 0 && (
                   <FormField
                     control={form.control}
                     name="languageIds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-md">Languages spoken</FormLabel>
+                        <FormLabel>Languages spoken</FormLabel>
                         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
                           {languages.map((lang) => (
                             <label
@@ -310,13 +307,15 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                     )}
                   />
                 )}
+              </div>
 
+              <div className="mt-8 mb-4">
                 <FormField
                   control={form.control}
                   name="about"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-md">About yourself</FormLabel>
+                      <FormLabel>About yourself</FormLabel>
                       <FormControl>
                         <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
                       </FormControl>
@@ -335,31 +334,27 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 </p>
               )}
 
-              <div className="flex items-center gap-3">
-                <Button type="submit" disabled={updateProfile.isPending}>
-                  {updateProfile.isPending ? "Saving…" : "Save changes"}
+              <div className="flex justify-between">
+                <span className="flex items-center gap-3">
+                  <Button type="submit" disabled={updateProfile.isPending}>
+                    {updateProfile.isPending ? "Saving…" : "Save changes"}
+                  </Button>
+                  {saved && <p className="text-success text-sm">Saved.</p>}
+                </span>
+                <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
+                  Delete account
                 </Button>
-                {saved && <p className="text-success text-sm">Saved.</p>}
               </div>
             </form>
           </Form>
-
-          <div className="bg-blue-dark-3/50 -mx-5 mt-8 -mb-5 space-y-3 rounded-b-md p-5">
-            <p className="text-muted-foreground text-sm">
-              Permanently delete your account and all associated data.
-            </p>
-            <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
-              Delete account
-            </Button>
-          </div>
 
           <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Delete account?</DialogTitle>
                 <DialogDescription>
-                  This will permanently delete your profile and all your applications. This cannot
-                  be undone.
+                  This will permanently delete your profile and all your applications. (This cannot
+                  be undone!)
                 </DialogDescription>
               </DialogHeader>
               {deleteAccount.isError && (
@@ -369,7 +364,6 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
               )}
               <DialogFooter>
                 <Button
-                  variant="ghost"
                   onClick={() => setDeleteAccountOpen(false)}
                   disabled={deleteAccount.isPending}
                 >

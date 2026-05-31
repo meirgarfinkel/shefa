@@ -610,20 +610,21 @@ function JobsContent() {
         {/* Desktop sidebar — sticky */}
         <aside className="hidden w-52 shrink-0 space-y-5 md:block md:overflow-y-auto md:pb-8">
           <div className="relative w-52">
-            <SearchIcon className="text-popover-foreground absolute top-1/2 left-2 size-4 -translate-y-1/2" />
+            <SearchIcon className="text-popover absolute top-1/2 left-2 size-4 -translate-y-1/2" />
 
             <Input
+              variant="secondary"
               placeholder="Search jobs…"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="placeholder-popover-foreground/80 pr-8 pl-8"
+              className="placeholder-popover/80 pr-8 pl-8"
             />
 
             {searchQuery && (
               <button
                 type="button"
                 onClick={clearSearch}
-                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
+                className="text-popover absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
               >
                 <XIcon className="size-3.5" />
               </button>
@@ -833,7 +834,6 @@ function JobsContent() {
                   workArrangement={job.workArrangement}
                   minHourlyRate={Number(job.minHourlyRate)}
                   status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
-                  showStatus={Boolean(employerProfile)}
                   companyName={job.company.name}
                   href={`/jobs/${job.id}`}
                   applicationCount={job._count.applications}

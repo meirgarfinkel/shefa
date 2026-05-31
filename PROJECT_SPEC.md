@@ -10,7 +10,7 @@ A charity-based job board where employers give unqualified candidates a chance t
 - **API layer**: tRPC
 - **Database**: PostgreSQL
 - **ORM**: Drizzle ORM (`drizzle-orm` + `@neondatabase/serverless` Neon HTTP driver; schema in `src/db/schema/`; config in `drizzle.config.ts`)
-- **Auth**: Auth.js v5 (`next-auth@beta`) with Google OAuth + email magic links via Resend; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with `@auth/drizzle-adapter`)
+- **Auth**: Auth.js v5 (`next-auth@beta`) — Google OAuth only; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with `@auth/drizzle-adapter`); JWT session strategy
 - **Background jobs**: Vercel Cron (API routes in `src/app/api/cron/`)
 - **Email**: Resend
 - **Validation**: Zod
@@ -96,9 +96,8 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 - Preferred skills (multi-select — note: NO required skills, only preferred, by design)
 - Required languages (multi-select)
 - Work authorization required (yes/no)
-- "What we'll teach you" (free text, max 1000 chars)
-- "What we're really looking for" (free text, max 1000 chars)
-- **System fields**: status (DRAFT / ACTIVE / PAUSED / EXPIRED / FILLED / CLOSED), createdAt, updatedAt, lastVerifiedAt, viewCount, applicationCount, postedBy (FK to User)
+- "What we're looking for" (free text, max 1000 chars)
+- **System fields**: status (ACTIVE / PAUSED / EXPIRED / FILLED / CLOSED), createdAt, updatedAt, lastVerifiedAt, viewCount, applicationCount, postedBy (FK to User)
 
 **Note**: Education is NOT on the job posting. Seekers fill in their education on their profile; employers can see it but cannot filter on it. By design.
 
@@ -209,11 +208,10 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 ### Auth
 
-- Email magic links via Resend (Auth.js).
-- Email verification baked into magic link flow.
+- Google OAuth only via Auth.js v5 — no email/magic links, no passwords.
+- JWT session strategy (not database sessions) — middleware can verify auth in the Edge runtime without a DB call.
+- Role-based access control via server component layouts, not middleware.
 - Phone numbers collected at signup but not verified (deferred for SMS cost reasons).
-- JWT session strategy (not database) so middleware can verify auth in the Edge runtime without a DB call.
-- All route-level auth redirects live exclusively in `src/middleware.ts`. Page components never redirect based on auth state. See CLAUDE.md "Routing and auth guards" for the full rules.
 
 ### Routing conventions
 
@@ -239,7 +237,7 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 
 - `userId` is **never** exposed in a URL — not as a route segment, not as a query parameter.
 - tRPC procedures never accept `userId` as input. The caller's identity comes exclusively from `ctx.user.id` (session). For targeting another user, procedures accept a `profileId` and resolve the `userId` internally.
-- All auth-based redirects live in `src/middleware.ts`. Adding a new protected route means updating `EMPLOYER_ONLY_PREFIXES` or `SEEKER_ONLY_PREFIXES` there — never adding a client-side guard.
+- Protecting a new route means: (1) add its path prefix to the `matcher` array in `src/middleware.ts`, (2) add a role check in its server component layout. Never add client-side auth guards.
 
 ---
 
@@ -264,8 +262,8 @@ Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Offi
 3. **Profiles**: Seeker + Employer profile schemas, signup flows (lean), profile completion pages, skill/language seed + multi-select. ✅ backend + signup UI; ⚠️ missing: profile view/edit pages.
 4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page. ✅ backend + core UI; ⚠️ missing: job edit page, publish/pause/close/fill status controls.
 5. **Applications + messaging**: apply flow, conversations + messages, inbox, read receipts, block/report, cold DM flow. ✅ full backend (tRPC routers: application, conversation, message, report); ⚠️ missing: inbox UI, conversation UI, employer cold-DM UI, profile view pages needed to navigate to messaging.
-6. **Freshness system**: BullMQ + Redis, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX. ✅
-7. **Notifications + responsiveness**: NotificationPreferences, 12-min debounced jobs, daily digest, responsiveness computation job, badge display. ✅
+6. **Freshness system**: Vercel Cron routes, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX. ✅
+7. **Notifications + responsiveness**: NotificationPreferences, immediate fire-and-forget notifications, daily digest cron, responsiveness computation cron, badge display. ✅
 8. **Polish + abuse + ship**: rate limiting, admin dashboard for flags, basic admin tools, error handling, deploy. ⬜
 
 Ship target after Phase 8. Each phase is shippable on its own and committed to git separately.

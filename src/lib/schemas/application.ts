@@ -1,12 +1,9 @@
 import { z } from "zod";
+import { optionalTrimmedString } from "@/lib/utils";
 
 export const ApplySchema = z.object({
   jobId: z.string().min(1),
-  message: z
-    .string()
-    .max(500)
-    .optional()
-    .transform((v) => (v === "" ? undefined : v)),
+  message: optionalTrimmedString(1000),
 });
 
 export const ListForJobSchema = z.object({

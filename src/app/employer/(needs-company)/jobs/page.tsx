@@ -169,10 +169,8 @@ export default function EmployerJobsPage() {
           <button
             key={tab.value}
             onClick={() => setStatusFilter(tab.value)}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-100 ${
-              statusFilter === tab.value
-                ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:bg-blue-dark-3"
+            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+              statusFilter === tab.value ? "bg-popover text-white" : "hover:bg-popover/30"
             }`}
           >
             {tab.label}
@@ -183,20 +181,10 @@ export default function EmployerJobsPage() {
       {isLoading && <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>}
 
       {!isLoading && jobs?.length === 0 && (
-        <div className="bg-secondary text-muted-foreground rounded-lg py-16 text-center text-sm">
-          {statusFilter !== "all" ? (
-            `No ${statusFilter.toLowerCase()} job postings.`
-          ) : (
-            <>
-              No job postings yet.{" "}
-              <Link
-                href="/employer/jobs/new"
-                className="text-popover-foreground underline underline-offset-2"
-              >
-                Post your first job.
-              </Link>
-            </>
-          )}
+        <div className="bg-secondary text-muted-foreground rounded-lg py-16 text-center">
+          {statusFilter !== "all"
+            ? `No ${statusFilter.toLowerCase()} job postings.`
+            : "No job postings yet."}
         </div>
       )}
 

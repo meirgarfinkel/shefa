@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -26,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LocationPicker } from "@/components/ui/location-picker";
-import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 
 const COMPANY_SIZES = [
   { value: "SIZE_1_10", label: "1–10 employees" },
@@ -75,33 +74,29 @@ export default function CompanyNewPage() {
   }
 
   return (
-    <div className="p-3">
-      <div className="mx-auto max-w-2xl">
-        <Card className="hover:bg-secondary/50">
-          <div className="mb-8">
-            <h1 className="text-xl font-bold">
-              {isFirstCompany ? "Add Your Company" : "Add A Company"}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {isFirstCompany
+    <div className="p-5">
+      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+        <div className="p-5">
+          <PageHeader
+            title={isFirstCompany ? "Add your company" : "Add a company"}
+            description={
+              isFirstCompany
                 ? "Tell candidates about the company you're hiring for."
-                : "Add another company to post jobs under."}
-            </p>
-          </div>
+                : "Add another company to post jobs under."
+            }
+          />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)}>
               {/* Company basics */}
-              <div className="space-y-4">
-                <h2 className="font-medium">Company details</h2>
-
+              <div className="my-8">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Company name <span className="text-danger">*</span>
+                        Company Name <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input variant="secondary" {...field} />
@@ -110,123 +105,114 @@ export default function CompanyNewPage() {
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input
+                        variant="secondary"
+                        {...field}
+                        value={field.value ?? ""}
+                        type="url"
+                        placeholder="https://example.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="my-8 grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="website"
+                  name="companySize"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Website</FormLabel>
-                      <FormControl>
-                        <Input
-                          variant="secondary"
-                          {...field}
-                          value={field.value ?? ""}
-                          type="url"
-                          placeholder="https://example.com"
-                        />
-                      </FormControl>
+                      <FormLabel>Company Size</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COMPANY_SIZES.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="companySize"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Company size</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select…" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {COMPANY_SIZES.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="industry"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Industry</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select…" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {INDUSTRIES.map((opt) => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {INDUSTRIES.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
-              <Separator />
+              <LocationPicker />
 
-              <div className="space-y-4">
-                <h2 className="font-medium">Location</h2>
-                <LocationPicker />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-6">
-                <div>
-                  <h2 className="font-medium">About your company</h2>
-                  <p className="text-muted-foreground text-sm">
-                    Optional — helps candidates understand who you are.
-                  </p>
-                </div>
-
+              <div className="mt-8 mb-4">
                 <FormField
                   control={form.control}
                   name="aboutCompany"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>About the company</FormLabel>
-                      <FormDescription>
-                        What does your company do? (max 2000 characters)
-                      </FormDescription>
+                      <FormLabel>About the Company</FormLabel>
                       <FormControl>
-                        <Textarea {...field} value={field.value ?? ""} rows={4} maxLength={2000} />
+                        <Textarea
+                          {...field}
+                          value={field.value ?? ""}
+                          rows={4}
+                          maxLength={2000}
+                          placeholder="e.g. We provide custom software solutions for any need."
+                        />
                       </FormControl>
                       <FormMessage />
+                      <FormDescription className="text-muted/50 text-end">
+                        (max 2000 characters)
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
+              </div>
 
+              <div>
                 <FormField
                   control={form.control}
                   name="missionText"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Why do you want to give people a chance?</FormLabel>
-                      <FormDescription>
-                        Tell candidates what makes your company different. (max 1000 characters)
-                      </FormDescription>
+                      <FormLabel>Company Values</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -237,6 +223,9 @@ export default function CompanyNewPage() {
                         />
                       </FormControl>
                       <FormMessage />
+                      <FormDescription className="text-muted/50 text-end">
+                        (max 1000 characters)
+                      </FormDescription>
                     </FormItem>
                   )}
                 />
@@ -248,7 +237,7 @@ export default function CompanyNewPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full" disabled={createCompany.isPending}>
+              <Button type="submit" className="mt-4" disabled={createCompany.isPending}>
                 {createCompany.isPending
                   ? "Creating…"
                   : isFirstCompany
@@ -257,7 +246,7 @@ export default function CompanyNewPage() {
               </Button>
             </form>
           </Form>
-        </Card>
+        </div>
       </div>
     </div>
   );

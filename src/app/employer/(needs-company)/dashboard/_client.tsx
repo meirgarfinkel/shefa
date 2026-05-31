@@ -220,7 +220,7 @@ export function EmployerDashboardClient({
         <Button asChild>
           <Link href="/employer/jobs/new">
             <BriefcaseIcon className="mr-1 size-4" />
-            Post a job
+            Post A Job
           </Link>
         </Button>
         <Button asChild>
@@ -232,7 +232,7 @@ export function EmployerDashboardClient({
         <Button asChild variant="ghost">
           <Link href="/employer/company/new">
             <PlusIcon className="mr-1 size-4" />
-            Add company
+            Add Company
           </Link>
         </Button>
 
@@ -241,27 +241,27 @@ export function EmployerDashboardClient({
           <DialogTrigger asChild>
             <Button variant="ghost">
               <BuildingIcon className="mr-1 size-4" />
-              My companies
+              My Companies
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>My companies</DialogTitle>
+              <DialogTitle>My Companies</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-2">
               {companies.map((c) => (
                 <div
                   key={c.id}
-                  className="bg-blue-dark-2 flex items-center justify-between gap-3 rounded-md px-4 py-3"
+                  className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-4 py-3"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{c.companyName}</p>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-popover text-xs">
                       {c.city}, {c.state} · {c.activeJobsCount} active job
                       {c.activeJobsCount !== 1 ? "s" : ""}
                     </p>
                   </div>
-                  <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 text-xs">
+                  <Button asChild size="sm" variant="secondary">
                     <Link href={`/employer/company/${c.id}/edit`}>Edit</Link>
                   </Button>
                 </div>
@@ -271,14 +271,13 @@ export function EmployerDashboardClient({
         </Dialog>
       </div>
 
-      {/* Two-column section — stacks on mobile, side-by-side with independent scroll on desktop */}
       <div className="grid gap-6 lg:min-h-0 lg:flex-1 lg:grid-cols-2">
         {/* Active jobs */}
         <div className="flex flex-col lg:min-h-0">
           <div className="mb-3 flex shrink-0 items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="font-medium">
-                Active jobs{" "}
+                Active Jobs{" "}
                 <span className="bg-primary/30 text-popover rounded-full p-2">
                   {filteredJobs.length}
                 </span>
@@ -292,7 +291,7 @@ export function EmployerDashboardClient({
                     </FilterTrigger>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                    <DropdownMenuLabel>Filter by company</DropdownMenuLabel>
+                    <DropdownMenuLabel>Filter by Company</DropdownMenuLabel>
                     {companies.map((c) => (
                       <DropdownMenuCheckboxItem
                         key={c.id}
@@ -312,7 +311,7 @@ export function EmployerDashboardClient({
               href="/employer/jobs"
               className="text-muted-foreground hover:text-popover-foreground text-xs transition-colors duration-100"
             >
-              View all →
+              View All →
             </Link>
           </div>
 
@@ -375,7 +374,7 @@ export function EmployerDashboardClient({
 
         {/* New applicants */}
         <div className="flex flex-col lg:min-h-0">
-          <h2 className="mb-3 shrink-0 font-medium">New applicants</h2>
+          <h2 className="mb-3 shrink-0 font-medium">New Applicants</h2>
 
           <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {appFeed.length === 0 ? (

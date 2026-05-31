@@ -177,7 +177,6 @@ export const conversationRouter = createTRPCRouter({
             workDays: true,
             scheduleNotes: true,
             description: true,
-            whatWeTeach: true,
             whatWereLookingFor: true,
           },
           with: {

@@ -27,10 +27,10 @@ const INDUSTRY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default function CompanyPublicPage({ params }: { params: Promise<{ profileId: string }> }) {
-  const { profileId } = use(params);
+export default function CompanyPublicPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
 
-  const { data: company, isLoading, error } = trpc.company.getPublic.useQuery({ id: profileId });
+  const { data: company, isLoading, error } = trpc.company.getPublic.useQuery({ id });
 
   if (isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
@@ -49,12 +49,10 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ profil
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      {/* Back link */}
       <Link href="/jobs" className="mb-6 inline-flex items-center gap-1 text-sm">
         ← Browse jobs
       </Link>
 
-      {/* Header */}
       <div className="mt-4 mb-6">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
@@ -86,7 +84,6 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ profil
 
       <Separator />
 
-      {/* About */}
       {company.aboutCompany && (
         <div className="my-6">
           <h2 className="mb-3 font-medium">About {company.companyName}</h2>
@@ -94,7 +91,6 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ profil
         </div>
       )}
 
-      {/* Mission */}
       {company.missionText && (
         <>
           {company.aboutCompany && <Separator />}
@@ -105,7 +101,6 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ profil
         </>
       )}
 
-      {/* CTA */}
       <Separator />
       <div className="mt-8">
         <Link href="/jobs">

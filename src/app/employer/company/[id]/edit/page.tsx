@@ -18,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -115,219 +114,210 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <PageHeader
-        title={`Edit ${company.name}`}
-        description="Keep your company profile up to date."
-      />
+    <div className="p-5">
+      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+        <div className="p-5">
+          <PageHeader title={`Edit ${company.name}`} />
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="space-y-4">
-            <h2 className="font-medium">Company details</h2>
-
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Company name *</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="website"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Website</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      type="url"
-                      placeholder="https://example.com"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="companySize"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Company size</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="my-8">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Company name <span className="text-danger">*</span>
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select…" />
-                        </SelectTrigger>
+                        <Input {...field} />
                       </FormControl>
-                      <SelectContent>
-                        {COMPANY_SIZES.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <FormField
-                control={form.control}
-                name="industry"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Industry</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
+              <div>
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select…" />
-                        </SelectTrigger>
+                        <Input
+                          {...field}
+                          value={field.value ?? ""}
+                          type="url"
+                          placeholder="https://example.com"
+                        />
                       </FormControl>
-                      <SelectContent>
-                        {INDUSTRIES.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          <Separator />
+              <div className="my-8 grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="companySize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company size</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COMPANY_SIZES.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-          <div className="space-y-4">
-            <h2 className="font-medium">Location</h2>
-            <LocationPicker />
-          </div>
+                <FormField
+                  control={form.control}
+                  name="industry"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Industry</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select…" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {INDUSTRIES.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-          <Separator />
+              <LocationPicker />
 
-          <div className="space-y-6">
-            <h2 className="font-medium">About your company</h2>
+              <div className="mt-8 mb-4">
+                <FormField
+                  control={form.control}
+                  name="aboutCompany"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>About the company</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={field.value ?? ""}
+                          rows={4}
+                          maxLength={2000}
+                          placeholder="We provide custom software solutions for any need."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <FormDescription className="text-muted/50 text-end">
+                        (max 2000 characters)
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <FormField
-              control={form.control}
-              name="aboutCompany"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>About the company</FormLabel>
-                  <FormDescription>
-                    What does your company do? (max 2000 characters)
-                  </FormDescription>
-                  <FormControl>
-                    <Textarea {...field} value={field.value ?? ""} rows={4} maxLength={2000} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              <div>
+                <FormField
+                  control={form.control}
+                  name="missionText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company values</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          value={field.value ?? ""}
+                          rows={3}
+                          maxLength={1000}
+                          placeholder="We believe everyone deserves a shot."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <FormDescription className="text-muted/50 text-end">
+                        (max 1000 characters)
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {updateCompany.isError && (
+                <p className="text-danger text-sm">
+                  {updateCompany.error.message ?? "Something went wrong. Please try again."}
+                </p>
               )}
-            />
 
-            <FormField
-              control={form.control}
-              name="missionText"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Why do you want to give people a chance?</FormLabel>
-                  <FormDescription>
-                    Tell candidates what makes your company different. (max 1000 characters)
-                  </FormDescription>
-                  <FormControl>
-                    <Textarea
-                      {...field}
-                      value={field.value ?? ""}
-                      rows={3}
-                      maxLength={1000}
-                      placeholder="e.g. We believe everyone deserves a shot."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              <div className="mt-4 flex justify-between">
+                <span className="flex items-center gap-3">
+                  <Button type="submit" disabled={updateCompany.isPending}>
+                    {updateCompany.isPending ? "Saving…" : "Save changes"}
+                  </Button>
+                  {saved && <p className="text-success text-sm">Saved.</p>}
+                </span>
+                <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+                  Delete company
+                </Button>
+              </div>
+            </form>
+          </Form>
+
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Delete company?</DialogTitle>
+                <DialogDescription>
+                  This will permanently delete <span className="font-medium">{company.name}</span>{" "}
+                  and all its job postings. (This cannot be undone!)
+                </DialogDescription>
+              </DialogHeader>
+              {deleteCompany.isError && (
+                <p className="text-danger text-sm">
+                  {deleteCompany.error.message ?? "Something went wrong."}
+                </p>
               )}
-            />
-          </div>
-
-          {updateCompany.isError && (
-            <p className="text-danger text-sm">
-              {updateCompany.error.message ?? "Something went wrong. Please try again."}
-            </p>
-          )}
-
-          <div className="flex items-center gap-3">
-            <Button type="submit" disabled={updateCompany.isPending}>
-              {updateCompany.isPending ? "Saving…" : "Save changes"}
-            </Button>
-            {saved && <p className="text-success text-sm">Saved.</p>}
-          </div>
-        </form>
-      </Form>
-
-      <Separator className="my-10" />
-
-      <div className="space-y-4">
-        <h2 className="font-medium">Danger zone</h2>
-
-        <div className="space-y-2">
-          <p className="text-sm font-medium">Delete this company</p>
-          <p className="text-muted-foreground text-sm">
-            Removes the company and all its job postings. You must close all active jobs first.
-          </p>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            Delete company
-          </Button>
+              <DialogFooter>
+                <Button
+                  variant="ghost"
+                  onClick={() => setDeleteOpen(false)}
+                  disabled={deleteCompany.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteCompany.mutate({ id: company.id })}
+                  disabled={deleteCompany.isPending}
+                >
+                  {deleteCompany.isPending ? "Deleting…" : "Yes, delete company"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
-
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete company?</DialogTitle>
-            <DialogDescription>
-              This will permanently delete <span className="font-medium">{company.name}</span> and
-              all its job postings. This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          {deleteCompany.isError && (
-            <p className="text-danger text-sm">
-              {deleteCompany.error.message ?? "Something went wrong."}
-            </p>
-          )}
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setDeleteOpen(false)}
-              disabled={deleteCompany.isPending}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => deleteCompany.mutate({ id: company.id })}
-              disabled={deleteCompany.isPending}
-            >
-              {deleteCompany.isPending ? "Deleting…" : "Yes, delete company"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -92,7 +92,6 @@ const MOCK_JOB = {
   workDays: ["MON", "TUE"],
   scheduleNotes: null,
   workAuthRequired: false,
-  whatWeTeach: null,
   whatWereLookingFor: null,
   status: "ACTIVE",
   applicationCount: 0,
@@ -186,23 +185,15 @@ describe("jobPosting.create", () => {
   it("stores optional fields when provided", async () => {
     db.insert.mockReturnValue({
       values: vi.fn().mockReturnValue({
-        returning: vi
-          .fn()
-          .mockResolvedValue([
-            { ...MOCK_JOB, payNotes: "Based on experience", whatWeTeach: "Cooking basics" },
-          ]),
+        returning: vi.fn().mockResolvedValue([{ ...MOCK_JOB, payNotes: "Based on experience" }]),
       }),
     });
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const result = await caller.create({
       ...VALID_CREATE_INPUT,
       payNotes: "Based on experience",
-      whatWeTeach: "Cooking basics",
     });
-    expect(result).toMatchObject({
-      payNotes: "Based on experience",
-      whatWeTeach: "Cooking basics",
-    });
+    expect(result).toMatchObject({ payNotes: "Based on experience" });
   });
 
   it("deduplicates workDays", async () => {
@@ -234,20 +225,6 @@ describe("jobPosting.create", () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
       caller.create({ ...VALID_CREATE_INPUT, description: "a".repeat(5001) }),
-    ).rejects.toThrow(TRPCError);
-  });
-
-  it("accepts whatWeTeach at exactly 1000 chars", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", db));
-    await expect(
-      caller.create({ ...VALID_CREATE_INPUT, whatWeTeach: "a".repeat(1000) }),
-    ).resolves.toBeDefined();
-  });
-
-  it("rejects whatWeTeach longer than 1000 chars", async () => {
-    const caller = createCaller(makeCtx("EMPLOYER", db));
-    await expect(
-      caller.create({ ...VALID_CREATE_INPUT, whatWeTeach: "a".repeat(1001) }),
     ).rejects.toThrow(TRPCError);
   });
 

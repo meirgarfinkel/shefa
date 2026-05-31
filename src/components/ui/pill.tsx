@@ -10,7 +10,7 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
       data-slot="pill"
       className={cn(
         // base
-        "bg-secondary/70 rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
+        "bg-secondary/60 text-popover rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
 
         // variants
         variant === "dark" && "bg-card/60",

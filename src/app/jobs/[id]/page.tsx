@@ -6,17 +6,7 @@ import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  Pencil,
-  Building,
-  Car,
-  Clock,
-  MapPin,
-  GraduationCap,
-  Info,
-  Check,
-  SearchCheck,
-} from "lucide-react";
+import { Pencil, Building, Car, Clock, MapPin, Info, Check, SearchCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CardTitle, CardContent } from "@/components/ui/card";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
@@ -26,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Pill } from "@/components/ui/pill";
 
@@ -99,9 +88,7 @@ function ApplyDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Apply for {jobTitle}</DialogTitle>
-          <DialogDescription>
-            Add an optional message to introduce yourself. Keep it brief — 500 chars max.
-          </DialogDescription>
+          <DialogDescription>Add an optional message to introduce yourself.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
@@ -124,14 +111,14 @@ function ApplyDialog({
           </p>
         )}
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submit.isPending}>
-            Cancel
-          </Button>
+        <div className="flex justify-between">
           <Button onClick={handleSubmit} disabled={submit.isPending}>
             {submit.isPending ? "Submitting…" : "Submit application"}
           </Button>
-        </DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submit.isPending}>
+            Cancel
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -193,7 +180,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {isOwner && (
                 <Button asChild size="sm">
                   <Link href={`/employer/jobs/${id}/edit`}>
-                    <Pencil className="text-accent mr-1 size-4" strokeWidth={2.5} />
+                    <Pencil className="text-message-green mr-1 size-4" strokeWidth={2.5} />
                     Edit
                   </Link>
                 </Button>
@@ -206,7 +193,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </div>
           <div className="my-5">
             <Link
-              href={`/employer/${job.company.id}`}
+              href={`/company/${job.company.id}`}
               className="hover:text-orange flex items-center font-medium"
             >
               <Building className="text-message-green mr-1 size-4" strokeWidth={2.5} />
@@ -285,16 +272,6 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
             <div className="rounded-sm bg-white/40 p-4 shadow-xl">{job.description}</div>
 
-            {job.whatWeTeach && (
-              <>
-                <div className="mt-5 flex items-center font-medium">
-                  <GraduationCap className="text-message-green mr-1 size-4" strokeWidth={2.5} />
-                  We&apos;ll teach you
-                </div>
-                <div className="rounded-sm bg-white/40 p-4 shadow-xl">{job.whatWeTeach}</div>
-              </>
-            )}
-
             {job.whatWereLookingFor && (
               <>
                 <div className="mt-5 flex items-center font-medium">
@@ -328,13 +305,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {hasProfile && hasApplied && currentStatus !== "CLOSED" && (
                 <div className="flex flex-wrap items-center gap-3">
                   <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium ${
+                    className={`rounded-full px-3 py-1 text-sm font-medium text-white ${
                       APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]
                     }`}
                   >
                     {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
                   </span>
-                  <Link href="/seeker/applications" className="text-muted text-sm underline">
+                  <Link
+                    href="/seeker/applications"
+                    className="text-muted hover:text-orange text-sm underline"
+                  >
                     View my applications
                   </Link>
                 </div>

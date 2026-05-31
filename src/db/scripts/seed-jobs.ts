@@ -23,7 +23,6 @@ type JobTemplate = {
   lon: number;
   minHourlyRate: number;
   workAuthRequired: boolean;
-  whatWeTeach?: string;
   whatWereLookingFor?: string;
 };
 
@@ -40,8 +39,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 22,
     workAuthRequired: true,
-    whatWeTeach:
-      "Git workflows, code review, React fundamentals, REST APIs, and our internal deployment pipeline.",
     whatWereLookingFor:
       "Eagerness to learn, basic familiarity with any programming language, and a team-first attitude.",
   },
@@ -57,7 +54,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: true,
-    whatWeTeach: "Our product inside and out, de-escalation techniques, and ticketing systems.",
     whatWereLookingFor:
       "Clear written communication, patience, and a genuine desire to help people.",
   },
@@ -73,7 +69,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 20,
     workAuthRequired: true,
-    whatWeTeach: "Test case design, bug reporting best practices, and our testing toolchain.",
     whatWereLookingFor:
       "Attention to detail, curiosity about how things break, and clear written communication.",
   },
@@ -89,7 +84,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: false,
-    whatWeTeach: "Spreadsheet tools, our data management platform, and data quality standards.",
     whatWereLookingFor: "Accuracy, focus, and the ability to meet daily quotas independently.",
   },
   {
@@ -104,7 +98,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 19,
     workAuthRequired: true,
-    whatWeTeach: "Office management systems, internal request tracking, and vendor coordination.",
     whatWereLookingFor:
       "Organization, reliability, and a proactive approach to spotting things that need doing.",
   },
@@ -120,8 +113,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 21,
     workAuthRequired: true,
-    whatWeTeach:
-      "Our device management stack, escalation procedures, and internal networking basics.",
     whatWereLookingFor:
       "Comfort with computers, a calm troubleshooting mindset, and strong interpersonal skills.",
   },
@@ -137,8 +128,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 23,
     workAuthRequired: true,
-    whatWeTeach:
-      "Product thinking frameworks, sprint ceremonies, roadmap tools, and stakeholder communication.",
     whatWereLookingFor:
       "Structured thinking, empathy for users, and the ability to communicate clearly across teams.",
   },
@@ -154,7 +143,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: false,
-    whatWeTeach: "Our content calendar tools, brand voice guidelines, and analytics reporting.",
     whatWereLookingFor:
       "Creative writing, knowledge of social platforms, and comfort with performance metrics.",
   },
@@ -170,8 +158,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 20,
     workAuthRequired: true,
-    whatWeTeach:
-      "Our accounting software, invoice processing workflow, and reconciliation procedures.",
     whatWereLookingFor:
       "Numeracy, accuracy, and the ability to meet deadlines during month-end crunch.",
   },
@@ -187,8 +173,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: false,
-    whatWeTeach:
-      "Inventory management software, safe lifting techniques, and our fulfillment process.",
     whatWereLookingFor:
       "Physical stamina, reliability, and the ability to work in a fast-paced environment.",
   },
@@ -204,8 +188,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 19,
     workAuthRequired: true,
-    whatWeTeach:
-      "Route planning apps, vehicle safety protocols, and customer communication standards.",
     whatWereLookingFor: "Valid driver's license, clean driving record, and punctuality.",
   },
   {
@@ -220,7 +202,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: true,
-    whatWeTeach: "Our phone system, visitor management software, and internal team structure.",
     whatWereLookingFor: "Warmth, professional demeanor, and strong verbal communication.",
   },
   {
@@ -235,7 +216,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 20,
     workAuthRequired: true,
-    whatWeTeach: "Email marketing tools, ad platforms, CRM basics, and reporting dashboards.",
     whatWereLookingFor:
       "Strong writing, curiosity about marketing data, and ability to juggle multiple projects.",
   },
@@ -251,8 +231,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 21,
     workAuthRequired: true,
-    whatWeTeach:
-      "Project management tools, our internal ops playbook, and executive communication.",
     whatWereLookingFor:
       "High organizational ability, follow-through, and comfort navigating ambiguity.",
   },
@@ -268,7 +246,6 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 20,
     workAuthRequired: true,
-    whatWeTeach: "Outbound sales techniques, our CRM, objection handling, and product knowledge.",
     whatWereLookingFor: "Resilience, a competitive spirit, and clear verbal communication.",
   },
 ];
@@ -286,7 +263,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: false,
-    whatWeTeach: "Product knowledge, point-of-sale systems, and customer service standards.",
     whatWereLookingFor: "Friendly attitude, reliability, and comfort working on your feet all day.",
   },
   {
@@ -301,7 +277,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 16,
     workAuthRequired: false,
-    whatWeTeach: "Our POS system, cash handling procedures, and return policies.",
     whatWereLookingFor:
       "Numerical accuracy, a friendly presence, and the ability to stay calm during busy periods.",
   },
@@ -317,7 +292,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: false,
-    whatWeTeach: "Inventory scanning systems, stocking best practices, and safety procedures.",
     whatWereLookingFor: "Physical stamina, organization, and a team-first mindset.",
   },
   {
@@ -332,7 +306,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 22,
     workAuthRequired: true,
-    whatWeTeach: "Every aspect of store operations, people management, and P&L basics.",
     whatWereLookingFor:
       "Leadership potential, ownership mindset, and the desire to grow into management.",
   },
@@ -348,7 +321,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: false,
-    whatWeTeach: "Our brand guidelines, planogram execution, and display building techniques.",
     whatWereLookingFor: "An eye for aesthetics, creativity, and comfort with physical setup work.",
   },
   {
@@ -363,7 +335,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 17,
     workAuthRequired: false,
-    whatWeTeach: "De-escalation techniques, our return policy, and issue resolution workflows.",
     whatWereLookingFor: "Patience, empathy, and clear communication under pressure.",
   },
   {
@@ -378,8 +349,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 19,
     workAuthRequired: false,
-    whatWeTeach:
-      "Inventory management software, cycle count procedures, and loss prevention basics.",
     whatWereLookingFor: "Extreme attention to detail, comfort with numbers, and reliability.",
   },
   {
@@ -394,7 +363,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 21,
     workAuthRequired: true,
-    whatWeTeach: "Shift management, coaching techniques, and our store operations handbook.",
     whatWereLookingFor: "Prior retail experience, calm under pressure, and natural leadership.",
   },
   {
@@ -409,8 +377,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 20,
     workAuthRequired: true,
-    whatWeTeach:
-      "Security system operation, incident documentation, and legal compliance in apprehensions.",
     whatWereLookingFor:
       "Observational skills, discretion, and comfort remaining calm in confrontational situations.",
   },
@@ -426,7 +392,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: false,
-    whatWeTeach: "Receiving workflows, supplier coordination, and safe material handling.",
     whatWereLookingFor: "Physical endurance, organizational skills, and reliability.",
   },
   {
@@ -441,7 +406,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 16,
     workAuthRequired: false,
-    whatWeTeach: "Cleaning product safety, equipment operation, and our sanitation schedule.",
     whatWereLookingFor: "Thoroughness, reliability, and the ability to work independently.",
   },
   {
@@ -456,7 +420,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 22,
     workAuthRequired: true,
-    whatWeTeach: "Retail management fundamentals, scheduling, and performance coaching.",
     whatWereLookingFor: "Leadership potential, retail experience, and a drive to develop others.",
   },
   {
@@ -471,7 +434,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: false,
-    whatWeTeach: "Order management systems, packing standards, and shipping carrier procedures.",
     whatWereLookingFor:
       "Speed and accuracy, comfort with technology, and the ability to hit daily fulfillment targets.",
   },
@@ -487,7 +449,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 18,
     workAuthRequired: false,
-    whatWeTeach: "Our full beauty product line, skin type assessment, and consultative selling.",
     whatWereLookingFor:
       "Passion for beauty, strong interpersonal skills, and comfort recommending products.",
   },
@@ -503,8 +464,6 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
     lon: -73.9442,
     minHourlyRate: 19,
     workAuthRequired: false,
-    whatWeTeach:
-      "Product specs across our electronics range, sales techniques, and warranty programs.",
     whatWereLookingFor:
       "Tech curiosity, the ability to explain complex features simply, and sales motivation.",
   },
@@ -664,7 +623,6 @@ async function main() {
           minHourlyRate: String(t.minHourlyRate),
           workAuthRequired: t.workAuthRequired,
           workDays: JOB_DAYS,
-          whatWeTeach: t.whatWeTeach,
           whatWereLookingFor: t.whatWereLookingFor,
           status: "ACTIVE" as const,
         })),
@@ -689,7 +647,6 @@ async function main() {
           minHourlyRate: String(t.minHourlyRate),
           workAuthRequired: t.workAuthRequired,
           workDays: JOB_DAYS,
-          whatWeTeach: t.whatWeTeach,
           whatWereLookingFor: t.whatWereLookingFor,
           status: "ACTIVE" as const,
         })),

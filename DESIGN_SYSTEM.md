@@ -2,35 +2,35 @@
 
 ## Design concept
 
-Glassmorphism over a blurred photo background. Surfaces are semi-transparent glass panels with `backdrop-filter` blur. Text is dark navy by default — light glass panels provide the contrast.
+Light glassmorphism. A blurred photo background (`blur(70px)`) sits behind a light-gray page surface. UI panels use semi-transparent overlays (opacity modifiers like `/30`, `/40`) so the depth shows through. The palette is a blue-gray spectrum — dark navy to sky blue — with warm accent notes (orange, message-green).
 
 ## How Tailwind v4 + shadcn work together
 
 In Tailwind v4 there is no `tailwind.config.js`. All configuration lives in `globals.css`.
 
 The pattern is:
-
-1. Define raw CSS custom properties in `:root` (these are the shadcn theme variables)
-2. Wire them into Tailwind v4 utilities via `@theme inline`
-3. Use semantic Tailwind classes everywhere (`bg-card`, `text-dark`, etc.)
+1. Define raw color primitives in `:root` (palette layer)
+2. Assign semantic tokens to primitives (second `:root` block)
+3. Wire semantic tokens into Tailwind v4 utilities via `@theme inline`
+4. Use semantic Tailwind classes everywhere (`bg-card`, `text-foreground`, etc.)
 
 shadcn components read from these same CSS variables automatically — that's the integration.
-You never touch `tailwind.config.js` because it doesn't exist.
 
 ---
 
 ## Single theme — one palette only
 
-No light/dark toggle. No `.dark` class. One theme, always the same.
-All token values are defined once in `:root`.
+No light/dark toggle. No `.dark` class. One theme, always the same. All token values defined once in `:root`.
 
 ---
 
 ## Background
 
-The page background is a blurred photo (`/bg-image.jpg`) rendered via `body::before` (fixed, inset, `blur(3px)`). The `body` itself has `background: transparent`. An `rgba(25, 64, 112, 0.288)` overlay sits on top, giving the whole page a deep blue tint.
+The page background is a blurred photo (`/bg-image.jpg`) rendered via `body::before` (fixed, inset, `blur(70px)`). The `body` itself has `background-color: var(--background)` (`rgb(208, 210, 211)`) — a light gray that tints over the photo.
 
-Never use a solid opaque background on the `body` or `html` — it will cover the photo.
+Never use a solid opaque background on `body` or `html` — it will cover the photo.
+
+For translucent panels, use `bg-card/30` or `bg-white/40` rather than opaque fills. This lets the blurred photo show through.
 
 ---
 
@@ -38,29 +38,41 @@ Never use a solid opaque background on the `body` or `html` — it will cover th
 
 All tokens are defined in `globals.css` and wired into Tailwind via `@theme inline`.
 
-| Token                | Utility class            | Value                          | Usage                                    |
-| -------------------- | ------------------------ | ------------------------------ | ---------------------------------------- |
-| `--background`       | `bg-background`          | `rgba(25, 64, 112, 0.288)`     | Page overlay (layer 0)                   |
-| `--blue-dark-2`        | `bg-blue-dark-2`           | `rgba(155, 200, 255, 0.15)`    | Subtle inline sections (layer 2)         |
-| `--blue-dark-3`        | `bg-blue-dark-3`           | `rgba(155, 200, 255, 0.25)`    | Inputs, nested sections (layer 2)        |
-| `--card`             | `bg-card`                | `rgba(155, 200, 255, 0.18)`    | Cards and panels (layer 1)               |
-| `--popover`          | `bg-popover`             | `rgba(140, 190, 255, 0.35)`    | Dropdowns, popovers (floating layer)     |
-| `--input`            | `bg-input`               | `rgba(155, 200, 255, 0.22)`    | Input fields                             |
-| `--light`            | `text-popover-foreground` / `bg-light`| `rgba(191, 212, 235)`          | Light text — use on dark/photo contexts  |                      |
-| `--dark`             | `text-dark` / `bg-dark`  | `rgb(20, 35, 55)`              | Default body text (dark navy)            |
-| `--primary`          | `text-primary` / `bg-primary` | `rgb(143, 184, 246)`      | Accent — sky blue                        |
-| `--success`          | `text-success`           | `rgb(135, 219, 135)`           | Active, confirmed states                 |
-| `--warning`          | `text-warning`           | `rgb(221, 139, 44)`            | Paused, caution, pay highlights          |
-| `--danger`           | `text-danger`            | `rgb(255, 70, 70)`             | Errors, closed, danger                   |
-| `--muted-foreground` | `text-muted-foreground`  | same as `--light-muted`        | shadcn alias for muted text              |
-| `--border-col`       | (via `border` class)     | `rgba(228, 165, 72, 0.466)`    | Amber/gold border — use sparingly        |
+### Semantic tokens
 
-> **Note**: There is no `--popover` or `text-text`. Use `bg-card` for cards, `text-dark` for body text.
+| Token | Tailwind class | Value | Usage |
+|-------|----------------|-------|-------|
+| `--background` | `bg-background` | `rgb(208, 210, 211)` | Page background (light gray) |
+| `--foreground` | `text-foreground` | `rgb(41, 48, 56)` | Default body text (dark gray) |
+| `--card` | `bg-card` | `rgb(139, 165, 193)` | Cards — use `bg-card/30` for translucent panels |
+| `--card-foreground` | `text-card-foreground` | `rgb(208, 210, 211)` | Text on filled card surfaces |
+| `--popover` | `bg-popover` | `rgb(10, 51, 78)` | Dark navy surfaces, dropdowns, dialogs |
+| `--popover-foreground` | `text-popover-foreground` | `rgb(208, 210, 211)` | Light text on dark (`bg-popover`) surfaces |
+| `--primary` | `text-primary` / `bg-primary` | `rgb(174, 206, 253)` | Sky blue accent — buttons, highlights |
+| `--muted` | `bg-muted` | `rgb(43, 64, 91)` | Muted dark-blue surface |
+| `--muted-foreground` | `text-muted-foreground` | — | Secondary/muted text |
+| `--accent` | `text-accent` | `green-300` | Green accent — edit icons, positive CTAs |
+| `--success` | `text-success` | `rgb(85, 180, 45)` | Active, confirmed |
+| `--warning` | `text-warning` | `rgb(255, 214, 79)` | Paused, caution |
+| `--destructive` / `--danger` | `text-destructive` / `text-danger` | `rgb(156, 20, 45)` | Errors, closed, danger |
+| `--input` | `bg-input` | `rgb(43, 64, 91)` | Input field background |
+| `--border` | (via `border` class) | `rgb(208, 210, 211)` | Borders — avoid wherever possible |
 
-### One accent only
+### Additional palette tokens
 
-`--primary` (`rgb(143, 184, 246)`) is the single accent. Never introduce a second accent color.
-Opacity variants: `bg-primary/15`, `bg-primary/20`, `bg-primary/25`, `bg-primary/30` — no separate variable needed.
+| Class | Value | Usage |
+|-------|-------|-------|
+| `text-message-green` | `rgb(43, 121, 95)` | Contextual icons (location, type, status) |
+| `text-orange` / `hover:text-orange` | `rgb(217, 119, 87)` | Link hover color |
+| `bg-blue-dark-3` | `rgb(68, 94, 124)` | Chip/badge background |
+| `bg-blue-dark-2` / `bg-muted` | `rgb(43, 64, 91)` | Nested sections, inputs |
+| `bg-blue-light-1` / `bg-card` | `rgb(139, 165, 193)` | Card fill (use with `/30` opacity) |
+
+### One accent color
+
+`--primary` (`rgb(174, 206, 253)`) is the primary interactive accent. `--accent` (green-300) is used for icons and edit CTAs. Don't add further accent colors.
+
+Opacity variants — `bg-primary/15`, `bg-primary/20`, `bg-primary/30` — no separate variable needed.
 
 ---
 
@@ -69,46 +81,47 @@ Opacity variants: `bg-primary/15`, `bg-primary/20`, `bg-primary/25`, `bg-primary
 Maximum 3 layers. Never nest deeper.
 
 ```
-Layer 0 — bg-background         → page overlay (on top of photo)
-Layer 1 — bg-popover               → primary content blocks (cards, panels, shadcn Card)
-Layer 2 — bg-blue-dark-2          → subtle inline nested sections
-Layer 2 — bg-blue-dark-3          → inputs, more-visible nested sections
-Floating — bg-popover           → dropdowns, popovers, dialogs (backdrop-blur via globals)
+Layer 0 — bg-background         → page (light gray + blurred photo beneath)
+Layer 1 — bg-card/30            → primary content panels (semi-transparent)
+Layer 2 — bg-white/40           → inline content boxes, nested sections
+Floating — bg-popover           → dropdowns, dialogs (dark navy)
 ```
 
 ---
 
-## Glass effects
+## Translucency pattern
 
-Glass blur is applied **globally in `globals.css`** — you do not need to add it per-component.
+Use opacity modifiers on existing tokens rather than defining new transparent colors:
 
-| Element                                                                           | Applied blur                             |
-| --------------------------------------------------------------------------------- | ---------------------------------------- |
-| `header`, `[data-slot="card"]`, dialogs, dropdowns, popovers, `[data-slot="command"]` | `backdrop-filter: blur(18px) saturate(160%)` |
-| `[data-slot="input"]`, `[data-slot="textarea"]`, `[data-slot="button"]`           | `backdrop-filter: blur(8px)`             |
-
-For custom containers that need glass: add `backdrop-blur-lg` directly.
-
-Example — job card (not a shadcn Card, custom div):
 ```tsx
-<div className="bg-light/40 hover:bg-dark/15 rounded-md p-5 backdrop-blur-lg transition-colors duration-100">
+// Primary card panel — layer 1
+<div className="bg-card/30 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
+
+// Content section within a card — layer 2
+<div className="rounded-sm bg-white/40 p-4">{text}</div>
+
+// Pill / chip
+<Pill className="bg-white/40 text-popover">…</Pill>
 ```
 
 ---
 
 ## Typography
 
-| Use               | Class          | Weight          |
-| ----------------- | -------------- | --------------- |
-| Page heading (h1) | `text-2xl`     | `font-bold`     |
-| Section label     | `text-xs`      | `font-medium`   |
-| Body              | `text-sm`      | `font-normal`   |
-| Supporting / meta | `text-xs`      | `font-normal`   |
-| Badge / pill      | `text-xs`      | `font-semibold` |
+| Use | Class | Weight |
+|-----|-------|--------|
+| Page heading (h1) | `text-2xl` | `font-bold` |
+| Card title | `<CardTitle>` from shadcn | — |
+| Section heading | `text-sm` | `font-medium` |
+| Section label (uppercase) | `text-xs uppercase tracking-wide` | `font-medium` |
+| Body | `text-sm` | `font-normal` |
+| Supporting / meta | `text-xs` | `font-normal` |
+| Badge / pill | `text-xs` | `font-semibold` |
 
 Rules:
-- Default text color is `color: var(--dark)` (set on `body`) — dark navy on light glass
-- Use `text-popover-foreground` when placing text directly on the photo background or on a dark surface
+- Default text color is `text-foreground` (set on `body`)
+- Use `text-popover-foreground` for text on `bg-popover` (dark navy) surfaces
+- Use `text-popover` for text on `bg-white/40` pill backgrounds (dark navy, readable on light)
 - Never go below `text-xs`
 - Avoid `font-bold` except for h1 page headings
 
@@ -116,78 +129,84 @@ Rules:
 
 ## Spacing scale
 
-Use only these values. Never arbitrary spacing.
+Use only these values:
 
-| Gap             | Value | Use                        |
-| --------------- | ----- | -------------------------- |
-| `gap-1` / `p-1` | 4px   | Tight inline               |
-| `gap-2` / `p-2` | 8px   | Component internal         |
-| `gap-3` / `p-3` | 12px  | Between related elements   |
-| `gap-4` / `p-4` | 16px  | Within a card              |
-| `gap-5` / `p-5` | 20px  | Card padding (comfortable) |
-| `gap-6`         | 24px  | Between cards              |
-| `gap-8`         | 32px  | Between page sections      |
-| `mb-8`          | 32px  | Below page headers         |
+| Gap | Value | Use |
+|-----|-------|-----|
+| `gap-1` / `p-1` | 4px | Tight inline |
+| `gap-2` / `p-2` | 8px | Component internal |
+| `gap-3` / `p-3` | 12px | Between related elements |
+| `gap-4` / `p-4` | 16px | Within a card |
+| `gap-5` / `p-5` | 20px | Card padding (comfortable) |
+| `gap-6` | 24px | Between cards |
+| `gap-8` | 32px | Between page sections |
+| `mb-8` | 32px | Below page headers |
 
 ---
 
 ## Border radius
 
-| Context                         | Class                 |
-| ------------------------------- | --------------------- |
-| Pills, badges, avatars          | `rounded-full`        |
-| Buttons, inputs, small elements | `rounded-md` (8px)    |
-| Cards, panels                   | `rounded-lg` (12px)   |
-| Never use                       | `rounded-xl` or above |
+| Context | Class |
+|---------|-------|
+| Pills, badges | `rounded-full` |
+| Buttons, inputs, chips | `rounded-md` |
+| Cards, panels | `rounded-md` |
+| Inline content boxes | `rounded-sm` |
+| Never use | `rounded-xl` or above |
 
 ---
 
 ## Borders
 
-Borders are amber/gold (`rgba(228, 165, 72, 0.466)`). Avoid them wherever possible — glass contrast and spacing should be sufficient. The `.border` class is globally overridden to use `--border-col` at `0.1px` width.
+Borders use `var(--border)` (light gray). Avoid them wherever possible — glass contrast and spacing are usually sufficient.
 
 ---
 
 ## Transitions
 
 All transitions must be:
-
 - Duration: `duration-100` only
 - Property: `transition-colors` — color/background only
 - No movement — no `translate`, `scale`, or `transform` on hover
 
 ```tsx
 // Correct
-className = "transition-colors duration-100 hover:bg-blue-dark-3";
+className="transition-colors duration-100 hover:bg-blue-dark-3"
 
 // Wrong — element moves
-className = "transition-transform hover:scale-105";
+className="transition-transform hover:scale-105"
 ```
 
 ---
 
 ## Component patterns
 
-### Job card (custom glass div, not shadcn Card)
+### Primary card panel
 
 ```tsx
-<div className="bg-light/40 hover:bg-dark/15 rounded-md p-5 backdrop-blur-lg transition-colors duration-100">
+<div className="bg-card/30 mt-5 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
   {children}
 </div>
 ```
 
-### Filter trigger button
+### Content section within a card
 
 ```tsx
-<Button
-  variant="ghost"
-  className="bg-primary/20 hover:bg-primary/30 h-8 rounded-md px-3 text-sm shadow-lg transition-colors duration-100"
->
-  Filter label <ChevronDownIcon className="size-3.5" />
-</Button>
+<div className="rounded-sm bg-white/40 p-4">{text}</div>
 ```
 
-### Primary button (publish, confirm, submit)
+### Pill / chip with icon
+
+```tsx
+<Pill className="bg-white/40 text-popover">
+  <div className="flex items-center">
+    <MapPin className="text-message-green mr-1 size-4" strokeWidth={2.5} />
+    Label
+  </div>
+</Pill>
+```
+
+### Primary button (submit, publish, confirm)
 
 ```tsx
 <Button className="bg-primary/15 text-primary hover:bg-primary/25 transition-colors duration-100">
@@ -211,11 +230,26 @@ className = "transition-transform hover:scale-105";
 </Button>
 ```
 
-### Input / Textarea
+### Filter trigger button
 
-shadcn Input has glass blur applied globally. No extra classes needed unless overriding color:
 ```tsx
-<Input className="placeholder:text-muted-foreground" />
+<Button
+  variant="ghost"
+  className="bg-primary/20 hover:bg-primary/30 h-8 rounded-md px-3 text-sm shadow-lg transition-colors duration-100"
+>
+  Filter label <ChevronDownIcon className="size-3.5" />
+</Button>
+```
+
+### shadcn Card
+
+Glass blur applied automatically via `[data-slot="card"]`. Use as normal:
+
+```tsx
+<Card>
+  <CardHeader>...</CardHeader>
+  <CardContent>...</CardContent>
+</Card>
 ```
 
 ### Form section label
@@ -224,27 +258,45 @@ shadcn Input has glass blur applied globally. No extra classes needed unless ove
 <p className="mb-1.5 px-1 text-xs font-medium">Location</p>
 ```
 
-### shadcn Card
+### Link hover
 
-Glass blur applied automatically via `[data-slot="card"]` selector. Use as normal:
 ```tsx
-<Card>
-  <CardHeader>...</CardHeader>
-  <CardContent>...</CardContent>
-</Card>
+<Link href="..." className="hover:text-orange">
+  Link text
+</Link>
 ```
 
 ---
 
 ## Status colors
 
-| Status          | Classes                              |
-| --------------- | ------------------------------------ |
-| ACTIVE          | `bg-success/15 text-success`         |
-| DRAFT           | `bg-blue-dark-3 text-muted-foreground` |
-| PAUSED          | `bg-warning/15 text-warning`         |
-| FILLED          | `bg-primary/15 text-primary`         |
-| EXPIRED / CLOSED| `bg-danger/15 text-danger`           |
+### Job status
+
+| Status | Classes |
+|--------|---------|
+| ACTIVE | `bg-success/15 text-success` |
+| DRAFT | `bg-blue-dark-3 text-muted-foreground` |
+| PAUSED | `bg-warning/15 text-warning` |
+| FILLED | `bg-primary/15 text-primary` |
+| EXPIRED / CLOSED | `bg-danger/15 text-danger` |
+
+### Application status
+
+| Status | Classes |
+|--------|---------|
+| SUBMITTED | `bg-blue-dark-3 text-muted-foreground` |
+| VIEWED | `bg-warning/15 text-warning` |
+| REJECTED | `bg-danger/15 text-danger` |
+| CLOSED | `bg-blue-dark-3 text-muted-foreground` |
+
+---
+
+## Icon style
+
+All contextual icons (location, job type, section markers) use:
+- Size: `size-4`
+- Stroke: `strokeWidth={2.5}`
+- Color: `text-message-green`
 
 ---
 
@@ -252,25 +304,27 @@ Glass blur applied automatically via `[data-slot="card"]` selector. Use as norma
 
 These are Shefa-specific, not shadcn primitives:
 
-| File                   | Purpose                                   |
-| ---------------------- | ----------------------------------------- |
-| `status-badge.tsx`     | Job status pill — ACTIVE/DRAFT/PAUSED/etc |
-| `responsive-badge.tsx` | User responsiveness indicator             |
-| `job-card.tsx`         | Job listing card                          |
-| `stat-card.tsx`        | Dashboard metric card                     |
-| `page-header.tsx`      | Page title + description + action slot    |
-| `empty-state.tsx`      | Empty list placeholder                    |
-| `inbox-row.tsx`        | Message thread row                        |
-| `divider.tsx`          | Horizontal rule (`bg-background h-px`)    |
-| `filter-trigger.tsx`   | Dropdown trigger with optional badge count|
+| File | Purpose |
+|------|---------|
+| `status-badge.tsx` | Job status pill — ACTIVE/DRAFT/PAUSED/etc |
+| `responsive-badge.tsx` | User responsiveness indicator |
+| `job-card.tsx` | Job listing card |
+| `stat-card.tsx` | Dashboard metric card |
+| `page-header.tsx` | Page title + description + action slot |
+| `empty-state.tsx` | Empty list placeholder |
+| `inbox-row.tsx` | Message thread row |
+| `divider.tsx` | Horizontal rule |
+| `filter-trigger.tsx` | Dropdown trigger with optional badge count |
+| `pill.tsx` | Inline chip/tag with optional icon |
+| `location-picker.tsx` | City/state dropdown picker |
 
 ---
 
 ## Layout rules
 
 - Mobile-first always: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
-- Max content width: `max-w-4xl mx-auto` (forms), `max-w-6xl mx-auto` (dashboards)
-- Page padding: `px-4 pt-8`
+- Max content width: `max-w-2xl mx-auto` (detail pages), `max-w-4xl mx-auto` (forms), `max-w-6xl mx-auto` (dashboards)
+- Page padding: `p-5`
 - Between cards: `gap-6`
 - Between page sections: `gap-8` or `mb-8`
 - Never use float-based layout
@@ -279,16 +333,16 @@ These are Shefa-specific, not shadcn primitives:
 
 ## What to avoid
 
-| Avoid                                        | Use instead                                   |
-| -------------------------------------------- | --------------------------------------------- |
-| Raw hex in className                         | Semantic token (`bg-card`, `text-dark`)       |
-| `font-bold` except h1                        | `font-medium` for headings below page title   |
-| `rounded-xl` or larger                       | `rounded-lg` max                              |
-| `shadow-lg`, `shadow-xl` (except filter buttons) | No shadow                              |
-| `bg-blue-500`, `bg-success`                | Status tokens                                 |
-| Hover animations that move                   | `transition-colors duration-100` only         |
-| `style={{ color: '#...' }}`                  | Tailwind class                                |
-| Second accent color                          | One accent: `--primary` only                  |
-| `text-[10px]`                                | `text-xs` minimum                             |
-| Nested surfaces beyond layer 2               | Flatten the layout                            |
-| Solid opaque background on body              | Keep body transparent over photo              |
+| Avoid | Use instead |
+|-------|-------------|
+| Raw hex in className | Semantic token (`bg-card`, `text-foreground`) |
+| `font-bold` except h1 | `font-medium` for sub-headings |
+| `rounded-xl` or larger | `rounded-lg` max |
+| `shadow-xl` on general elements | No shadow (acceptable on `bg-white/40` content boxes) |
+| Solid opaque fills on card panels | `bg-card/30` or `bg-white/40` for translucency |
+| Third accent color | `--primary` + `--accent` only |
+| `text-[10px]` | `text-xs` minimum |
+| Nested surfaces beyond layer 2 | Flatten the layout |
+| Hover animations that move | `transition-colors duration-100` only |
+| `style={{ color: '...' }}` | Tailwind class |
+| Solid opaque background on body | Keep body transparent over photo |
