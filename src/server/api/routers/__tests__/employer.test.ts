@@ -244,6 +244,7 @@ describe("employer.createProfile", () => {
     db.query.users.findFirst.mockResolvedValue({ isAdult: false });
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const { isAdult: _isAdult, ...withoutAdult } = VALID_PROFILE_INPUT;
+    // @ts-expect-error testing invalid input (missing isAdult)
     await expect(caller.createProfile(withoutAdult)).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });

@@ -52,18 +52,18 @@ export const UpdateJobPostingSchema = z.object({
   workAuthRequired: JobPostingFields.workAuthRequired.optional(),
   whatWereLookingFor: JobPostingFields.whatWereLookingFor,
   requiredLanguageIds: JobPostingFields.requiredLanguageIds.optional(),
-  status: JobStatusEnum,
+  status: z.enum(["ACTIVE", "PAUSED"]).optional(),
 });
 
 export const ListJobPostingsSchema = z.object({
   status: z.array(JobStatusEnum).optional(),
   companyId: z.string().optional(),
   myJobs: z.boolean().optional(),
-  city: z.string().max(100).optional(),
-  state: z.string().max(100).optional(),
+  city: JobPostingFields.city.optional(),
+  state: JobPostingFields.state.optional(),
   radiusMiles: z.number().positive().max(500).optional(),
-  jobType: z.array(JobType).optional(),
-  workArrangement: z.array(WorkArrangement).optional(),
+  jobType: z.array(JobPostingFields.jobType).optional(),
+  workArrangement: z.array(JobPostingFields.workArrangement).optional(),
   workDays: z.array(DayOfWeek).optional(),
   sortBy: z.enum(["newest", "closest", "pay"]).default("newest"),
 });

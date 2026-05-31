@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { optionalHttpUrl, optionalTrimmedString, requiredTrimmedString } from "../utils";
+import { optionalHttpUrl, optionalTrimmedString, requiredTrimmedString } from "@/lib/utils";
 
 const CompanySize = z.enum(["SIZE_1_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_PLUS"]);
 
@@ -28,13 +28,13 @@ const Industry = z.enum([
 const EmployerProfileFields = {
   firstName: requiredTrimmedString(100),
   lastName: requiredTrimmedString(100),
-  roleAtCompany: optionalTrimmedString(100),
+  roleAtCompany: optionalTrimmedString(200),
 };
 
 export const CreateEmployerProfileSchema = z.object({
   firstName: requiredTrimmedString(100),
   lastName: requiredTrimmedString(100),
-  roleAtCompany: optionalTrimmedString(100),
+  roleAtCompany: optionalTrimmedString(200),
   isAdult: z.literal(true, {
     message: "You must be 18 or older to use this platform",
   }),

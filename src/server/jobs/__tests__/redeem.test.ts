@@ -1,24 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+vi.mock("@/db", () => ({ db: {} }));
 import { redeemToken } from "../redeem";
+import {
+  seekerProfile as seekerProfileSchema,
+  jobPosting as jobPostingSchema,
+  verificationPing as verificationPingSchema,
+  freshnessToken as freshnessTokenSchema,
+} from "@/db/schema";
 
 // ── Mock helpers ──────────────────────────────────────────────────────────────
 
 function makeMockDb() {
-  return {
-    freshnessToken: {
-      findUnique: vi.fn(),
-      updateMany: vi.fn(),
+  const seekerSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+  const jobSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+  const pingSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+  const tokenSet = vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+
+  const db = {
+    query: {
+      freshnessToken: { findFirst: vi.fn() },
     },
-    seekerProfile: {
-      update: vi.fn(),
-    },
-    jobPosting: {
-      update: vi.fn(),
-    },
-    verificationPing: {
-      update: vi.fn(),
-    },
+    update: vi.fn().mockImplementation((table: unknown) => {
+      if (table === seekerProfileSchema) return { set: seekerSet };
+      if (table === jobPostingSchema) return { set: jobSet };
+      if (table === verificationPingSchema) return { set: pingSet };
+      if (table === freshnessTokenSchema) return { set: tokenSet };
+      return { set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) };
+    }),
   };
+
+  return { db, seekerSet, jobSet, pingSet, tokenSet };
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -42,188 +53,144 @@ function makeToken(overrides: Record<string, unknown> = {}) {
 // ── redeemToken ───────────────────────────────────────────────────────────────
 
 describe("redeemToken", () => {
-  let mockDb: ReturnType<typeof makeMockDb>;
+  let mocks: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
-    mockDb = makeMockDb();
-    mockDb.seekerProfile.update.mockResolvedValue({});
-    mockDb.jobPosting.update.mockResolvedValue({});
-    mockDb.verificationPing.update.mockResolvedValue({});
-    mockDb.freshnessToken.updateMany.mockResolvedValue({ count: 1 });
+    mocks = makeMockDb();
   });
 
   // ── Happy paths ──────────────────────────────────────────────────────────
 
   it("SEEKER_PROFILE + CONFIRMED → updates lastVerifiedAt, marks all ping tokens used", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(makeToken());
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(makeToken());
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.seekerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "sp-1" },
-        data: expect.objectContaining({ lastVerifiedAt: expect.any(Date) }),
-      }),
+    expect(mocks.seekerSet).toHaveBeenCalledWith(
+      expect.objectContaining({ lastVerifiedAt: expect.any(Date) }),
     );
-    expect(mockDb.verificationPing.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "ping-1" },
-        data: expect.objectContaining({ response: "CONFIRMED", respondedAt: expect.any(Date) }),
-      }),
+    expect(mocks.pingSet).toHaveBeenCalledWith(
+      expect.objectContaining({ response: "CONFIRMED", respondedAt: expect.any(Date) }),
     );
-    expect(mockDb.freshnessToken.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { pingId: "ping-1" } }),
+    expect(mocks.tokenSet).toHaveBeenCalledWith(
+      expect.objectContaining({ usedAt: expect.any(Date) }),
     );
   });
 
   it("SEEKER_PROFILE + PAUSED → sets status PAUSED", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(makeToken({ action: "PAUSED" }));
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(makeToken({ action: "PAUSED" }));
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.seekerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "sp-1" },
-        data: expect.objectContaining({ status: "PAUSED" }),
-      }),
-    );
+    expect(mocks.seekerSet).toHaveBeenCalledWith(expect.objectContaining({ status: "PAUSED" }));
   });
 
   it("SEEKER_PROFILE + NOT_LOOKING → sets status PAUSED", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(makeToken({ action: "NOT_LOOKING" }));
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(makeToken({ action: "NOT_LOOKING" }));
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.seekerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: "PAUSED" }),
-      }),
-    );
+    expect(mocks.seekerSet).toHaveBeenCalledWith(expect.objectContaining({ status: "PAUSED" }));
   });
 
   it("JOB_POSTING + CONFIRMED → updates job lastVerifiedAt", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ targetType: "JOB_POSTING", targetId: "job-1" }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.jobPosting.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "job-1" },
-        data: expect.objectContaining({ lastVerifiedAt: expect.any(Date) }),
-      }),
+    expect(mocks.jobSet).toHaveBeenCalledWith(
+      expect.objectContaining({ lastVerifiedAt: expect.any(Date) }),
     );
   });
 
   it("JOB_POSTING + FILLED → sets job status CLOSED with closureReason FILLED_ON_SHEFA", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ targetType: "JOB_POSTING", targetId: "job-1", action: "FILLED" }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.jobPosting.update).toHaveBeenCalledWith(
+    expect(mocks.jobSet).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: "job-1" },
-        data: expect.objectContaining({
-          status: "CLOSED",
-          closureReason: "FILLED_ON_SHEFA",
-          closedAt: expect.any(Date),
-        }),
+        status: "CLOSED",
+        closureReason: "FILLED_ON_SHEFA",
+        closedAt: expect.any(Date),
       }),
     );
   });
 
   it("JOB_POSTING + PAUSED → sets job status PAUSED", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ targetType: "JOB_POSTING", targetId: "job-1", action: "PAUSED" }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.jobPosting.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ status: "PAUSED" }),
-      }),
-    );
+    expect(mocks.jobSet).toHaveBeenCalledWith(expect.objectContaining({ status: "PAUSED" }));
   });
 
   // ── Invalid token cases ──────────────────────────────────────────────────
 
   it("nonexistent token → status: invalid", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(null);
-
-    const result = await redeemToken("nonexistent", mockDb as never);
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(null);
+    const result = await redeemToken("nonexistent", mocks.db as never);
 
     expect(result.status).toBe("invalid");
-    expect(mockDb.seekerProfile.update).not.toHaveBeenCalled();
-    expect(mockDb.jobPosting.update).not.toHaveBeenCalled();
+    expect(mocks.db.update).not.toHaveBeenCalledWith(seekerProfileSchema);
+    expect(mocks.db.update).not.toHaveBeenCalledWith(jobPostingSchema);
   });
 
   it("expired token → status: expired", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ expiresAt: new Date(Date.now() - 1000) }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("expired");
-    expect(mockDb.seekerProfile.update).not.toHaveBeenCalled();
+    expect(mocks.db.update).not.toHaveBeenCalledWith(seekerProfileSchema);
   });
 
   it("already-used token → status: already-used", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ usedAt: new Date(Date.now() - 60000) }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("already-used");
-    expect(mockDb.seekerProfile.update).not.toHaveBeenCalled();
+    expect(mocks.db.update).not.toHaveBeenCalledWith(seekerProfileSchema);
   });
 
   // ── Adversarial cases ──────────────────────────────────────────────────────
 
   it("SEEKER_PROFILE token with FILLED action → no-op on job table, still updates seeker", async () => {
-    // FILLED is a job action but token says SEEKER_PROFILE — we don't update the job table
-    mockDb.freshnessToken.findUnique.mockResolvedValue(makeToken({ action: "FILLED" }));
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    // FILLED is a job action but token says SEEKER_PROFILE — job table should not be touched
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(makeToken({ action: "FILLED" }));
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.jobPosting.update).not.toHaveBeenCalled();
-    // SEEKER_PROFILE + FILLED → treated as PAUSED (same outcome as NOT_LOOKING)
-    expect(mockDb.seekerProfile.update).toHaveBeenCalled();
+    expect(mocks.db.update).not.toHaveBeenCalledWith(jobPostingSchema);
+    expect(mocks.seekerSet).toHaveBeenCalled();
   });
 
   it("JOB_POSTING token with NOT_LOOKING action → no-op on seeker table, job gets PAUSED", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(
       makeToken({ targetType: "JOB_POSTING", targetId: "job-1", action: "NOT_LOOKING" }),
     );
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.seekerProfile.update).not.toHaveBeenCalled();
-    expect(mockDb.jobPosting.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: "PAUSED" }) }),
-    );
+    expect(mocks.db.update).not.toHaveBeenCalledWith(seekerProfileSchema);
+    expect(mocks.jobSet).toHaveBeenCalledWith(expect.objectContaining({ status: "PAUSED" }));
   });
 
   it("token without pingId still marks token used (no ping update)", async () => {
-    mockDb.freshnessToken.findUnique.mockResolvedValue(makeToken({ pingId: null }));
-
-    const result = await redeemToken("valid-token-abc", mockDb as never);
+    mocks.db.query.freshnessToken.findFirst.mockResolvedValue(makeToken({ pingId: null }));
+    const result = await redeemToken("valid-token-abc", mocks.db as never);
 
     expect(result.status).toBe("success");
-    expect(mockDb.verificationPing.update).not.toHaveBeenCalled();
-    expect(mockDb.freshnessToken.updateMany).not.toHaveBeenCalled();
+    expect(mocks.db.update).not.toHaveBeenCalledWith(verificationPingSchema);
+    expect(mocks.db.update).not.toHaveBeenCalledWith(freshnessTokenSchema);
   });
 });

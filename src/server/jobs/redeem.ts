@@ -63,6 +63,7 @@ async function applySeekerAction(
 
     case "NOT_LOOKING":
     case "PAUSED":
+    case "FILLED":
       await db
         .update(seekerProfile)
         .set({ status: "PAUSED" })
@@ -93,6 +94,7 @@ async function applyJobAction(
       return;
 
     case "PAUSED":
+    case "NOT_LOOKING":
       await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, jobId));
       return;
 

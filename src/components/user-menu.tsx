@@ -13,11 +13,11 @@ export function UserMenu({ email }: { email: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="dark" size="sm" className="max-w-48 truncate text-sm shadow-none">
+        <Button size="sm" className="max-w-48 truncate bg-transparent text-sm shadow-none">
           {email}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-blue-dark-3 w-30">
+      <DropdownMenuContent align="end" className="bg-blue-dark-3 w-30 text-white">
         <DropdownMenuItem
           className="cursor-pointer"
           onClick={() => signOut({ callbackUrl: "/sign-in" })}

@@ -44,7 +44,7 @@ function makeMockDb() {
         groupBy: vi.fn().mockResolvedValue([]),
       }),
     }),
-    execute: vi.fn().mockResolvedValue([]),
+    execute: vi.fn().mockResolvedValue({ rows: [] }),
   };
 }
 
@@ -314,7 +314,7 @@ describe("jobPosting.list", () => {
         groupBy: vi.fn().mockResolvedValue([]),
       }),
     });
-    db.execute.mockResolvedValue([]);
+    db.execute.mockResolvedValue({ rows: [] });
   });
 
   // ── Happy path ──
@@ -701,7 +701,7 @@ describe("jobPosting.search", () => {
 
   beforeEach(() => {
     db = makeMockDb();
-    db.execute.mockResolvedValue([]);
+    db.execute.mockResolvedValue({ rows: [] });
     db.query.jobPosting.findMany.mockResolvedValue([]);
     // For count queries
     db.select.mockReturnValue({
@@ -728,7 +728,7 @@ describe("jobPosting.search", () => {
   });
 
   it("returns jobs with rank attached from the raw query", async () => {
-    db.execute.mockResolvedValue([{ id: JOB_ID, rank: 1.5 }]);
+    db.execute.mockResolvedValue({ rows: [{ id: JOB_ID, rank: 1.5 }] });
     db.query.jobPosting.findMany.mockResolvedValue([MOCK_JOB_SEARCH_RESULT]);
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.search({ q: "cook" });
@@ -737,10 +737,12 @@ describe("jobPosting.search", () => {
   });
 
   it("preserves rank order from raw query regardless of findMany return order", async () => {
-    db.execute.mockResolvedValue([
-      { id: "job-a", rank: 2.0 },
-      { id: "job-b", rank: 0.8 },
-    ]);
+    db.execute.mockResolvedValue({
+      rows: [
+        { id: "job-a", rank: 2.0 },
+        { id: "job-b", rank: 0.8 },
+      ],
+    });
     // findMany returns them in reverse — the procedure must re-sort by raw query order
     db.query.jobPosting.findMany.mockResolvedValue([
       { ...MOCK_JOB_SEARCH_RESULT, id: "job-b" },
@@ -754,7 +756,7 @@ describe("jobPosting.search", () => {
 
   it("coerces rank to number when Postgres returns a string (numeric type edge case)", async () => {
     // Some Postgres numeric types come back as strings through certain drivers
-    db.execute.mockResolvedValue([{ id: JOB_ID, rank: "1.23" as unknown as number }]);
+    db.execute.mockResolvedValue({ rows: [{ id: JOB_ID, rank: "1.23" as unknown as number }] });
     db.query.jobPosting.findMany.mockResolvedValue([MOCK_JOB_SEARCH_RESULT]);
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.search({ q: "cook" });
@@ -772,10 +774,12 @@ describe("jobPosting.search", () => {
 
   it("omits a job that disappeared between the raw query and findMany", async () => {
     // Race condition: job deleted after trigram scan but before fetch
-    db.execute.mockResolvedValue([
-      { id: "job-a", rank: 2.0 },
-      { id: "job-gone", rank: 1.0 },
-    ]);
+    db.execute.mockResolvedValue({
+      rows: [
+        { id: "job-a", rank: 2.0 },
+        { id: "job-gone", rank: 1.0 },
+      ],
+    });
     db.query.jobPosting.findMany.mockResolvedValue([{ ...MOCK_JOB_SEARCH_RESULT, id: "job-a" }]);
     const caller = createCaller(makeCtx(null, db));
     const result = await caller.search({ q: "cook" });
