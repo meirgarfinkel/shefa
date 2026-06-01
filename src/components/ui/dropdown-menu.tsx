@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover text-popover-foreground z-50 max-h-(--radix-dropdown-menu-content-available-height) space-y-1 overflow-auto rounded-md p-1 shadow-md",
+          "bg-popover z-50 max-h-(--radix-dropdown-menu-content-available-height) space-y-1 overflow-auto rounded-md p-1 text-white shadow-md",
           className,
         )}
         {...props}
@@ -62,7 +62,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "relative flex cursor-default items-center gap-1.5 rounded-md p-1 text-sm outline-none select-none",
+        "hover:bg-card/30 relative flex cursor-pointer items-center gap-1.5 rounded-md p-1 text-sm outline-none select-none",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
         variant === "destructive" && "text-danger focus:bg-danger/10 focus:text-danger",
         inset && "pl-7",

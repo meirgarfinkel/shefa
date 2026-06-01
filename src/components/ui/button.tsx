@@ -11,7 +11,8 @@ const buttonVariants = cva(
         // default: "bg-primary hover:bg-popover/90 hover:text-white from-white/40 bg-linear-to-b via-transparent to-transparent",
         default:
           "bg-primary hover:bg-popover/90 hover:text-white from-popover/20 bg-linear-to-t via-transparent to-transparent",
-        secondary: "bg-secondary/40 text-popover hover:bg-secondary/80 hover:text-popover",
+        secondary:
+          "bg-secondary/40 text-popover hover:bg-secondary/80 hover:text-popover from-popover/20 bg-linear-to-t via-transparent to-transparent",
         ghost: "bg-white/20 hover:bg-white/70",
         destructive:
           "bg-white/80 text-danger hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",

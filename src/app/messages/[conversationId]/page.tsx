@@ -14,10 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Card, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import type { JobStatus } from "@/db/schema";
+import { Building, Car, Check, Clock, Info, MapPin, SearchCheck } from "lucide-react";
 
 const MAX_BODY = 5000;
 
@@ -72,7 +73,7 @@ function JobDetailCard({ job }: { job: ConvJob }) {
   const sortedDays = [...job.workDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
 
   return (
-    <Card className="w-full">
+    <div className="bg-card/30 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <CardTitle>{job.title}</CardTitle>
         <ResponsiveBadge
@@ -81,76 +82,94 @@ function JobDetailCard({ job }: { job: ConvJob }) {
         />
       </div>
       <CardDescription>
-        <span>🏢 </span>
-        <Link
-          href={`/company/${job.company.id}`}
-          className="hover:text-popover-foreground font-medium"
-        >
-          {job.company.name}
-        </Link>
+        <div className="my-5">
+          <Link
+            href={`/company/${job.company.id}`}
+            className="hover:text-orange flex items-center gap-1 font-medium"
+          >
+            <Building className="text-message-green size-4" strokeWidth={2.5} />
+            {job.company.name}
+          </Link>
+        </div>
       </CardDescription>
       <CardContent>
         <div className="flex flex-wrap gap-2">
-          <Pill variant="dark">
-            <span>
-              📍 {job.city}, {job.state}
-            </span>
+          <Pill variant="light">
+            <div className="flex items-center gap-1">
+              <MapPin className="text-message-green size-4" strokeWidth={2.5} /> {job.city},{" "}
+              {job.state}
+            </div>
           </Pill>
-          <Pill variant="dark">
-            <span>🕒 {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}</span>
+          <Pill variant="light">
+            <div className="flex items-center gap-1">
+              <Clock className="text-message-green size-4" strokeWidth={2.5} />
+              {JOB_TYPE_LABELS[job.jobType] ?? job.jobType}
+            </div>
           </Pill>
-          <Pill variant="dark">
-            <span>🚗 {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}</span>
+          <Pill variant="light">
+            <div className="flex items-center gap-1">
+              <Car className="text-message-green size-4" strokeWidth={2.5} />
+              {ARRANGEMENT_LABELS[job.workArrangement] ?? job.workArrangement}
+            </div>
           </Pill>
           {job.workAuthRequired && (
-            <Pill variant="dark">
-              <span>✅ Work auth required</span>
+            <Pill variant="light">
+              <div className="flex items-center gap-1">
+                <Check className="text-message-green size-4" strokeWidth={2.5} />
+                Work auth required
+              </div>
             </Pill>
           )}
         </div>
 
-        <div className="my-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="my-6 grid grid-cols-2 gap-4">
           <div>
-            <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">Pay</p>
-            <p className="text-popover-foreground mt-1 text-sm font-medium">
+            <p className="text-md font-medium tracking-wide">Pay</p>
+            <p className="text-muted mt-1 text-sm font-medium">
               From ${Number(job.minHourlyRate).toFixed(2)}/hr
             </p>
-            {job.payNotes && <p className="text-muted-foreground mt-0.5 text-xs">{job.payNotes}</p>}
+            {job.payNotes && <p className="text-muted mt-0.5 text-xs">{job.payNotes}</p>}
           </div>
 
           {sortedDays.length > 0 && (
             <div>
-              <p className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
-                Work days
-              </p>
-              <p className="text-popover-foreground mt-1 text-sm">
+              <p className="text-md font-medium tracking-wide">Work days</p>
+              <p className="text-muted mt-1 text-sm font-medium">
                 {sortedDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
               </p>
               {job.scheduleNotes && (
-                <p className="text-muted-foreground mt-0.5 text-xs">{job.scheduleNotes}</p>
+                <p className="text-muted mt-0.5 text-xs">{job.scheduleNotes}</p>
               )}
             </div>
           )}
 
           {job.requiredLanguages.length > 0 && (
             <div>
-              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                Languages
-              </p>
-              <p className="mt-1 text-sm">
+              <p className="text-md font-medium tracking-wide">Languages</p>
+              <p className="text-muted mt-1 text-sm font-medium">
                 {job.requiredLanguages.map((l) => l.language.name).join(", ")}
               </p>
             </div>
           )}
         </div>
 
-        <h2>📄 About the role</h2>
-        <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.description}</div>
+        <div>
+          <div className="mb-1 flex items-center gap-1 font-medium">
+            <Info className="text-message-green size-4" strokeWidth={2.5} />
+            About the role
+          </div>
+          <div className="rounded-sm bg-white/70 p-3 text-sm shadow-xl">{job.description}</div>
+        </div>
 
         {job.whatWereLookingFor && (
-          <div className="my-5">
-            <h2>🔍 What we&apos;re looking for</h2>
-            <div className="bg-muted/20 rounded-sm p-4 shadow-xl">{job.whatWereLookingFor}</div>
+          <div className="my-8">
+            <div className="mb-1 flex items-center gap-1 font-medium">
+              <SearchCheck className="text-message-green size-4" strokeWidth={2.5} />
+              What we&apos;re looking for
+            </div>
+            <div className="rounded-sm bg-white/70 p-3 text-sm shadow-xl">
+              {job.whatWereLookingFor}
+            </div>
           </div>
         )}
 
@@ -160,7 +179,7 @@ function JobDetailCard({ job }: { job: ConvJob }) {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </div>
   );
 }
 
@@ -253,7 +272,7 @@ export default function ConversationPage({
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <p className="text-muted-foreground">Conversation not found.</p>
-        <Button variant="ghost" className="mt-4" asChild>
+        <Button variant="light" className="mt-4" asChild>
           <Link href="/messages">Back to messages</Link>
         </Button>
       </div>
@@ -349,10 +368,7 @@ export default function ConversationPage({
           {/* Header */}
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <Link
-                href="/messages"
-                className="text-muted-foreground hover:text-popover-foreground text-sm"
-              >
+              <Link href="/messages" className="hover:text-orange text-sm">
                 ← Messages
               </Link>
               <Separator orientation="vertical" className="h-4" />
@@ -367,7 +383,7 @@ export default function ConversationPage({
                 {conv.job && (
                   <p className="text-muted-foreground text-xs">
                     Re:{" "}
-                    <Link href={`/jobs/${conv.job.id}`} className="hover:underline">
+                    <Link href={`/jobs/${conv.job.id}`} className="capitalize hover:underline">
                       {conv.job.title}
                     </Link>
                   </p>
@@ -391,7 +407,7 @@ export default function ConversationPage({
               {/* Actions menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                  <Button variant="secondary" size="sm">
                     ⋯
                   </Button>
                 </DropdownMenuTrigger>
@@ -407,7 +423,6 @@ export default function ConversationPage({
                     <DropdownMenuItem
                       onClick={() => blockConv.mutate({ conversationId })}
                       disabled={blockConv.isPending}
-                      className="text-danger focus:text-danger"
                     >
                       Block
                     </DropdownMenuItem>
@@ -421,7 +436,6 @@ export default function ConversationPage({
                       })
                     }
                     disabled={report.isPending}
-                    className="text-danger focus:text-danger"
                   >
                     Report user
                   </DropdownMenuItem>
@@ -429,8 +443,6 @@ export default function ConversationPage({
               </DropdownMenu>
             </div>
           </div>
-
-          <Separator className="mb-4" />
 
           {/* Messages */}
           <div className="mb-4 min-h-[300px] space-y-3">
@@ -469,7 +481,7 @@ export default function ConversationPage({
 
           {/* Blocked / gated state */}
           {blockMessage && (
-            <div className="bg-blue-dark-3 text-muted-foreground rounded-md px-4 py-3 text-center text-sm">
+            <div className="bg-blue-dark-3 rounded-md px-4 py-3 text-center text-sm text-white">
               {blockMessage}
               {blockReason === "caller-blocked" && (
                 <button
@@ -496,7 +508,7 @@ export default function ConversationPage({
                 className="resize-none"
               />
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground text-xs">
+                <span className="text-muted text-xs">
                   {body.length}/{MAX_BODY}
                 </span>
                 <Button
