@@ -169,14 +169,14 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                   control={form.control}
                   name="workAuthorization"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row space-y-0 space-x-3 rounded-md bg-white/40 p-3">
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/40 p-3">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={(checked) => field.onChange(!!checked)}
                         />
                       </FormControl>
-                      <FormLabel className="font-normal">
+                      <FormLabel className="text-sm font-normal">
                         I am authorized to work in the United States
                       </FormLabel>
                     </FormItem>

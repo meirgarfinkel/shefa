@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { CardTitle } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
+import { Pill } from "@/components/ui/pill";
 
 const DAY_LABELS: Record<string, string> = {
   SUN: "Sun",
@@ -64,104 +66,90 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-medium">
+    <div className="p-5">
+      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
+        <div className="p-5">
+          <div className="flex justify-between gap-4">
+            <CardTitle>
               {profile.firstName} {profile.lastName}
-            </h1>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {profile.city}, {profile.state}
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
+            </CardTitle>
             {profile.status === "PAUSED" && (
               <span className="border-warning/25 bg-warning/15 text-warning rounded-full px-3 py-1 text-xs">
                 Not currently active
               </span>
             )}
+            {isEmployer && profile.status === "ACTIVE" && (
+              <Button
+                disabled={createConversation.isPending}
+                onClick={() => createConversation.mutate({ targetId: profileId })}
+              >
+                {createConversation.isPending ? "Opening…" : "Message"}
+              </Button>
+            )}
           </div>
-        </div>
-
-        {isEmployer && profile.status === "ACTIVE" && (
-          <div className="mt-4">
-            <Button
-              disabled={createConversation.isPending}
-              onClick={() => createConversation.mutate({ targetId: profileId })}
-            >
-              {createConversation.isPending ? "Opening…" : "Message"}
-            </Button>
+          <div className="flex items-center gap-1">
+            <MapPin className="text-message-green size-4" strokeWidth={2.5} /> {profile.city},{" "}
+            {profile.state}
           </div>
-        )}
-      </div>
 
-      <Separator />
-
-      {/* What they're looking for */}
-      <div className="my-6">
-        <h2 className="text-popover-foreground mb-2 font-medium">What they&apos;re looking for</h2>
-        <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.jobSeekText}</p>
-      </div>
-
-      {/* About */}
-      {profile.about && (
-        <>
-          <Separator />
-          <div className="my-6">
-            <h2 className="text-popover-foreground mb-2 font-medium">About</h2>
-            <p className="text-muted-foreground text-sm whitespace-pre-wrap">{profile.about}</p>
-          </div>
-        </>
-      )}
-
-      <Separator />
-
-      {/* Details grid */}
-      <div className="my-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-        {profile.availableDays.length > 0 && (
-          <div>
-            <p className="mb-1 text-sm font-medium">Available days</p>
-            <p className="text-muted-foreground text-sm">
-              {profile.availableDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
+          <div className="my-6 space-y-1">
+            <h2 className="font-medium">What I&apos;m looking for</h2>
+            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+              {profile.jobSeekText}
             </p>
           </div>
-        )}
 
-        <div>
-          <p className="mb-1 text-sm font-medium">Work authorization</p>
-          <p className="text-muted-foreground text-sm">
-            {profile.workAuthorization ? "Authorized to work" : "Not authorized"}
-          </p>
-        </div>
-
-        {profile.educationLevel && (
-          <div>
-            <p className="mb-1 text-sm font-medium">Education</p>
-            <p className="text-muted-foreground text-sm">
-              {EDUCATION_LABELS[profile.educationLevel] ?? profile.educationLevel}
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Languages */}
-      {profile.languages.length > 0 && (
-        <>
-          <Separator />
-          <div className="my-6">
-            <h2 className="text-popover-foreground mb-3 font-medium">Languages</h2>
-            <div className="flex flex-wrap gap-2">
-              {profile.languages.map((lang) => (
-                <span key={lang} className="bg-blue-dark-3 rounded-full px-3 py-1 text-sm">
-                  {lang}
-                </span>
-              ))}
+          {/* About */}
+          {profile.about && (
+            <div className="my-6 space-y-1">
+              <h2 className="font-medium">About</h2>
+              <p className="text-sm whitespace-pre-wrap">{profile.about}</p>
             </div>
+          )}
+
+          {/* Details grid */}
+          <div className="my-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+            {profile.availableDays.length > 0 && (
+              <div className="space-y-1">
+                <h2 className="font-medium">Available days</h2>
+                <p className="text-sm">
+                  {profile.availableDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <h2 className="font-medium">Work authorization</h2>
+              <p className="text-sm">
+                {profile.workAuthorization ? "Authorized to work" : "Not authorized"}
+              </p>
+            </div>
+
+            {profile.educationLevel && (
+              <div className="flex items-center gap-2 space-y-1">
+                <h2 className="font-medium">Education:</h2>
+                <p className="text-sm">
+                  {EDUCATION_LABELS[profile.educationLevel] ?? profile.educationLevel}
+                </p>
+              </div>
+            )}
           </div>
-        </>
-      )}
+
+          {/* Languages */}
+          {profile.languages.length > 0 && (
+            <div className="flex items-center gap-2 space-y-1">
+              <h2 className="font-medium">Languages:</h2>
+              <div className="flex flex-wrap gap-2">
+                {profile.languages.map((lang) => (
+                  <Pill key={lang} variant="light">
+                    {lang}
+                  </Pill>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import type { ApplicationStatus } from "@/db/schema";
+import { Pill } from "@/components/ui/pill";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "Applied",
@@ -16,20 +17,17 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-blue-dark-3 text-success",
-  VIEWED: "bg-warning/15 text-warning",
-  REJECTED: "bg-danger/15 text-danger",
-  CLOSED: "bg-blue-dark-3 text-muted-foreground",
+  SUBMITTED: "text-success",
+  VIEWED: "text-warning",
+  REJECTED: "text-danger",
+  CLOSED: "text-muted-foreground",
 };
 
-function AppStatusBadge({ status }: { status: string }) {
-  const s = status as ApplicationStatus;
+function AppStatusBadge({ status }: { status: ApplicationStatus }) {
   return (
-    <span
-      className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-blue-dark-3 text-muted-foreground"}`}
-    >
-      {STATUS_LABELS[s] ?? s}
-    </span>
+    <Pill variant="light" className={STATUS_STYLES[status]}>
+      {STATUS_LABELS[status]}
+    </Pill>
   );
 }
 
@@ -64,10 +62,10 @@ export default function SeekerApplicationsPage() {
             <li key={app.id}>
               <Link href={`/jobs/${app.job.id}`}>
                 <Card>
-                  <CardTitle className="flex justify-between">
-                    {app.job.title}
+                  <div className="flex justify-between">
+                    <CardTitle>{app.job.title}</CardTitle>
                     <AppStatusBadge status={app.status} />
-                  </CardTitle>
+                  </div>
                   <CardDescription>
                     {app.job.company.name} · {app.job.city}, {app.job.state}
                   </CardDescription>
@@ -76,7 +74,7 @@ export default function SeekerApplicationsPage() {
                       <p className="text-muted-foreground text-xs">
                         Applied: {new Date(app.createdAt).toLocaleDateString()}
                       </p>
-                      {app.job.status === "ACTIVE" && (
+                      {!["REJECTED", "CLOSED"].includes(app.status) && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"

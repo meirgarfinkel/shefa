@@ -206,7 +206,7 @@ function profileHref(
 ): string | null {
   if (!participant) return null;
   if (participant.seekerProfile) return `/seeker/${participant.seekerProfile.id}`;
-  if (participant.companies.length > 0) return `/employer/${participant.companies[0]!.id}`;
+  if (participant.companies.length > 0) return `/company/${participant.companies[0]!.id}`;
   return null;
 }
 

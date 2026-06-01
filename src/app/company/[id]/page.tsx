@@ -67,18 +67,16 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="bg-secondary/80 rounded-md px-3 py-1 text-sm">
+            <Button variant="secondary">
               {company._count.jobs === 1 ? "1 active job" : `${company._count.jobs} jobs`}
-            </span>
+            </Button>
+
             {company.website && (
-              <a
-                href={company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-md bg-white/70 px-3 py-1 text-sm transition-colors hover:bg-white"
-              >
-                Website ↗
-              </a>
+              <Button asChild variant="light">
+                <Link href={company.website} target="_blank" rel="noopener noreferrer">
+                  Website ↗
+                </Link>
+              </Button>
             )}
           </div>
 
