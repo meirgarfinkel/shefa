@@ -18,6 +18,7 @@ import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
 import type { JobStatus } from "@/db/schema";
 import { CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -141,6 +142,7 @@ export default function EmployerJobsPage() {
   const isPending = updateJob.isPending || duplicateJob.isPending || confirmFreshness.isPending;
 
   const pageSubtitle = multiCompany ? "All companies" : (companies?.[0]?.companyName ?? undefined);
+  const router = useRouter();
 
   return (
     <div className="p-5">
@@ -198,7 +200,8 @@ export default function EmployerJobsPage() {
               return (
                 <div
                   key={job.id}
-                  className="bg-primary/30 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                  className="bg-primary/30 relative cursor-pointer rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                  onClick={() => router.push(`/jobs/${job.id}`)}
                 >
                   <div className="space-y-2 md:flex md:items-start md:justify-between md:space-y-0">
                     {/* Mobile: title + status on same row */}
@@ -223,7 +226,11 @@ export default function EmployerJobsPage() {
                           variant="light"
                           className="text-success w-fit"
                           disabled={isPending}
-                          onClick={() => confirmFreshness.mutate({ id: job.id })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            confirmFreshness.mutate({ id: job.id });
+                          }}
                         >
                           I confirm job is still open
                         </Button>
@@ -256,22 +263,34 @@ export default function EmployerJobsPage() {
                     </div>
                   </div>
 
-                  <p className="text-muted-foreground mt-0.5 text-xs">
+                  <p className="text-muted-foreground relative z-10 mt-0.5 text-xs">
                     {multiCompany && <>{job.company.name}</>} · {job.city}, {job.state} · $
                     {Number(job.minHourlyRate).toFixed(0)}/hr
                   </p>
 
-                  <div className="mt-3 flex flex-wrap justify-between">
+                  <div className="relative z-10 mt-3 flex flex-wrap justify-between">
                     <div className="flex gap-1.5">
                       {!isClosed && (
-                        <Button asChild variant="light" size="sm" className="h-7 text-xs">
+                        <Button
+                          asChild
+                          variant="light"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link href={`/employer/jobs/${job.id}/applications`}>
                             Applicants ({job._count.applications})
                           </Link>
                         </Button>
                       )}
                       {!isClosed && (
-                        <Button asChild variant="light" size="sm" className="h-7 text-xs">
+                        <Button
+                          asChild
+                          variant="light"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
                         </Button>
                       )}
@@ -281,7 +300,11 @@ export default function EmployerJobsPage() {
                           size="sm"
                           className="h-7 text-xs"
                           disabled={isPending}
-                          onClick={() => updateJob.mutate({ id: job.id, status: "PAUSED" })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateJob.mutate({ id: job.id, status: "PAUSED" });
+                          }}
                         >
                           Pause
                         </Button>
@@ -292,7 +315,11 @@ export default function EmployerJobsPage() {
                           size="sm"
                           className="h-7 text-xs"
                           disabled={isPending}
-                          onClick={() => updateJob.mutate({ id: job.id, status: "ACTIVE" })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            updateJob.mutate({ id: job.id, status: "ACTIVE" });
+                          }}
                         >
                           Unpause
                         </Button>
@@ -302,17 +329,13 @@ export default function EmployerJobsPage() {
                         size="sm"
                         className="h-7 text-xs"
                         disabled={isPending}
-                        onClick={() => duplicateJob.mutate({ id: job.id })}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          duplicateJob.mutate({ id: job.id });
+                        }}
                       >
                         Duplicate
-                      </Button>
-                      <Button
-                        asChild
-                        variant="light"
-                        size="sm"
-                        className="text-muted-foreground h-7 text-xs"
-                      >
-                        <Link href={`/jobs/${job.id}`}>Preview</Link>
                       </Button>
                     </div>
                     <div>
@@ -322,7 +345,11 @@ export default function EmployerJobsPage() {
                           size="sm"
                           className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
                           disabled={isPending}
-                          onClick={() => setClosingJob({ id: job.id, title: job.title })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setClosingJob({ id: job.id, title: job.title });
+                          }}
                         >
                           Close listing
                         </Button>

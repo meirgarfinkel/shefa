@@ -158,7 +158,9 @@ function JobDetailCard({ job }: { job: ConvJob }) {
             <Info className="text-message-green size-4" strokeWidth={2.5} />
             About the role
           </div>
-          <div className="rounded-sm bg-white/70 p-3 text-sm shadow-xl">{job.description}</div>
+          <div className="rounded-sm bg-white/70 px-3 py-2 text-sm shadow-xl">
+            {job.description}
+          </div>
         </div>
 
         {job.whatWereLookingFor && (
@@ -364,7 +366,9 @@ export default function ConversationPage({
         )}
 
         {/* Conversation panel */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div
+          className={`flex flex-col ${conv.job ? "min-w-0 flex-1" : "mx-auto w-full max-w-3xl"}`}
+        >
           {/* Header */}
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">

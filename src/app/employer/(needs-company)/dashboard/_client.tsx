@@ -40,13 +40,14 @@ const CLOSURE_OPTIONS: { value: JobClosureReason; label: string }[] = [
 function CloseJobModal({
   jobId,
   jobTitle,
-  disabled,
+  open,
+  onClose,
 }: {
   jobId: string;
   jobTitle: string;
-  disabled: boolean;
+  open: boolean;
+  onClose: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<JobClosureReason | null>(null);
   const utils = trpc.useUtils();
 
@@ -54,27 +55,17 @@ function CloseJobModal({
     onSuccess: () => {
       void utils.jobPosting.list.invalidate();
       setReason(null);
-      setOpen(false);
+      onClose();
     },
   });
 
-  function handleOpenChange(v: boolean) {
-    if (!v) setReason(null);
-    setOpen(v);
+  function handleClose() {
+    setReason(null);
+    onClose();
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="light"
-          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
-          disabled={disabled}
-        >
-          Close listing
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Close &ldquo;{jobTitle}&rdquo;?</DialogTitle>
@@ -103,11 +94,7 @@ function CloseJobModal({
         </div>
 
         <DialogFooter className="gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => handleOpenChange(false)}
-            disabled={closeJob.isPending}
-          >
+          <Button variant="ghost" onClick={handleClose} disabled={closeJob.isPending}>
             Cancel
           </Button>
           <Button
@@ -171,6 +158,7 @@ export function EmployerDashboardClient({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () => new Set(companies.map((c) => c.id)),
   );
+  const [closingJob, setClosingJob] = useState<{ id: string; title: string } | null>(null);
 
   const activeJobs = jobs ?? [];
   const appFeed = recentApps ?? [];
@@ -340,7 +328,12 @@ export function EmployerDashboardClient({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <CardTitle className="text-lg">{job.title}</CardTitle>
-                        <Button asChild size="sm" variant="light">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="light"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link href={`/employer/jobs/${job.id}/applications`}>
                             Applicants ({job._count.applications})
                           </Link>
@@ -370,15 +363,28 @@ export function EmployerDashboardClient({
                         >
                           Pause
                         </Button>
-                        <Button asChild size="sm" variant="light">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="light"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
                         </Button>
                       </div>
-                      <CloseJobModal
-                        jobId={job.id}
-                        jobTitle={job.title}
+                      <Button
+                        size="sm"
+                        variant="light"
+                        className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
                         disabled={updateJob.isPending}
-                      />
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setClosingJob({ id: job.id, title: job.title });
+                        }}
+                      >
+                        Close listing
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -424,6 +430,15 @@ export function EmployerDashboardClient({
           </div>
         </div>
       </div>
+
+      {closingJob && (
+        <CloseJobModal
+          jobId={closingJob.id}
+          jobTitle={closingJob.title}
+          open={true}
+          onClose={() => setClosingJob(null)}
+        />
+      )}
     </div>
   );
 }

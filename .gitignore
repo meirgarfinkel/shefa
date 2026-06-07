@@ -19,6 +19,7 @@
 
 # production
 /build
+/graphify*
 
 # misc
 .DS_Store

@@ -55,6 +55,7 @@
 
   /* Borders / inputs */
   --border: var(--gray-light-1);
+  --dark-border: rgb(0, 0, 0);
   --input: var(--blue-dark-2);
   --ring: var(--gray-light-1);
 
@@ -103,6 +104,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
 
   --color-border: var(--border);
+  --color-dark-border: var(--dark-border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 

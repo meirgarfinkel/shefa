@@ -127,7 +127,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const { data: session } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [applicationJustSubmitted, setApplicationJustSubmitted] = useState(false);
 
   const { data: job, isLoading, error } = trpc.jobPosting.getById.useQuery({ id });
   const { data: myStatus } = trpc.application.myStatus.useQuery(
@@ -162,8 +162,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const hasProfile =
     isSeeker && !seekerProfileLoading && seekerProfile !== null && seekerProfile !== undefined;
   const noProfile = isSeeker && !seekerProfileLoading && !seekerProfile;
-  const hasApplied = submitted || (myStatus && myStatus.status !== "CLOSED");
   const currentStatus = myStatus?.status;
+
+  const applicationClosed = currentStatus === "CLOSED";
+
+  const hasApplied = applicationJustSubmitted || (!!currentStatus && currentStatus !== "CLOSED");
+
+  const canApply = hasProfile && !hasApplied && !applicationClosed;
+
+  const showApplicationStatus = hasProfile && hasApplied && !applicationClosed;
 
   return (
     <div className="p-5">
@@ -181,7 +188,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 isNew={job.company.employer.isNew}
               />
               {isOwner && (
-                <Button asChild size="sm" className="gap-1">
+                <Button asChild size="sm" className="gap-1 text-sm">
                   <Link href={`/employer/jobs/${id}/edit`}>
                     <Pencil className="text-message-green size-4" strokeWidth={2.5} />
                     Edit
@@ -263,28 +270,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
 
             {/* Description */}
-            <div>
-              <div className="mb-1 flex items-center gap-1 font-medium">
+            <div className="mb-8 space-y-1">
+              <div className="flex items-center gap-1 font-medium">
                 <Info className="text-message-green size-4" strokeWidth={2.5} />
                 About the role
               </div>
-              <div className="rounded-sm bg-white/70 p-3 shadow-xl">{job.description}</div>
+              <div className="rounded-sm bg-white/70 px-3 py-2 shadow-xl">{job.description}</div>
             </div>
 
             {job.whatWereLookingFor && (
-              <div className="my-8">
+              <div className="mb-8 space-y-1">
                 <div className="mb-1 flex items-center gap-1 font-medium">
                   <SearchCheck className="text-message-green size-4" strokeWidth={2.5} />
                   What we&apos;re looking for
                 </div>
-                <div className="rounded-sm bg-white/70 p-3 shadow-xl">{job.whatWereLookingFor}</div>
+                <div className="rounded-sm bg-white/70 px-3 py-2 shadow-xl">
+                  {job.whatWereLookingFor}
+                </div>
               </div>
             )}
 
             {/* Apply CTA */}
-            <div>
-              {!isSeeker && <p className="text-muted text-sm">Sign in as a job seeker to apply.</p>}
-
+            <div className="mt-8 space-y-2">
               {noProfile && (
                 <p className="text-muted text-sm">
                   <Link href="/seeker/profile/new" className="text-primary underline">
@@ -294,19 +301,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </p>
               )}
 
-              {hasProfile && !hasApplied && myStatus?.status !== "CLOSED" && (
-                <Button onClick={() => setDialogOpen(true)}>Apply for this job</Button>
-              )}
+              {!isSeeker && <p className="text-muted text-sm">Sign in as a job seeker to apply.</p>}
 
-              {hasProfile && hasApplied && currentStatus !== "CLOSED" && (
+              {canApply && <Button onClick={() => setDialogOpen(true)}>Apply for this job</Button>}
+
+              {showApplicationStatus && (
                 <div className="flex flex-wrap items-center gap-3">
                   <span
-                    className={`rounded-full px-3 py-1 text-sm font-medium text-white ${
+                    className={`rounded-full px-3 py-1 text-sm font-medium ${
                       APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]
                     }`}
                   >
                     {APPLICATION_STATUS_LABELS[currentStatus ?? "SUBMITTED"]}
                   </span>
+
                   <Link
                     href="/seeker/applications"
                     className="text-muted hover:text-orange text-sm underline"
@@ -316,14 +324,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               )}
 
-              {hasProfile && (myStatus?.status === "CLOSED" || (!myStatus && submitted)) && (
-                <div className="space-y-2">
-                  {submitted && (
-                    <p className="text-success text-sm">
-                      Application submitted! The employer will be in touch.
-                    </p>
-                  )}
-                </div>
+              {applicationJustSubmitted && (
+                <p className="text-success text-sm">
+                  Application submitted! The employer will be in touch.
+                </p>
               )}
             </div>
 
@@ -335,7 +339,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 onOpenChange={setDialogOpen}
                 onSuccess={() => {
                   setDialogOpen(false);
-                  setSubmitted(true);
+                  setApplicationJustSubmitted(true);
                 }}
               />
             )}

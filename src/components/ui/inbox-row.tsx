@@ -24,30 +24,29 @@ export function InboxRow({
     <Link href={`/messages/${conversationId}`}>
       <div
         className={cn(
-          "flex items-center gap-3 px-4 py-3 transition-colors duration-100",
-          "border-b last:border-b-0",
-          "hover:bg-blue-dark-3/50 cursor-pointer",
+          "mb-3 flex items-center gap-3 rounded-md p-3 transition-colors duration-100",
+          "bg-card/50 hover:bg-card/10 cursor-pointer hover:shadow-sm",
           className,
         )}
       >
         {/* Unread indicator */}
         <div className="flex w-2 shrink-0 justify-center">
-          {isUnread && <span className="bg-primary size-2 rounded-full" />}
+          {isUnread && <span className="bg-success size-2 rounded-full" />}
         </div>
 
         {/* Avatar */}
-        <div className="bg-blue-dark-3 flex size-9 shrink-0 items-center justify-center rounded-full border">
-          <span className="text-primary text-xs font-medium">{initials}</span>
+        <div className="bg-blue-dark-3 flex size-9 shrink-0 items-center justify-center rounded-full border border-white pl-0.5">
+          <span className="text-md font-medium text-white">{initials}</span>
         </div>
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <p className={cn("text-popover-foreground truncate text-sm font-medium")}>{name}</p>
-          <p className="text-muted-foreground truncate text-xs">{preview}</p>
+          <p className="truncate text-lg font-medium">{name}</p>
+          <p className="truncate text-sm">{preview}</p>
         </div>
 
         {/* Time */}
-        <span className="text-muted-foreground shrink-0 text-xs">{timeAgo}</span>
+        <span className="shrink-0 text-sm">{timeAgo}</span>
       </div>
     </Link>
   );

@@ -355,10 +355,10 @@ function JobEditForm({
                         {DAYS.map((day) => (
                           <label
                             key={day.value}
-                            className={`bg-muted/10 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
                               field.value?.includes(day.value)
-                                ? "bg-popover text-white"
-                                : "hover:bg-popover/30"
+                                ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
+                                : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
                             }`}
                           >
                             <input
@@ -415,7 +415,7 @@ function JobEditForm({
                   control={form.control}
                   name="workAuthRequired"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/60 p-2">
                       <FormControl>
                         <Checkbox
                           checked={field.value}

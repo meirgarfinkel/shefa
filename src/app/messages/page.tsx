@@ -25,8 +25,8 @@ function getInitials(name: string): string {
     .map((w) => w[0])
     .filter(Boolean)
     .join("")
-    .toUpperCase()
-    .slice(0, 2);
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function formatTime(date: Date | string | null): string {
@@ -47,42 +47,44 @@ export default function MessagesPage() {
   const { data: conversations, isLoading } = trpc.conversation.list.useQuery();
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
-      <PageHeader title="Messages" description="Your conversations." />
+    <div className="p-5">
+      <div className="mx-auto max-w-2xl">
+        <PageHeader title="Messages" description="Your conversations." />
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+        {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
-      {!isLoading && conversations?.length === 0 && (
-        <div className="py-12 text-center">
-          <p className="text-muted-foreground text-sm">No messages yet.</p>
-        </div>
-      )}
+        {!isLoading && conversations?.length === 0 && (
+          <div className="py-12 text-center">
+            <p className="text-muted-foreground text-sm">No messages yet.</p>
+          </div>
+        )}
 
-      {!isLoading && conversations && conversations.length > 0 && (
-        <div className="bg-secondary overflow-hidden rounded-md border">
-          {conversations.map((conv) => {
-            const other = role === "SEEKER" ? conv.employer : conv.seeker;
-            const isUnread = conv._count.messages > 0;
-            const name = displayName(other);
-            const preview =
-              [conv.job ? `Re: ${conv.job.title}` : null, conv.lastMessagePreview]
-                .filter(Boolean)
-                .join(" · ") || "";
+        {!isLoading && conversations && conversations.length > 0 && (
+          <div className="overflow-hidden rounded-md">
+            {conversations.map((conv) => {
+              const other = role === "SEEKER" ? conv.employer : conv.seeker;
+              const isUnread = conv._count.messages > 0;
+              const name = displayName(other);
+              const preview =
+                [conv.job ? `Re: ${conv.job.title}` : null, conv.lastMessagePreview]
+                  .filter(Boolean)
+                  .join(" · ") || "";
 
-            return (
-              <InboxRow
-                key={conv.id}
-                conversationId={conv.id}
-                name={name}
-                preview={preview}
-                timeAgo={formatTime(conv.lastMessageAt)}
-                isUnread={isUnread}
-                initials={getInitials(name)}
-              />
-            );
-          })}
-        </div>
-      )}
+              return (
+                <InboxRow
+                  key={conv.id}
+                  conversationId={conv.id}
+                  name={name}
+                  preview={preview}
+                  timeAgo={formatTime(conv.lastMessageAt)}
+                  isUnread={isUnread}
+                  initials={getInitials(name)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

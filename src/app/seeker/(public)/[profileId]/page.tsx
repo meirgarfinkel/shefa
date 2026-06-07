@@ -94,7 +94,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
 
           <div className="my-6 space-y-1">
             <h2 className="font-medium">What I&apos;m looking for</h2>
-            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+            <p className="rounded-md bg-white/80 px-3 py-2 text-sm whitespace-pre-wrap">
               {profile.jobSeekText}
             </p>
           </div>
@@ -102,8 +102,10 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
           {/* About */}
           {profile.about && (
             <div className="my-6 space-y-1">
-              <h2 className="font-medium">About</h2>
-              <p className="text-sm whitespace-pre-wrap">{profile.about}</p>
+              <h2 className="font-medium">About me</h2>
+              <p className="rounded-md bg-white/80 px-3 py-2 text-sm whitespace-pre-wrap">
+                {profile.about}
+              </p>
             </div>
           )}
 
