@@ -35,12 +35,12 @@ export function MobileNav({ links, email }: MobileNavProps) {
       {/* Trigger */}
       <div className="md:hidden">
         <Button
-          variant="ghost"
+          variant="secondary"
           size="icon"
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((prev) => !prev)}
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5 text-white" />}
         </Button>
       </div>
 
@@ -88,36 +88,50 @@ export function MobileNav({ links, email }: MobileNavProps) {
             </nav>
 
             {/* Footer */}
-            {(links.length > 0 || email) && (
-              <div className="border-primary mt-auto space-y-2 border-t p-3">
-                {email ? (
-                  <>
-                    <p className="text-muted-foreground truncate text-xs">{email}</p>
-                    <Link
-                      href="/privacy"
-                      onClick={() => setOpen(false)}
-                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
-                    >
-                      Privacy Policy
-                    </Link>
-                    <Link
-                      href="/terms"
-                      onClick={() => setOpen(false)}
-                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
-                    >
-                      Terms of Service
-                    </Link>
-                    <button
-                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
-                      onClick={() => {
-                        setOpen(false);
-                        void signOut({ callbackUrl: "/sign-in" });
-                      }}
-                    >
-                      Sign out
-                    </button>
-                  </>
-                ) : (
+            <div className="border-primary mt-auto space-y-2 border-t p-3">
+              {email ? (
+                <>
+                  <p className="text-muted-foreground truncate text-xs">{email}</p>
+                  <Link
+                    href="/privacy"
+                    onClick={() => setOpen(false)}
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    href="/terms"
+                    onClick={() => setOpen(false)}
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
+                  <button
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
+                    onClick={() => {
+                      setOpen(false);
+                      void signOut({ callbackUrl: "/sign-in" });
+                    }}
+                  >
+                    Sign out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/privacy"
+                    onClick={() => setOpen(false)}
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                  >
+                    Privacy Policy
+                  </Link>
+                  <Link
+                    href="/terms"
+                    onClick={() => setOpen(false)}
+                    className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                  >
+                    Terms of Service
+                  </Link>
                   <Link
                     href="/sign-in"
                     onClick={() => setOpen(false)}
@@ -125,9 +139,9 @@ export function MobileNav({ links, email }: MobileNavProps) {
                   >
                     Sign in
                   </Link>
-                )}
-              </div>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

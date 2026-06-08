@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { NavLinks, type NavLink } from "./nav-links";
 import { UserMenu } from "./user-menu";
+import { GuestMenu } from "./guest-menu";
 import { MobileNav } from "./mobile-nav";
 
 function linksForRole(role: string): NavLink[] {
@@ -47,16 +48,7 @@ export async function Nav() {
             {/* Desktop nav — hidden on mobile */}
             <div className="hidden items-center gap-4 md:flex">
               {links.length > 0 && <NavLinks links={links} />}
-              {email ? (
-                <UserMenu email={email} />
-              ) : (
-                <Link
-                  href="/sign-in"
-                  className="text-muted-foreground hover:text-popover-foreground text-sm transition-colors duration-100"
-                >
-                  Sign in
-                </Link>
-              )}
+              {email ? <UserMenu email={email} /> : <GuestMenu />}
             </div>
 
             {/* Mobile hamburger — hidden on desktop */}
