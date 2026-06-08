@@ -4,7 +4,9 @@
 
 ## ⚠️ Action required before deploy
 
-- **Run the pending migration** for the new application index (schema changed this session):
+- **Run the pending migration** (schema changed this session — additive only: the new
+  application index, plus `User.deletedAt` and the `ProfileStatus.DELETED` enum value for
+  account soft-delete):
   ```bash
   npm run db:dev-generate && npm run db:dev-migrate     # dev
   npm run db:prod-generate && npm run db:prod-migrate   # production
@@ -30,8 +32,17 @@
 - **Suspension enforcement (new):** soft block — SUSPENDED users can log in and view own
   data, but cannot apply, post jobs, or start conversations, and are hidden from public
   seeker/company/job views.
+- **Account deletion = soft delete (new):** `user.deleteAccount` → `softDeleteAccount`
+  (`src/server/account.ts`). One transaction: scrubs User PII (`email` → unique
+  non-routable placeholder, `name`/`phone`/`image` → null, sets `deletedAt`), closes the
+  user's open jobs (`CLOSED`/`CANCELLED`), marks profiles `DELETED` with generic names,
+  and deletes only `Account`/`Session` rows. Conversations/messages/applications/reports
+  are preserved (the other party keeps history; reports stay as evidence). Re-signup with
+  the real Google email creates a fresh row. `createTRPCContext` drops the session when
+  `deletedAt` is set, so a JWT lingering on another device is rejected on its next request.
+  `seeker.getPublicProfile` 404s `DELETED` profiles.
 - **Crons (`vercel.json`):** freshness `0 9 * * *`, responsiveness `0 3 */2 * *`, digest `0 18 * * *`.
-- **Tests:** 410 passing across 19 suites. `npm run check` green.
+- **Tests:** 428 passing across 22 suites. `npm run check` green.
 
 ## Still needed (Phase 8)
 
@@ -54,11 +65,15 @@ self-suspend, and suspending an admin are all blocked.
   header to `` `Bearer ${process.env.CRON_SECRET}` ``; if the env var is missing, a request
   with `Authorization: Bearer undefined` matches. Fix: assert the secret is set (reject if
   not) and prefer a constant-time compare. Mitigation today: ensure `CRON_SECRET` is set in prod.
-- **S2 (medium) — `user.deleteAccount` is broken and off-mission.** It hard-deletes the
-  `User` row, but `application`/`report`/`seekerProfile`/`notificationPreferences`/
-  `verificationPing` FKs to `users` lack `onDelete` cascade, so it throws for any user with
-  dependent rows. Also conflicts with "no automatic deletion of user data." Decide: soft
-  delete (deactivate) vs. explicit cascade. Currently effectively dead/unsafe.
+- **S2 — RESOLVED (this session).** `user.deleteAccount` was hard-deleting the `User` row
+  and throwing on FK constraints (e.g. `JobLanguage`), and conflicted with "no automatic
+  deletion of user data." Replaced with `softDeleteAccount` (see "Account deletion" above
+  and the decision record below). No FK/cascade changes were needed — the `User` row now
+  survives, so the constraint problem disappears entirely.
+  - _Follow-up (low):_ audit `src/server/jobs/` crons (freshness/responsiveness/digest) to
+    skip users where `deletedAt IS NOT NULL` / profiles with `status = 'DELETED'`, so a
+    tombstoned account isn't pinged or emailed. Their jobs are `CLOSED` and `Account`/
+    `Session` are gone, so impact is limited, but worth confirming.
 - **S3 (low) — `report.submit` does not verify `targetId` exists.** Bogus targets are
   possible; admin UI shows "target no longer exists." Acceptable for v1.
 - **S4 (low) — unsuspend sets status to `ACTIVE` unconditionally**, which would un-pause a
@@ -77,7 +92,7 @@ self-suspend, and suspending an admin are all blocked.
 
 ```bash
 npm run check                                          # typecheck + lint + format
-npm run db:dev-generate && npm run db:dev-migrate      # pending application-index migration (dev)
+npm run db:dev-generate && npm run db:dev-migrate      # pending migration: app index + User.deletedAt + ProfileStatus.DELETED (dev)
 npm run db:prod-generate && npm run db:prod-migrate    # same, against production
 ```
 
@@ -98,6 +113,19 @@ npm run db:prod-generate && npm run db:prod-migrate    # same, against productio
 - **Suspension = soft block** (hidden + write-blocked, can still view own data).
   _Alternatives:_ hard lockout via DB check in every server layout. _Reason:_ reversible,
   no data destruction, mission-aligned; middleware is Edge-only and can't check the DB.
+- **Account deletion = soft delete + anonymize** (keep the `User` row; scrub PII; close
+  jobs; mark profile `DELETED`; delete only `Account`/`Session`). _Alternatives:_ (a) hard
+  delete + add `onDelete: cascade` to every FK rooted at `users` — rejected: destroys the
+  other party's conversations and the reports filed as evidence, and conflicts with the
+  "no deletion of user data" mission; (b) hard delete with nullable `employerId`/`seekerId`
+  + `SET NULL` — rejected: orphaned rows, more nullable FKs to reason about, no cleaner than
+  soft delete. _Reason:_ preserves referential integrity with zero cascade, keeps the other
+  party's history and report evidence intact, lets the person re-sign-up fresh (scrambled
+  unique email + severed `Account`), and matches the codebase's data-preservation
+  philosophy. _Session invalidation:_ JWT strategy means the cookie outlives deletion, so
+  `createTRPCContext` checks `deletedAt` per request and nulls the session — chosen over a
+  `protectedProcedure` middleware check, which would have broken the mock-based router test
+  suites and run against the module-level `db`.
 
 ## Blockers
 

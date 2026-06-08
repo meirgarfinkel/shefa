@@ -15,6 +15,13 @@
       "when": 1780920905782,
       "tag": "0001_careful_deathstrike",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780930315610,
+      "tag": "0002_perfect_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

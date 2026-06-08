@@ -15,6 +15,7 @@ export const users = pgTable(
     phone: text("phone"),
     role: roleEnum("role"),
     isAdult: boolean("isAdult").notNull().default(false),
+    deletedAt: timestamp("deletedAt", { withTimezone: true, mode: "date" }),
     createdAt: timestamp("createdAt", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" })
       .notNull()

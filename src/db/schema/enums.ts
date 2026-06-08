@@ -1,7 +1,12 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
 export const roleEnum = pgEnum("Role", ["SEEKER", "EMPLOYER", "ADMIN"]);
-export const profileStatusEnum = pgEnum("ProfileStatus", ["ACTIVE", "PAUSED", "SUSPENDED"]);
+export const profileStatusEnum = pgEnum("ProfileStatus", [
+  "ACTIVE",
+  "PAUSED",
+  "SUSPENDED",
+  "DELETED",
+]);
 export const jobStatusEnum = pgEnum("JobStatus", ["ACTIVE", "PAUSED", "CLOSED"]);
 export const jobClosureReasonEnum = pgEnum("JobClosureReason", [
   "FILLED_ON_SHEFA",

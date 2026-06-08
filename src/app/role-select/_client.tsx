@@ -17,6 +17,9 @@ export default function RoleSelectClient() {
     onSuccess: async (_data, variables) => {
       await update({ role: variables.role });
       router.push(variables.role === "SEEKER" ? "/seeker/profile/new" : "/employer/profile/new");
+      // <Nav> is a server component in the shared root layout; a push alone keeps its
+      // stale (role-less) render, so refresh to re-run auth() server-side.
+      router.refresh();
     },
     onSettled: () => setLoadingRole(null),
   });

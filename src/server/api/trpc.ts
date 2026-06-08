@@ -1,17 +1,30 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/db";
+import { users } from "@/db/schema";
 
 export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await auth();
   return {
     headers: opts.headers,
-    session,
+    // Identity comes from the JWT, which outlives a soft-deleted account (the cookie
+    // stays valid until expiry). Drop the session if the User row has been soft-deleted
+    // so a lingering token — e.g. on another device — can't keep acting.
+    session: session && (await isActiveUser(session.user.id)) ? session : null,
     db,
   };
 };
+
+async function isActiveUser(userId: string): Promise<boolean> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { deletedAt: true },
+  });
+  return !!user && !user.deletedAt;
+}
 
 type Context = Awaited<ReturnType<typeof createTRPCContext>>;
 

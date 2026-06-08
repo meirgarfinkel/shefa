@@ -68,7 +68,11 @@ export default function SeekerProfileNewPage() {
   });
 
   const createProfile = trpc.seeker.createProfile.useMutation({
-    onSuccess: () => router.push("/jobs"),
+    onSuccess: () => {
+      router.push("/jobs");
+      // Refresh server components so the onboarding gate + <Nav> see the new profile.
+      router.refresh();
+    },
   });
 
   function onSubmit(data: CreateSeekerProfileInput) {

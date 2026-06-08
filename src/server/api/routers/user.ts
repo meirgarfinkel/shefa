@@ -2,6 +2,7 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { users } from "@/db/schema";
+import { softDeleteAccount } from "@/server/account";
 
 export const userRouter = createTRPCRouter({
   setRole: protectedProcedure
@@ -12,7 +13,7 @@ export const userRouter = createTRPCRouter({
     }),
 
   deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
-    await ctx.db.delete(users).where(eq(users.id, ctx.user.id));
+    await softDeleteAccount(ctx.db, ctx.user.id);
     return { success: true };
   }),
 });
