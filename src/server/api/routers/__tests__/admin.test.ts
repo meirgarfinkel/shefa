@@ -6,6 +6,8 @@ vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 function makeMockDb() {
+  // Shared groupBy mock so mostBlocked's two select() calls can be queued in order.
+  const groupBy = vi.fn().mockResolvedValue([]);
   return {
     query: {
       report: { findFirst: vi.fn(), findMany: vi.fn().mockResolvedValue([]) },
@@ -23,6 +25,12 @@ function makeMockDb() {
         }),
       }),
     }),
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({ groupBy }),
+      }),
+    }),
+    _groupBy: groupBy,
   };
 }
 
@@ -65,6 +73,53 @@ describe("admin authorization", () => {
     await expect(
       caller.setUserSuspension({ userId: "u-1", suspended: true }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.mostBlocked()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+});
+
+describe("mostBlocked", () => {
+  let mockDb: ReturnType<typeof makeMockDb>;
+  beforeEach(() => {
+    mockDb = makeMockDb();
+  });
+
+  it("merges block counts across roles, sorts desc, and flags suspension", async () => {
+    const caller = createCaller(makeCtx("ADMIN", mockDb));
+    // First select() = blocks against seekers; second = blocks against employers.
+    mockDb._groupBy
+      .mockResolvedValueOnce([
+        { uid: "u-1", blocks: 2 },
+        { uid: "u-2", blocks: 1 },
+      ])
+      .mockResolvedValueOnce([{ uid: "u-1", blocks: 3 }]);
+    mockDb.query.users.findMany.mockResolvedValue([
+      { id: "u-1", name: "A", email: "a@x.com", role: "SEEKER" },
+      { id: "u-2", name: "B", email: "b@x.com", role: "EMPLOYER" },
+    ]);
+    mockDb.query.seekerProfile.findMany.mockResolvedValue([{ userId: "u-1", status: "SUSPENDED" }]);
+
+    const result = await caller.mostBlocked();
+
+    expect(result).toEqual([
+      {
+        userId: "u-1",
+        blockCount: 5,
+        user: expect.objectContaining({ id: "u-1" }),
+        suspended: true,
+      },
+      {
+        userId: "u-2",
+        blockCount: 1,
+        user: expect.objectContaining({ id: "u-2" }),
+        suspended: false,
+      },
+    ]);
+  });
+
+  it("returns empty list when nobody is blocked", async () => {
+    const caller = createCaller(makeCtx("ADMIN", mockDb));
+    const result = await caller.mostBlocked();
+    expect(result).toEqual([]);
   });
 });
 

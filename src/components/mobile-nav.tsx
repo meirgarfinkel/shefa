@@ -93,6 +93,20 @@ export function MobileNav({ links, email }: MobileNavProps) {
                 {email ? (
                   <>
                     <p className="text-muted-foreground truncate text-xs">{email}</p>
+                    <Link
+                      href="/privacy"
+                      onClick={() => setOpen(false)}
+                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                    >
+                      Privacy Policy
+                    </Link>
+                    <Link
+                      href="/terms"
+                      onClick={() => setOpen(false)}
+                      className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
+                    >
+                      Terms of Service
+                    </Link>
                     <button
                       className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
                       onClick={() => {

@@ -1,8 +1,16 @@
 import { z } from "zod";
-import { eq, desc, inArray } from "drizzle-orm";
+import { eq, desc, inArray, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, adminProcedure } from "@/server/api/trpc";
-import { report, users, jobPosting, message, seekerProfile, employerProfile } from "@/db/schema";
+import {
+  report,
+  users,
+  jobPosting,
+  message,
+  conversation,
+  seekerProfile,
+  employerProfile,
+} from "@/db/schema";
 
 const ReportStatus = z.enum(["OPEN", "REVIEWED", "ACTIONED", "DISMISSED"]);
 
@@ -119,5 +127,66 @@ export const adminRouter = createTRPCRouter({
       ]);
 
       return { userId: input.userId, suspended: input.suspended };
+    }),
+
+  // Ranking of users by how many distinct counterparties currently block them.
+  // A moderation signal only — suspension stays a manual admin decision.
+  mostBlocked: adminProcedure
+    .input(z.object({ limit: z.number().int().positive().max(100).default(50) }).optional())
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 50;
+
+      // employerBlocked → the employer blocked the seeker → counts against the seeker.
+      // seekerBlocked   → the seeker blocked the employer → counts against the employer.
+      const [againstSeekers, againstEmployers] = await Promise.all([
+        ctx.db
+          .select({ uid: conversation.seekerId, blocks: count() })
+          .from(conversation)
+          .where(eq(conversation.employerBlocked, true))
+          .groupBy(conversation.seekerId),
+        ctx.db
+          .select({ uid: conversation.employerId, blocks: count() })
+          .from(conversation)
+          .where(eq(conversation.seekerBlocked, true))
+          .groupBy(conversation.employerId),
+      ]);
+
+      const totals = new Map<string, number>();
+      for (const row of [...againstSeekers, ...againstEmployers]) {
+        totals.set(row.uid, (totals.get(row.uid) ?? 0) + Number(row.blocks));
+      }
+      if (totals.size === 0) return [];
+
+      const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
+      const uids = ranked.map(([uid]) => uid);
+
+      const [userRows, seekerStatuses, employerStatuses] = await Promise.all([
+        ctx.db.query.users.findMany({
+          where: inArray(users.id, uids),
+          columns: { id: true, name: true, email: true, role: true },
+        }),
+        ctx.db.query.seekerProfile.findMany({
+          where: inArray(seekerProfile.userId, uids),
+          columns: { userId: true, status: true },
+        }),
+        ctx.db.query.employerProfile.findMany({
+          where: inArray(employerProfile.userId, uids),
+          columns: { userId: true, status: true },
+        }),
+      ]);
+
+      const userMap = new Map(userRows.map((u) => [u.id, u]));
+      const suspended = new Set(
+        [...seekerStatuses, ...employerStatuses]
+          .filter((p) => p.status === "SUSPENDED")
+          .map((p) => p.userId),
+      );
+
+      return ranked.map(([uid, blockCount]) => ({
+        userId: uid,
+        blockCount,
+        user: userMap.get(uid) ?? null,
+        suspended: suspended.has(uid),
+      }));
     }),
 });
