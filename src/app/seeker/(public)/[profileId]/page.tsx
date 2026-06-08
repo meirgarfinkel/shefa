@@ -9,16 +9,7 @@ import Link from "next/link";
 import { CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 import { Pill } from "@/components/ui/pill";
-
-const DAY_LABELS: Record<string, string> = {
-  SUN: "Sun",
-  MON: "Mon",
-  TUE: "Tue",
-  WED: "Wed",
-  THU: "Thu",
-  FRI: "Fri",
-  SAT: "Sat",
-};
+import { DAY_LABELS } from "@/lib/constants/labels";
 
 const EDUCATION_LABELS: Record<string, string> = {
   NONE: "No formal education",

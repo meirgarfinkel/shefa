@@ -99,6 +99,17 @@ const MOCK_JOB = {
   createdAt: new Date(),
   updatedAt: new Date(),
   requiredLanguages: [],
+  company: {
+    id: COMPANY_ID,
+    name: "Mama's Kitchen",
+    city: "Brooklyn",
+    state: "NY",
+    industry: "FOOD_SERVICE",
+    owner: {
+      id: EMPLOYER_USER_ID,
+      employerProfile: { isResponsive: true, responsivenessUpdatedAt: new Date() },
+    },
+  },
 };
 
 // Shape returned by search's findMany (includes company + _count)

@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import type { ApplicationStatus } from "@/db/schema";
+import { DAY_LABELS } from "@/lib/constants/labels";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "New",
@@ -20,16 +21,6 @@ const STATUS_STYLES: Record<ApplicationStatus, string> = {
   VIEWED: "bg-warning/15 text-warning",
   REJECTED: "bg-danger/15 text-danger",
   CLOSED: "bg-blue-dark-3 text-muted-foreground",
-};
-
-const DAY_LABELS: Record<string, string> = {
-  SUN: "Sun",
-  MON: "Mon",
-  TUE: "Tue",
-  WED: "Wed",
-  THU: "Thu",
-  FRI: "Fri",
-  SAT: "Sat",
 };
 
 function AppStatusBadge({ status }: { status: string }) {

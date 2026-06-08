@@ -17,30 +17,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Pill } from "@/components/ui/pill";
-
-const JOB_TYPE_LABELS: Record<string, string> = {
-  FULL_TIME: "Full-time",
-  PART_TIME: "Part-time",
-  EITHER: "Full or Part-time",
-};
-
-const ARRANGEMENT_LABELS: Record<string, string> = {
-  ON_SITE: "On-site",
-  REMOTE: "Remote",
-  HYBRID: "Hybrid",
-};
-
-const DAY_LABELS: Record<string, string> = {
-  SUN: "Sun",
-  MON: "Mon",
-  TUE: "Tue",
-  WED: "Wed",
-  THU: "Thu",
-  FRI: "Fri",
-  SAT: "Sat",
-};
-
-const DAY_ORDER = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+import { JOB_TYPE_LABELS, ARRANGEMENT_LABELS, DAY_LABELS, DAY_ORDER } from "@/lib/constants/labels";
 
 const APPLICATION_STATUS_LABELS: Record<string, string> = {
   SUBMITTED: "Applied",

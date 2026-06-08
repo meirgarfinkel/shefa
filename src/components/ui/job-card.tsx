@@ -7,18 +7,7 @@ import { JobStatusEnum } from "@/lib/schemas/jobPosting";
 
 type JobStatus = z.infer<typeof JobStatusEnum>;
 import { Car, Clock, MapPin, DollarSign } from "lucide-react";
-
-const JOB_TYPE_LABELS: Record<JobType, string> = {
-  FULL_TIME: "Full-time",
-  PART_TIME: "Part-time",
-  EITHER: "Full or part-time",
-};
-
-const ARRANGEMENT_LABELS: Record<WorkArrangement, string> = {
-  ON_SITE: "On-site",
-  REMOTE: "Remote",
-  HYBRID: "Hybrid",
-};
+import { JOB_TYPE_LABELS, ARRANGEMENT_LABELS } from "@/lib/constants/labels";
 
 interface JobCardProps {
   id: string;
