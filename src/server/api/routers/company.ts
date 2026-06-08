@@ -24,13 +24,17 @@ export const companyRouter = createTRPCRouter({
           columns: { id: true },
           with: {
             employerProfile: {
-              columns: { isResponsive: true, responsivenessUpdatedAt: true },
+              columns: { isResponsive: true, responsivenessUpdatedAt: true, status: true },
             },
           },
         },
       },
     });
     if (!co) throw new TRPCError({ code: "NOT_FOUND" });
+    // Hide companies owned by suspended employers from public view (moderation).
+    if (co.owner.employerProfile?.status === "SUSPENDED") {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
 
     const [activeJobsRow] = await ctx.db
       .select({ count: count() })

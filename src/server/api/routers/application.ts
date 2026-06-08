@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, gte, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import {
@@ -8,7 +8,8 @@ import {
   UpdateApplicationStatusSchema,
 } from "@/lib/schemas/application";
 import { runApplicationNotifyJob } from "@/server/jobs/application-notify.job";
-import { application, seekerProfile, jobPosting } from "@/db/schema";
+import { application, seekerProfile, employerProfile, jobPosting } from "@/db/schema";
+import { APPLICATIONS_PER_DAY, rateLimitWindowStart } from "@/lib/constants/rate-limits";
 
 export const applicationRouter = createTRPCRouter({
   submit: protectedProcedure.input(ApplySchema).mutation(async ({ ctx, input }) => {
@@ -18,10 +19,13 @@ export const applicationRouter = createTRPCRouter({
 
     const profile = await ctx.db.query.seekerProfile.findFirst({
       where: eq(seekerProfile.userId, ctx.user.id),
-      columns: { id: true },
+      columns: { id: true, status: true },
     });
     if (!profile) {
       throw new TRPCError({ code: "NOT_FOUND", message: "Seeker profile not found" });
+    }
+    if (profile.status === "SUSPENDED") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Your account is suspended" });
     }
 
     const job = await ctx.db.query.jobPosting.findFirst({
@@ -33,6 +37,30 @@ export const applicationRouter = createTRPCRouter({
     }
     if (job.status !== "ACTIVE") {
       throw new TRPCError({ code: "FORBIDDEN", message: "Job is not accepting applications" });
+    }
+
+    // A suspended employer's jobs are not applyable (hidden, like a closed job).
+    const jobOwner = await ctx.db.query.employerProfile.findFirst({
+      where: eq(employerProfile.userId, job.employerId),
+      columns: { status: true },
+    });
+    if (jobOwner?.status === "SUSPENDED") {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Job not found" });
+    }
+
+    // Rolling 24h application rate limit.
+    const recentCount = await ctx.db.$count(
+      application,
+      and(
+        eq(application.seekerId, ctx.user.id),
+        gte(application.createdAt, rateLimitWindowStart()),
+      ),
+    );
+    if (recentCount >= APPLICATIONS_PER_DAY) {
+      throw new TRPCError({
+        code: "TOO_MANY_REQUESTS",
+        message: `You can submit up to ${APPLICATIONS_PER_DAY} applications per day. Try again later.`,
+      });
     }
 
     let newApplication;

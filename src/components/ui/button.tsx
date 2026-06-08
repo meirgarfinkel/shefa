@@ -8,7 +8,6 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        // default: "bg-primary hover:bg-popover/90 hover:text-white from-white/40 bg-linear-to-b via-transparent to-transparent",
         default:
           "bg-primary hover:bg-popover/90 hover:text-white from-popover/20 bg-linear-to-t via-transparent to-transparent",
         secondary:

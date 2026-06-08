@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { eq, and, arrayOverlaps, desc, inArray, ilike, sql, count } from "drizzle-orm";
+import { eq, and, arrayOverlaps, desc, inArray, notInArray, ilike, sql, count } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import {
@@ -9,7 +9,16 @@ import {
   UpdateJobPostingSchema,
 } from "@/lib/schemas/jobPosting";
 import type { DbClient } from "@/db";
-import { jobPosting, jobLanguage, company, state, city, application } from "@/db/schema";
+import {
+  jobPosting,
+  jobLanguage,
+  company,
+  state,
+  city,
+  application,
+  employerProfile,
+} from "@/db/schema";
+import { assertActorActive } from "@/server/api/guards";
 
 async function lookupCityCoords(
   db: DbClient,
@@ -28,6 +37,8 @@ async function lookupCityCoords(
 export const jobPostingRouter = createTRPCRouter({
   create: protectedProcedure.input(CreateJobPostingSchema).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
+
+    await assertActorActive(ctx.db, ctx.user.id, ctx.user.role);
 
     const co = await ctx.db.query.company.findFirst({
       where: eq(company.id, input.companyId),
@@ -135,6 +146,16 @@ export const jobPostingRouter = createTRPCRouter({
         ? inArray(jobPosting.workArrangement, input.workArrangement)
         : undefined,
       input.workDays?.length ? arrayOverlaps(jobPosting.workDays, input.workDays) : undefined,
+      // Hide suspended employers' jobs from public browsing (owners still see their own).
+      isOwnerQuery
+        ? undefined
+        : notInArray(
+            jobPosting.employerId,
+            ctx.db
+              .select({ id: employerProfile.userId })
+              .from(employerProfile)
+              .where(eq(employerProfile.status, "SUSPENDED")),
+          ),
     ].filter(Boolean);
 
     const whereClause =
@@ -187,7 +208,7 @@ export const jobPostingRouter = createTRPCRouter({
               columns: { id: true },
               with: {
                 employerProfile: {
-                  columns: { isResponsive: true, responsivenessUpdatedAt: true },
+                  columns: { isResponsive: true, responsivenessUpdatedAt: true, status: true },
                 },
               },
             },
@@ -198,7 +219,12 @@ export const jobPostingRouter = createTRPCRouter({
 
     if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
 
-    if (posting.status !== "ACTIVE" && ctx.session?.user?.id !== posting.employerId) {
+    const isOwner = ctx.session?.user?.id === posting.employerId;
+    if (posting.status !== "ACTIVE" && !isOwner) {
+      throw new TRPCError({ code: "NOT_FOUND" });
+    }
+    // Hide jobs of suspended employers from everyone but the owner.
+    if (posting.company.owner.employerProfile?.status === "SUSPENDED" && !isOwner) {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 

@@ -11,11 +11,13 @@ function makeMockDb() {
   return {
     query: {
       seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
       application: { findFirst: vi.fn(), findMany: vi.fn() },
       conversation: { findFirst: vi.fn(), findMany: vi.fn() },
       message: { findFirst: vi.fn(), findMany: vi.fn() },
     },
+    $count: vi.fn().mockResolvedValue(0),
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([]),
@@ -112,6 +114,7 @@ describe("create", () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_USER_ID));
     mockDb.query.seekerProfile.findFirst.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
     mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.query.application.findFirst.mockResolvedValue({ id: "app-1" });
     mockDb.query.conversation.findFirst.mockResolvedValue(null);
     mockDb.insert.mockReturnValue({
       values: vi.fn().mockReturnValue({
@@ -243,6 +246,40 @@ describe("create", () => {
     await expect(
       caller.create({ targetId: EMPLOYER_USER_ID, jobId: "job-1" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("employer linking a job the seeker hasn't applied to → FORBIDDEN", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_USER_ID));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.query.application.findFirst.mockResolvedValue(null);
+
+    await expect(
+      caller.create({ targetId: SEEKER_PROFILE_ID, jobId: "job-1" }),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("suspended employer cannot start a conversation → FORBIDDEN", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_USER_ID));
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "SUSPENDED" });
+
+    await expect(caller.create({ targetId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    });
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("employer at the daily cold-DM limit → TOO_MANY_REQUESTS", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_USER_ID));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
+    mockDb.query.conversation.findFirst.mockResolvedValue(null);
+    mockDb.$count.mockResolvedValue(50);
+
+    await expect(caller.create({ targetId: SEEKER_PROFILE_ID })).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+    });
+    expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
   // ── EMPLOYER adversarial ──

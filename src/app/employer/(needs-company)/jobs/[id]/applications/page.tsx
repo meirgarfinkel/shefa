@@ -17,17 +17,17 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
-  SUBMITTED: "bg-primary/15 text-primary",
+  SUBMITTED: "bg-primary/15 text-popover",
   VIEWED: "bg-warning/15 text-warning",
   REJECTED: "bg-danger/15 text-danger",
-  CLOSED: "bg-blue-dark-3 text-muted-foreground",
+  CLOSED: "bg-blue-dark-3 text-white",
 };
 
 function AppStatusBadge({ status }: { status: string }) {
   const s = status as ApplicationStatus;
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[s] ?? "bg-blue-dark-3 text-muted-foreground"}`}
+      className={`inline-flex items-center rounded-full px-2 py-1 text-sm font-semibold ${STATUS_STYLES[s] ?? "bg-blue-dark-3 text-white"}`}
     >
       {STATUS_LABELS[s] ?? s}
     </span>
@@ -57,7 +57,7 @@ export default function EmployerJobApplicationsPage({
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
       <Link
         href="/employer/jobs"
-        className="text-muted-foreground hover:text-popover-foreground mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-100"
+        className="hover:text-orange mb-6 inline-flex items-center gap-1 text-sm transition-colors duration-100"
       >
         <ArrowLeftIcon className="size-3.5" />
         My jobs
@@ -66,18 +66,18 @@ export default function EmployerJobApplicationsPage({
       <div className="mb-8">
         <h1 className="text-2xl font-bold">{job?.title ?? "Applications"}</h1>
         {job && (
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="mt-1 text-sm">
             {job.city}, {job.state} · {applications?.length ?? 0} applicant
             {(applications?.length ?? 0) !== 1 ? "s" : ""}
           </p>
         )}
       </div>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-sm">Loading…</p>}
 
       {!isLoading && applications?.length === 0 && (
         <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
-          <p className="text-muted-foreground text-sm">No applications yet.</p>
+          <p className="text-sm">No applications yet.</p>
         </div>
       )}
 
@@ -95,37 +95,29 @@ export default function EmployerJobApplicationsPage({
                     <p className="font-medium">
                       {profile?.firstName} {profile?.lastName}
                     </p>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm">
                       {profile?.city}, {profile?.state}
                     </p>
                     {profile && profile.availableDays.length > 0 && (
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-sm">
                         Available: {profile.availableDays.map((d) => DAY_LABELS[d] ?? d).join(", ")}
                       </p>
                     )}
-                    {profile?.workAuthorization && (
-                      <p className="text-muted-foreground text-xs">Work authorized</p>
-                    )}
+                    {profile?.workAuthorization && <p className="text-sm">Work authorized</p>}
                   </div>
                   <AppStatusBadge status={app.status} />
                 </div>
 
                 {app.message && (
-                  <p className="text-muted-foreground mt-3 border-t pt-3 text-sm italic">
-                    &ldquo;{app.message}&rdquo;
-                  </p>
+                  <p className="mt-3 border-t pt-3 text-sm italic">&ldquo;{app.message}&rdquo;</p>
                 )}
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                  <p className="text-muted-foreground text-xs">
-                    Applied {new Date(app.createdAt).toLocaleDateString()}
-                  </p>
+                  <p className="text-sm">Applied {new Date(app.createdAt).toLocaleDateString()}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {profile && (
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className="h-7 text-xs"
                         disabled={createConversation.isPending}
                         onClick={() =>
                           createConversation.mutate({
@@ -141,9 +133,7 @@ export default function EmployerJobApplicationsPage({
                       <>
                         {app.status === "SUBMITTED" && (
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
+                            variant="light"
                             disabled={updateStatus.isPending}
                             onClick={() =>
                               updateStatus.mutate({
@@ -156,9 +146,7 @@ export default function EmployerJobApplicationsPage({
                           </Button>
                         )}
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+                          variant="destructive"
                           disabled={updateStatus.isPending}
                           onClick={() =>
                             updateStatus.mutate({
@@ -170,9 +158,6 @@ export default function EmployerJobApplicationsPage({
                           Reject
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:bg-blue-dark-3 h-7 text-xs transition-colors duration-100"
                           disabled={updateStatus.isPending}
                           onClick={() =>
                             updateStatus.mutate({

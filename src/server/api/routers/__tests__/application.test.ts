@@ -14,9 +14,11 @@ function makeMockDb() {
   return {
     query: {
       seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
       application: { findFirst: vi.fn(), findMany: vi.fn() },
     },
+    $count: vi.fn().mockResolvedValue(0),
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
         returning: vi.fn().mockResolvedValue([]),
@@ -231,6 +233,49 @@ describe("submit", () => {
       }),
     });
 
+    await expect(caller.submit({ jobId: "job-1" })).resolves.toEqual(CREATED_APPLICATION);
+  });
+
+  it("suspended seeker → FORBIDDEN", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({
+      id: "seeker-profile-1",
+      status: "SUSPENDED",
+    });
+    await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("job owned by a suspended employer → NOT_FOUND", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "SUSPENDED" });
+    await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("at the daily application limit → TOO_MANY_REQUESTS", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.$count.mockResolvedValue(25);
+    await expect(caller.submit({ jobId: "job-1" })).rejects.toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+    });
+    expect(mockDb.insert).not.toHaveBeenCalled();
+  });
+
+  it("just under the daily limit → allowed", async () => {
+    const caller = createCaller(makeCtx("SEEKER", mockDb));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(SEEKER_PROFILE);
+    mockDb.query.jobPosting.findFirst.mockResolvedValue(ACTIVE_JOB);
+    mockDb.$count.mockResolvedValue(24);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_APPLICATION]),
+      }),
+    });
     await expect(caller.submit({ jobId: "job-1" })).resolves.toEqual(CREATED_APPLICATION);
   });
 });

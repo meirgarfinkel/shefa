@@ -13,6 +13,7 @@ function makeMockDb() {
     query: {
       company: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
+      employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({

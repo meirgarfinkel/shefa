@@ -16,6 +16,8 @@ export const seekerRouter = createTRPCRouter({
         },
       });
       if (!profile) throw new TRPCError({ code: "NOT_FOUND" });
+      // Suspended profiles are hidden from public view (moderation).
+      if (profile.status === "SUSPENDED") throw new TRPCError({ code: "NOT_FOUND" });
 
       const { userId: _userId, languages, ...publicFields } = profile;
       return {

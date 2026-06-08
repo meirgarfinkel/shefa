@@ -18,8 +18,10 @@
     "db:prod-reset": "dotenv -e .env.production -- sh -c 'psql \"$DATABASE_URL\" -c \"DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;\" && rm -rf drizzle && npx drizzle-kit generate && npx drizzle-kit migrate && tsx src/db/scripts/seed.ts'",
     "db:seed": "tsx src/db/scripts/seed.ts",
     "db:seed:jobs": "tsx src/db/scripts/seed-jobs.ts",
-    "db:migrate": "drizzle-kit migrate",
-    "db:generate": "drizzle-kit generate",
+    "db:dev-generate": "dotenv -e .env -- npx drizzle-kit generate",
+    "db:dev-migrate": "dotenv -e .env -- npx drizzle-kit migrate",
+    "db:prod-generate": "dotenv -e .env.production -- npx drizzle-kit generate",
+    "db:prod-migrate": "dotenv -e .env.production -- npx drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "prepare": "husky"

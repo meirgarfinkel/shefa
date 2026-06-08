@@ -11,8 +11,10 @@ import { messageRouter } from "@/server/api/routers/message";
 import { notificationRouter } from "@/server/api/routers/notification";
 import { reportRouter } from "@/server/api/routers/report";
 import { locationRouter } from "@/server/api/routers/location";
+import { adminRouter } from "@/server/api/routers/admin";
 
 export const appRouter = createTRPCRouter({
+  admin: adminRouter,
   user: userRouter,
   seeker: seekerRouter,
   employer: employerRouter,

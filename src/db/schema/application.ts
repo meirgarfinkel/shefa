@@ -30,5 +30,6 @@ export const application = pgTable(
     index("Application_jobId_createdAt_idx").on(t.jobId, t.createdAt),
     index("Application_jobId_idx").on(t.jobId),
     index("Application_status_idx").on(t.status),
+    index("Application_seekerId_createdAt_idx").on(t.seekerId, t.createdAt),
   ],
 );

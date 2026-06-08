@@ -1,8 +1,10 @@
 import { z } from "zod";
-import { eq, and, isNull, ne, count, inArray, desc } from "drizzle-orm";
+import { eq, and, gte, isNull, ne, count, inArray, desc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import { conversation, message, seekerProfile, jobPosting, application } from "@/db/schema";
+import { assertActorActive } from "@/server/api/guards";
+import { COLD_DMS_PER_DAY, rateLimitWindowStart } from "@/lib/constants/rate-limits";
 
 const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 
@@ -34,6 +36,9 @@ export const conversationRouter = createTRPCRouter({
       const role = ctx.user.role;
       let seekerId: string;
       let employerId: string;
+
+      // Suspended actors cannot start conversations.
+      await assertActorActive(ctx.db, callerId, role);
 
       if (role === "SEEKER") {
         if (!jobId) {
@@ -86,6 +91,18 @@ export const conversationRouter = createTRPCRouter({
           if (!job || job.employerId !== callerId) {
             throw new TRPCError({ code: "FORBIDDEN", message: "Job does not belong to you" });
           }
+          // A job-linked conversation requires the seeker to have applied to that job.
+          // (Cold outreach must go through the no-jobId path, which is rate limited.)
+          const app = await ctx.db.query.application.findFirst({
+            where: and(eq(application.seekerId, profile.userId), eq(application.jobId, jobId)),
+            columns: { id: true },
+          });
+          if (!app) {
+            throw new TRPCError({
+              code: "FORBIDDEN",
+              message: "This seeker has not applied to that job",
+            });
+          }
         }
 
         seekerId = profile.userId;
@@ -104,6 +121,25 @@ export const conversationRouter = createTRPCRouter({
         ),
       });
       if (existing) return existing;
+
+      // Cold-DM rate limit: only employer-initiated, no-job-context threads count.
+      // Idempotent re-opens above don't reach here, so they don't consume the quota.
+      if (role === "EMPLOYER" && !jobId) {
+        const recentColdDms = await ctx.db.$count(
+          conversation,
+          and(
+            eq(conversation.employerId, employerId),
+            isNull(conversation.jobId),
+            gte(conversation.createdAt, rateLimitWindowStart()),
+          ),
+        );
+        if (recentColdDms >= COLD_DMS_PER_DAY) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message: `You can start up to ${COLD_DMS_PER_DAY} new conversations per day. Try again later.`,
+          });
+        }
+      }
 
       const [created] = await ctx.db
         .insert(conversation)

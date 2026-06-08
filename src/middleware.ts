@@ -19,5 +19,12 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ["/", "/employer/:path*", "/seeker/:path*", "/role-select", "/messages/:path*"],
+  matcher: [
+    "/",
+    "/admin/:path*",
+    "/employer/:path*",
+    "/seeker/:path*",
+    "/role-select",
+    "/messages/:path*",
+  ],
 };

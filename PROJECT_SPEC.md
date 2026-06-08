@@ -1,269 +1,399 @@
-# Charity Job Board (Shefa) — Project Spec
+# Shefa — Project Spec
 
-## Mission
-
-A charity-based job board where employers give unqualified candidates a chance to learn on the job. Free for both sides. Nonprofit. No payments anywhere in the system. The platform's core promise: fresh, real listings — no ghost jobs, no ghost candidates.
-
-## Stack (locked in)
-
-- **Frontend + Backend**: Next.js (App Router) with TypeScript
-- **API layer**: tRPC
-- **Database**: PostgreSQL
-- **ORM**: Drizzle ORM (`drizzle-orm` + `@neondatabase/serverless` Neon HTTP driver; schema in `src/db/schema/`; config in `drizzle.config.ts`)
-- **Auth**: Auth.js v5 (`next-auth@beta`) — Google OAuth only; split config pattern (`auth.config.ts` Edge-safe, `auth.ts` Node with `@auth/drizzle-adapter`); JWT session strategy
-- **Background jobs**: Vercel Cron (API routes in `src/app/api/cron/`)
-- **Email**: Resend
-- **Validation**: Zod
-- **UI**: Tailwind + shadcn/ui
-- **Local dev**: Docker Compose for Postgres only
-- **Linting/formatting**: ESLint (next config) + Prettier with Tailwind plugin. Husky + lint-staged for pre-commit hooks.
-- **Mobile (later, not now)**: React Native, sharing the same tRPC API
-
-## Hosting
-
-- **Web app + cron jobs**: Vercel (Next.js + Vercel Cron)
-- **Database**: Neon (PostgreSQL, serverless) — uses standard `postgres:16-alpine` locally via Docker Compose
-- **Email**: Resend
-- Chosen for nonprofit-friendly pricing and generous free tiers.
+> Canonical source of truth for scope, domain rules, data model, and architecture.
+> If implementation diverges from this document, update the document in the same change.
 
 ---
 
-## Data Model
+## 1. Project Overview
+
+**Shefa** is a nonprofit, charity-based job board. Its mission is to give unqualified
+candidates a chance to learn on the job — connecting them with employers willing to
+hire on potential rather than credentials.
+
+**Core promises:**
+
+- **Free for everyone.** No payments anywhere in the system, ever. Not a deferred
+  monetization play — payments are out of scope permanently.
+- **Fresh listings.** No ghost jobs, no ghost candidates. Listings and profiles are
+  periodically re-verified and auto-paused (never deleted) when they go stale.
+- **No gatekeeping on protected or educational attributes.** Employers cannot filter
+  candidates by education or any protected class. Education is collected on seeker
+  profiles for context only and is never a filter input.
+
+**Audience / roles:**
+
+- **Seekers** — job seekers building a profile and applying to jobs.
+- **Employers** — a contact human who owns one or more companies and posts jobs under them.
+- **Admins** — moderation and platform operations (minimal tooling for v1).
+
+---
+
+## 2. Core Domain Concepts
 
 ### User
 
-Base account. Fields: id, email (verified), phone (collected, unverified), auth method, role (SEEKER / EMPLOYER / ADMIN), isAdult (boolean, default false — set to true when profile is created after user confirms age ≥ 18), createdAt, updatedAt, lastLoginAt.
+The base account, created via Google OAuth. Holds identity (`name`, `email`,
+`emailVerified`, `image`), an unverified `phone`, a nullable `role`
+(`SEEKER` / `EMPLOYER` / `ADMIN`), and `isAdult` (set true when a profile is created
+after age confirmation). A user has at most one role and one role-specific profile.
 
 ### SeekerProfile (1:1 with User)
 
-**Required at signup:**
-
-- First name, last name
-- City, state (dropdown-selected from seeded geography tables; no zip)
-- Work authorization (yes/no)
-- Available days (multi-select Sun–Sat)
-- Skills (multi-select from curated list)
-- "Type of job you seek + what you want to learn" (free text, max 1000 chars)
-
-**Optional / encouraged later:**
-
-- Max education level (dropdown: none / some high school / high school / some college / associate / bachelor / graduate)
-- Languages (multi-select from curated list + "other languages" free text)
-- Other skills (comma-separated free text)
-- About yourself (free text, max 1000 chars)
-- Resume (PDF upload, optional)
-
-**System fields:**
-
-- isResponsive (boolean, computed every 48h)
-- responseRate, medianResponseHours (private, computed)
-- status (ACTIVE / PAUSED — paused = hidden from employer search)
-- lastVerifiedAt (drives freshness pings)
+The seeker's public-facing identity. Required: name, city/state, work authorization,
+available days, and a free-text "what job you seek / want to learn" (`jobSeekText`).
+Optional: education level, about text, résumé URL, and curated languages (via the
+`SeekerLanguage` join). Has a `status` (`ACTIVE` / `PAUSED` / `SUSPENDED`) and a
+`lastVerifiedAt` that drives freshness. **Seekers have no responsiveness metric** —
+that lives only on employers.
 
 ### EmployerProfile (1:1 with User)
 
-**Required at signup:**
+The **contact human**, not the business. Holds `firstName`, `lastName`,
+`roleAtCompany`, a `status`, and the responsiveness fields (`isResponsive`,
+`responsivenessUpdatedAt`). Company details live on a separate entity.
 
-- First name, last name (the contact human)
-- Company name
-- Company size (1–10 / 11–50 / 51–200 / 201+)
-- City, state (dropdown-selected from geography tables; no zip)
+### Company (many-to-one with User via `ownerId`)
 
-**Optional:**
+The business itself. One employer (user) can own **multiple** companies, unique per
+`(ownerId, name)`. Holds `name`, `city`/`state`, `website`, `industry`,
+`companySize`, `aboutCompany`, and `missionText` ("why we want to give people a chance").
 
-- Role at company (free text)
-- Industry (dropdown, ~10–12 buckets — see below)
-- Website
-- About the company (free text, max 2000 chars)
-- "Why we want to give people a chance" / mission alignment (free text, max 1000 chars)
+### JobPosting (belongs to a User via `employerId` and a Company via `companyId`)
 
-**System fields:** same as seeker (isResponsive, status, lastVerifiedAt, etc.)
-
-### Industry list (employer profile)
-
-Food Service / Retail / Hospitality / Healthcare / Trades / Manufacturing / Office & Admin / Transportation / Education / Personal Services / Technology / Business / Finance / Marketing / Media / Real Estate / Other
-
-### JobPosting (many-to-one with EmployerProfile)
-
-- Title, description (max 5000 chars)
-- Job type (full-time / part-time / either)
-- Work arrangement (remote / on-site / hybrid)
-- Location: city, state (dropdown-selected from geography tables; no zip; defaults from employer profile)
-- Minimum hourly rate (number, required)
-- Pay notes (optional free text — for "based on experience," raises, etc.)
-- Work days (multi-select Sun–Sat)
-- Schedule notes (optional free text — for nuance like "evenings only," "5am start")
-- Preferred skills (multi-select — note: NO required skills, only preferred, by design)
-- Required languages (multi-select)
-- Work authorization required (yes/no)
-- "What we're looking for" (free text, max 1000 chars)
-- **System fields**: status (ACTIVE / PAUSED / EXPIRED / FILLED / CLOSED), createdAt, updatedAt, lastVerifiedAt, viewCount, applicationCount, postedBy (FK to User)
-
-**Note**: Education is NOT on the job posting. Seekers fill in their education on their profile; employers can see it but cannot filter on it. By design.
+A job listing. Carries title, description, `jobType`, `workArrangement`,
+location (`city`/`state` plus geocoded `lat`/`lon`), `minHourlyRate`, optional pay and
+schedule notes, `workDays`, `workAuthRequired`, a free-text "what we're looking for",
+and required languages (via the `JobLanguage` join). Status is
+`ACTIVE` / `PAUSED` / `CLOSED` with an optional `closureReason` and `closedAt`.
+**No skills field, no required skills, no education field** — by design.
 
 ### Application (seeker → job)
 
-- seekerId, jobId
-- Application message (optional, max 500 chars)
-- Status (SUBMITTED / VIEWED / REJECTED / CLOSED)
-  - SUBMITTED: default; employer has not opened/reviewed
-  - VIEWED: employer opened the application
-  - REJECTED: explicit employer rejection (terminal)
-  - CLOSED: terminal non-rejection — seeker withdrew, job closed/paused/filled
-- closedAt (DateTime, nullable — set when status transitions to CLOSED)
-- createdAt, updatedAt
+A seeker's application to a job. Unique per `(seekerId, jobId)`. Optional message
+(≤500 chars). Status `SUBMITTED` → `VIEWED` / `REJECTED` / `CLOSED`. Application status
+is **independent** of job status.
 
-### Conversation
+### Conversation + Message
 
-- participantAId, participantBId
-- jobId (nullable — present if conversation arose from an application or about a specific job)
-- initiatedBy
-- lastMessageAt, lastMessagePreview (denormalized for inbox, preview truncated to 100 chars)
-- aBlockedB, bBlockedA (booleans)
-- createdAt
+A long-lived thread between a `seekerId` and an `employerId`, optionally linked to a
+`jobId`. Unique per `(seekerId, employerId, jobId)`. Carries denormalized
+`lastMessageAt` / `lastMessagePreview` (≤80 chars) for the inbox, and per-side block
+flags (`seekerBlocked` / `employerBlocked`). Messages are plain text (≤5000 chars) with
+a `readAt` receipt.
 
-**Creation rules** (enforced by `conversation.create`):
+### VerificationPing + FreshnessToken
 
-- Employers can start a conversation with any seeker whose profile is `ACTIVE`, with or without a `jobId`.
-- Seekers must provide a `jobId` and must have an existing `Application` for that specific job. The conversation is linked to that job.
-- Calling `create` with the same participant pair and the same `jobId` returns the existing conversation (idempotent — no duplicate threads).
-- A conversation between the same two users for a _different_ job creates a new, separate conversation.
+The freshness engine. A `VerificationPing` records a "still looking?" / "still open?"
+prompt and its response. A `FreshnessToken` is a single-use, expiring,
+login-free token embedding the target and the action to apply when clicked.
 
-### Message
+### Report
 
-- conversationId, senderId, body (max 5000 chars), readAt (nullable), createdAt
-
-### VerificationPing (drives freshness)
-
-- userId or jobId, type (SEEKER_STILL_LOOKING / JOB_STILL_OPEN), sentAt, respondedAt, response (CONFIRMED / NOT_LOOKING / FILLED / PAUSED / NO_RESPONSE)
-
-### VerificationToken
-
-- token (signed JWT or random string), targetType, targetId, expiresAt (30 days), usedAt
-
-### Skill (curated taxonomy)
-
-- name, category (optional, nullable for v1), createdAt
-
-### Language (curated taxonomy)
-
-- name, createdAt
+Abuse evidence — `reporterId`, `targetType` (`USER` / `JOB` / `MESSAGE`), `targetId`,
+`reason`, `status`. **Reports are input, not enforcement** (see Business Rules).
 
 ### NotificationPreferences (1:1 with User)
 
-- messageNotifications (PER_MESSAGE / DAILY_DIGEST / OFF) — default PER_MESSAGE
-- applicationNotifications (same enum) — default PER_MESSAGE
-- verificationEmails (always on, no opt-out)
+Per-user delivery frequency for `messageNotifications` and `applicationNotifications`
+(`PER_MESSAGE` / `DAILY_DIGEST` / `OFF`).
 
-### Report / Flag (abuse handling)
+### Taxonomy & Geography
 
-- reporterId, targetType (USER / JOB / MESSAGE), targetId, reason (max 2000 chars), status (OPEN / REVIEWED / ACTIONED / DISMISSED), createdAt
-- Self-reporting is rejected at the API level (`BAD_REQUEST`)
-
----
-
-## Key Behaviors
-
-### Freshness / verification system
-
-- Day 0: Listing/profile created or last verified
-- Day 14: Verification email sent — "Are you still looking?" / "Is this job still open?" with one-click action buttons (signed token in URL, no login required)
-- Day 20: If no response, warning email — "Will be paused in 8 days unless confirmed"
-- Day 28: If still no response, status changes to PAUSED. Hidden from search, can't be applied to / messaged about. Existing conversations remain functional.
-- **Never auto-deleted.** User can log in anytime and reactivate paused listings/profile, indefinitely.
-- Verification tokens expire 30 days after sending. After expiry, link goes to login page with reactivation pre-loaded.
-- Pause-for-30-days option included in verification emails for users on vacation/break.
-
-### Messaging
-
-- Async only (no real-time chat for v1).
-- **Hybrid initiation**: employers can cold-DM any seeker with an active profile; seekers can only start a conversation by providing a `jobId` they have applied to, which links the conversation to that job. Both parties can send freely once a conversation exists.
-- Either participant's block flag (`aBlockedB` / `bBlockedA`) prevents all messaging in that thread — both directions.
-- Read receipts: yes (`readAt` timestamp on each message, set via `conversation.markRead`).
-- Plain text only, max 5000 chars/message. No attachments for v1.
-- Block + report available on every conversation. Report targets: USER, JOB, MESSAGE.
-- Inbox sorted by `lastMessageAt` desc. No search for v1.
-
-### Notifications (email)
-
-- **Immediate per-message**: when a message is sent, notification email fires immediately inline (fire-and-forget). No debouncing — active conversations may result in multiple emails.
-- Same pattern for application notifications to employers.
-- User settings: PER_MESSAGE (default) / DAILY_DIGEST / OFF.
-- DAILY_DIGEST users receive one summary email per day via the `/api/cron/digest` Vercel Cron job.
-
-### Responsiveness badge
-
-- Boolean `isResponsive` on both seeker and employer profiles.
-- Computed every 48 hours by background job.
-- Threshold (v1, tunable): replies to ≥70% of conversations within 72-hour median.
-- New accounts (<5 conversations) show "New" pill, not negative state.
-- Underlying numbers (responseRate, medianResponseHours) computed and stored but not shown publicly.
-
-### Rate limiting
-
-- Seekers: max 25 applications/day.
-- Employers: max 50 cold DMs/day.
-- New accounts (first 7 days, <3 verified actions): tighter limits.
-- No per-message limit within an existing conversation.
-
-### Auth
-
-- Google OAuth only via Auth.js v5 — no email/magic links, no passwords.
-- JWT session strategy (not database sessions) — middleware can verify auth in the Edge runtime without a DB call.
-- Role-based access control via server component layouts, not middleware.
-- Phone numbers collected at signup but not verified (deferred for SMS cost reasons).
-
-### Routing conventions
-
-**Public routes** (no auth required) use the entity's `profileId` as the URL segment:
-
-| Route | Segment | ID type |
-|-------|---------|---------|
-| `/employer/[profileId]` | `profileId` | `EmployerProfile.id` |
-| `/seeker/[profileId]` | `profileId` | `SeekerProfile.id` |
-| `/jobs/[id]` | `id` | `JobPosting.id` |
-
-**Private routes** (auth required) use stable, non-parameterized paths. Ownership is established via `userId` from the JWT session — never from the URL:
-
-| Route | Who |
-|-------|-----|
-| `/employer/profile` | Authenticated employer (own profile) |
-| `/employer/dashboard` | Authenticated employer |
-| `/employer/jobs/[id]` | Authenticated employer (job by posting ID) |
-| `/seeker/profile` | Authenticated seeker (own profile) |
-| `/seeker/applications` | Authenticated seeker |
-
-**Hard rules:**
-
-- `userId` is **never** exposed in a URL — not as a route segment, not as a query parameter.
-- tRPC procedures never accept `userId` as input. The caller's identity comes exclusively from `ctx.user.id` (session). For targeting another user, procedures accept a `profileId` and resolve the `userId` internally.
-- Protecting a new route means: (1) add its path prefix to the `matcher` array in `src/middleware.ts`, (2) add a role check in its server component layout. Never add client-side auth guards.
+- **Language** — curated, admin-managed list (the only taxonomy; skills were removed).
+- **State / City** — seeded geography tables with `lat`/`lon`. No ZIP codes. All
+  locations are dropdown-selected from these tables.
 
 ---
 
-## Out of scope for v1 (deferred to v2+)
+## 3. Business Rules
 
-- Mobile apps (React Native)
-- SMS notifications and SMS verification
-- Real-time messaging / WebSockets
-- File attachments in messages
-- User-extensible skills taxonomy (admin-managed for now)
-- Profile photos / company logos
-- Inbox search
-- Cross-conversation digest emails (only daily digest as a setting)
-- Payment / monetization (intentionally never)
+### Roles & profiles
+
+- A user picks a role once (`/role-select`); the role is stored on the JWT and the User row.
+- Creating a profile requires confirming age ≥ 18 (`isAdult`).
+- An employer must create at least one Company before posting jobs (enforced by the
+  `(needs-company)` route group).
+
+### Job lifecycle
+
+- **ACTIVE** — visible, searchable, accepts applications, messaging enabled.
+- **PAUSED** — blocks new applications; preserves existing applications and
+  conversations; mutates no related entities.
+- **CLOSED** — hiring done; historical data preserved; carries a `closureReason`
+  (`FILLED_ON_SHEFA` / `FILLED_ELSEWHERE` / `HIRING_FROZEN` / `CANCELLED` / `OTHER`).
+- Closing or pausing a job **never** auto-rejects applications or closes conversations.
+
+### Applications
+
+- One application per seeker per job (DB-unique).
+- Status transitions are explicit and employer-driven; terminal states
+  (`REJECTED`, `CLOSED`) are terminal.
+- Application status is decoupled from job status — a closed job can still have
+  `SUBMITTED` applications until an employer acts on them.
+
+### Messaging initiation (hybrid)
+
+- **Employers** may start a conversation with any `ACTIVE` seeker, with or without a `jobId`.
+- **Seekers** may only start a conversation tied to a `jobId` they have applied to.
+- `conversation.create` is idempotent per `(seeker, employer, job)` — same triple
+  returns the existing thread; a different `jobId` creates a separate thread.
+- Either side's block flag halts messaging in **both** directions for that thread.
+- Conversations persist after job closure.
+
+### Reports & moderation
+
+- Reports are evidence only; they do **not** auto-suspend users or block messaging.
+- Moderation (`SUSPENDED` status, etc.) is a separate, explicit enforcement decision.
+- Self-reporting is rejected at the API layer.
+
+### Freshness / verification
+
+- Listings and profiles carry `lastVerifiedAt`. A cron sends "still looking / still
+  open?" pings as they age, escalates with a warning, and finally sets status to
+  `PAUSED`. **Nothing is ever auto-deleted.**
+- Verification links use signed, expiring, single-use `FreshnessToken`s and require no login.
+- Paused entities can be reactivated by the owner at any time, indefinitely.
+
+### Responsiveness (employers only)
+
+- `isResponsive` is a boolean recomputed periodically by a cron from conversation
+  reply behavior. New/low-volume employers surface a neutral "New" state, never a
+  negative one. Underlying rates are computed but not shown publicly.
+
+### Notifications
+
+- Message and application notifications fire **immediately, inline, fire-and-forget**
+  when the triggering event occurs (no debounce queue).
+- `DAILY_DIGEST` users instead receive one summary email per day via cron.
+- `OFF` disables that category. Verification emails are always sent regardless.
+
+### Constraints that are inviolable (mission)
+
+- No payments. No protected-class filtering. No education-based filtering.
+- No automatic deletion of user data.
 
 ---
 
-## Build Plan (8 phases)
+## 4. Current Features
 
-1. **Foundation**: Next.js + TS + Drizzle + Postgres + tRPC + Tailwind + shadcn/ui + Docker Compose. Empty app that runs. ✅
-2. **Auth + base User**: Auth.js magic links via Resend, role selection, protected routes. ✅
-3. **Profiles**: Seeker + Employer profile schemas, signup flows (lean), profile completion pages, skill/language seed + multi-select. ✅ backend + signup UI; ⚠️ missing: profile view/edit pages.
-4. **Job postings**: CRUD, post-a-job flow, public listings, search/filter, job detail page. ✅ backend + core UI; ⚠️ missing: job edit page, publish/pause/close/fill status controls.
-5. **Applications + messaging**: apply flow, conversations + messages, inbox, read receipts, block/report, cold DM flow. ✅ full backend (tRPC routers: application, conversation, message, report); ⚠️ missing: inbox UI, conversation UI, employer cold-DM UI, profile view pages needed to navigate to messaging.
-6. **Freshness system**: Vercel Cron routes, daily ping scheduler, email templates, signed verification tokens, auto-pause logic, reactivation UX. ✅
-7. **Notifications + responsiveness**: NotificationPreferences, immediate fire-and-forget notifications, daily digest cron, responsiveness computation cron, badge display. ✅
-8. **Polish + abuse + ship**: rate limiting, admin dashboard for flags, basic admin tools, error handling, deploy. ⬜
+All eight build phases are complete except final polish (Phase 8 in progress).
 
-Ship target after Phase 8. Each phase is shippable on its own and committed to git separately.
+**Auth & onboarding:** Google OAuth sign-in, role selection, age-gated profile creation.
+
+**Seeker:** create/edit profile, browse jobs, apply, view own applications with live
+status, public profile page (`/seeker/[profileId]`).
+
+**Employer:** create/edit the contact profile; create/edit/list companies; create,
+edit, duplicate, pause, and close jobs; view applications per job and update their
+status; dashboard with recent applications; public company page (`/company/[id]`) and
+public employer page (`/employer/[profileId]`).
+
+**Jobs (public):** listing with filters (status, job type, work arrangement, work days),
+geo radius search (haversine on `lat`/`lon`), sort by newest / closest / pay; public
+job detail.
+
+**Messaging:** inbox, conversation thread, send messages, read receipts, block/unblock,
+report; hybrid initiation (employer cold-DM, seeker job-scoped).
+
+**Freshness:** cron-driven pings, escalation, auto-pause, and login-free reactivation
+pages (`/verify/*`, `/api/verify/[token]`).
+
+**Notifications & responsiveness:** per-message / digest / off preferences, immediate
+emails, daily digest cron, responsiveness badge computation cron and display.
+
+**Pending (Phase 8):** rate limiting, admin moderation dashboard, a dedicated seeker
+dashboard, broader error-handling polish, and a pre-ship env/secret audit.
+
+---
+
+## 5. Technical Architecture
+
+**Stack:** Next.js (App Router) + TypeScript (strict) · tRPC v11 · Drizzle ORM with the
+`@neondatabase/serverless` HTTP driver · PostgreSQL · Auth.js v5 (`next-auth@beta`) ·
+Resend · Zod v4 · Tailwind 4 + shadcn/ui (Radix) · React Hook Form.
+
+**Hosting:** Vercel (web + cron) · Neon (Postgres) · Resend (email).
+**Local dev:** Docker Compose runs `postgres:16-alpine` only.
+
+**Auth (split-config pattern):**
+
+- `auth.config.ts` — Edge-safe; no DB/Drizzle imports; defines JWT/session callbacks
+  and providers placeholder.
+- `auth.ts` — full Node config with the DrizzleAdapter and Google provider.
+- **JWT session strategy** — middleware verifies auth from the cookie alone; it never
+  queries the DB.
+
+**Middleware (`src/middleware.ts`):** single responsibility — redirect unauthenticated
+requests to `/sign-in`, and redirect authenticated users hitting `/` to their role's
+dashboard. No other role/onboarding logic. Imports only `auth.config.ts` and Next built-ins.
+
+**Authorization:** role checks and onboarding redirects live in **server component
+layouts / page wrappers**, never in middleware or client components. The `employer` and
+`seeker` segment layouts gate by role; the `(needs-company)` group additionally requires
+an owned company.
+
+**API layer (tRPC):** `createTRPCContext` injects `{ session, db, headers }`.
+`publicProcedure` is open; `protectedProcedure` enforces a session and narrows
+`ctx.user`. Procedures own all business logic; components are presentation-only.
+Identity always comes from `ctx.session.user.id` — **never** from input.
+
+**Routers** (`src/server/api/root.ts`): `user`, `seeker`, `employer`, `company`,
+`taxonomy`, `jobPosting`, `application`, `conversation`, `message`, `notification`,
+`report`, `location`.
+
+**Database:** `src/db/schema/` is the canonical contract; `enums.ts` is the canonical
+enum source (exported as TS union types via `typeof X.enumValues[number]`). Relational
+reads use `db.query.X.findFirst/findMany` with `with`; mutations use
+`db.insert/update/delete`. Raw SQL is used only where justified — currently the
+haversine distance query in `jobPosting` geo search.
+
+**Background jobs (Vercel Cron, `src/app/api/cron/`):**
+
+| Route | Schedule | Purpose |
+|-------|----------|---------|
+| `/api/cron/freshness` | Daily 9am UTC | Freshness pings + escalation + auto-pause |
+| `/api/cron/responsiveness` | Every 2 days 3am UTC | Recompute employer responsiveness |
+| `/api/cron/digest` | Daily 6pm UTC | Daily digest emails |
+
+Each requires `Authorization: Bearer <CRON_SECRET>` (Vercel-injected). Cron routes
+delegate to job modules in `src/server/jobs/`; emails are composed in `src/server/emails/`.
+
+---
+
+## 6. Folder Conventions
+
+```text
+src/
+  app/                      # Next.js App Router
+    api/
+      auth/[...nextauth]/   # Auth.js handler
+      trpc/[trpc]/          # tRPC HTTP handler
+      cron/{freshness,responsiveness,digest}/
+      verify/[token]/       # login-free freshness redemption
+      change-email/
+    employer/
+      profile/{new,edit}/
+      company/{new,[id]/edit}/
+      (needs-company)/      # route group: requires an owned company
+        dashboard/  jobs/{new,[id]/{edit,applications}}/
+    seeker/
+      (protected)/profile/{new,edit}  (protected)/applications/
+      (public)/[profileId]/           # public seeker profile
+    jobs/[id]/              # public listing + detail
+    company/[id]/           # public company page
+    employer/[profileId]/   # public employer page
+    messages/[conversationId]/
+    {sign-in,role-select,verify/*,verify-request}/
+  server/
+    api/
+      trpc.ts  root.ts
+      routers/  + routers/__tests__/
+    jobs/                   # cron job logic + token/redeem helpers
+    emails/                 # Resend email composition
+  db/
+    schema/                 # canonical DB contract (one file per domain)
+    scripts/                # seed.ts, seed-jobs.ts
+    index.ts                # exports `db` (DbClient = typeof db)
+  lib/
+    schemas/                # shared Zod input schemas
+    constants/              # labels.ts (enum → label maps)
+    trpc/                   # client/server tRPC wiring
+    utils.ts
+  components/
+    ui/                     # shadcn primitives
+    *.tsx                   # shared app components (nav, badges, menus)
+  middleware.ts  auth.ts  auth.config.ts  types/
+drizzle.config.ts
+```
+
+**Placement rules:**
+
+- Business logic → tRPC routers. Shared validation → `src/lib/schemas/`.
+- Enum-label maps live once in `src/lib/constants/labels.ts` (no duplicated maps).
+- Cron entrypoints are thin route handlers; logic lives in `src/server/jobs/*.job.ts`.
+- Tests are co-located in `__tests__/` next to the code they cover.
+
+---
+
+## 7. Naming Conventions
+
+**Database (Drizzle):** table names are PascalCase singular (`User`, `JobPosting`,
+`SeekerProfile`); column names are camelCase (`firstName`, `lastVerifiedAt`); primary
+keys are `text` cuid2 (`createId()`); join tables are `OwnerChild` (`SeekerLanguage`,
+`JobLanguage`) with composite primary keys.
+
+**Enums:** Postgres enum type names are PascalCase (`pgEnum("JobStatus", …)`); values are
+SCREAMING_SNAKE_CASE (`FULL_TIME`, `FILLED_ON_SHEFA`); the exported TS type matches the
+type name (`type JobStatus`). Zod mirrors enum values with string literals — never
+`z.nativeEnum`.
+
+**Routers / procedures:** router files are camelCase by entity (`jobPosting.ts`);
+exported routers are `<entity>Router`. Procedures are verbs: `create`, `update`,
+`list`, `getById`, `getPublic`, `listMine`, `updateStatus`, `markRead`, `block`.
+"Mine"/"My" denotes the caller's own records derived from session.
+
+**Routes:** kebab-case paths; bracket segments for params. Public profile routes take a
+**profile id** segment (`[profileId]`, `[id]`); private routes are stable,
+non-parameterized paths with ownership derived from the session. `userId` never appears
+in a URL or as a query parameter.
+
+**Shared Zod schemas:** `PascalCaseSchema` (e.g. `CreateJobPostingSchema`) with an
+inferred `PascalCaseInput` type alongside.
+
+**React components:** PascalCase files for shared components; shadcn primitives stay in
+`components/ui/`.
+
+---
+
+## 8. Important Decisions
+
+- **Company is separate from EmployerProfile.** The employer profile is the contact
+  human; companies are owned entities (one user → many companies). This replaced the
+  earlier model where company fields lived on the employer profile.
+- **Skills were removed entirely.** There is no skills taxonomy and no required/preferred
+  skills on jobs or profiles. Languages are the only curated taxonomy. This reinforces
+  the "hire on potential" mission and avoids credential-style gatekeeping.
+- **Geo search via haversine on `lat`/`lon`.** Jobs and geography tables are geocoded;
+  radius filtering and "closest" sort use a justified raw-SQL distance query. No ZIPs.
+- **Job status simplified to ACTIVE / PAUSED / CLOSED** with a structured
+  `closureReason`, replacing the earlier EXPIRED/FILLED states.
+- **Responsiveness is employer-only.** Seekers carry no responsiveness metric.
+- **JWT sessions over DB sessions** so Edge middleware can gate auth without a DB call.
+- **Auth gating in middleware, role/onboarding gating in server layouts.** No
+  client-side auth redirects anywhere.
+- **Notifications are immediate and inline (fire-and-forget)**, with an optional daily
+  digest — no separate queue/worker infrastructure (Vercel Cron only).
+- **Idempotent, job-scoped conversations** prevent duplicate threads while allowing
+  separate threads per job between the same two people.
+- **Derived permissions over destructive cascades** — status changes never mutate
+  related entities; permission is checked at action time.
+
+---
+
+## 9. Known Constraints
+
+**Mission (permanent):** no payments; no protected-class filtering; no education-based
+filtering; no automatic deletion of user data.
+
+**Architectural invariants:**
+
+- Middleware is Edge-safe and must never import the DB client or `@/auth`.
+- `auth.config.ts` carries no DB/Drizzle imports or adapter.
+- Auth.js v5 only (no downgrade to v4); Google provider only — no email/magic-link/password.
+- No duplicated enum definitions; `@/db/schema` is the single source.
+- No `as any` to paper over schema drift; no raw SQL without justification.
+- No business logic in client components; no alternate UI libraries; shadcn primitives only.
+
+**Operational guardrails:**
+
+- Schema changes require `npx drizzle-kit generate` then `npx drizzle-kit migrate`,
+  provided to the user before dependent code is written. Migrations/pushes are never run
+  autonomously, and destructive DB commands are never run autonomously.
+- `.env*` files are never edited; new variables go to `.env.example` with a comment and
+  an explicit heads-up to the user.
+- `npm run check` (typecheck + lint + format) must pass before any change is considered complete.
+
+**Deferred to v2+:** mobile apps (React Native over the same tRPC API), SMS
+notifications/verification, real-time messaging, message attachments, profile photos /
+company logos, inbox search, and user-extensible taxonomies.

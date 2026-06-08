@@ -144,7 +144,7 @@ function JobEditForm({
       <div className="mx-auto max-w-2xl">
         <Link
           href="/employer/jobs"
-          className="text-muted-foreground hover:text-orange mb-2 inline-flex items-center gap-1 transition-colors duration-100"
+          className="hover:text-orange mb-2 inline-flex items-center gap-1 transition-colors duration-100"
         >
           <ArrowLeftIcon className="size-3.5" />
           My jobs
