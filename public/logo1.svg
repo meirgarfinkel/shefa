@@ -1,12 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="11.012 3.025 500 220" xmlns:bx="https://boxy-svg.com">
-  <defs>
-    <bx:grid x="11.5" y="3.538" width="260.99" height="173.418"></bx:grid>
-  </defs>
-  <text style="fill: rgb(255, 255, 255); font-family: &quot;Arial&quot;, sans-serif; font-size: 28px; white-space: pre; stroke-width: 1px;" x="16.017" y="118.73" transform="matrix(6.548891, 0, 0, 6.432457, -1347.591064, -1487.855713)"><tspan x="208.283" y="260.719" style="word-spacing: 0px; stroke-width: 1px;">Shefa</tspan></text>
-  <rect x="69.568" y="190.805" width="16.017" height="25.856" style="fill-rule: nonzero; paint-order: stroke; fill: rgb(174, 206, 253); stroke-width: 1px;"></rect>
-  <path d="M 93.152 401.554 L 93.152 427.755 L 73.278 427.755 L 73.278 401.554 L 93.152 401.554 Z M 79.825 421.29 L 86.607 421.29 L 86.607 408.019 L 79.825 408.019 L 79.825 421.29 Z" style="fill-rule: nonzero; paint-order: fill; fill: none; stroke-width: 1px;"></path>
-  <path style="fill: rgb(174, 206, 253); stroke-width: 1px;" transform="matrix(0.64283, 0.766009, -0.875982, 0.511783, 196.564377, -1297.868042)" d="M 1230.82 701.391 H 1246.77 A 0 0 0 0 1 1246.77 701.391 V 805.788 A 0 0 0 0 1 1246.77 805.788 H 1230.82 V 805.788 H 1230.82 V 701.391 A 0 0 0 0 1 1230.82 701.391 Z" bx:shape="rect 1230.82 701.391 15.949 104.397 0 0 0 0 0 0 0 0 0 3 0 0 2@cc0715c2" id="path-0"></path>
-  <rect x="1230.81" y="651.035" width="15.949" height="96.902" style="stroke-width: 1px; fill: rgb(174, 206, 253);" transform="matrix(0.64283, -0.766009, 0.875982, 0.511783, -998.067322, 625.74408)"></rect>
-  <path style="stroke-width: 1px; fill: rgb(174, 206, 253);" d="M 324.598 4.893 H 338.236 A 0 0 0 0 1 338.236 4.893 V 37.346 A 0 0 0 0 1 338.236 37.346 H 324.598 A 0 0 0 0 1 324.598 37.346 V 4.893 A 0 0 0 0 1 324.598 4.893 Z" bx:shape="rect 324.598 4.893 13.638 32.453 0 0 0 2@ed22ed8a"></path>
-  <rect x="72.35" y="38.047" width="16.017" height="25.856" style="fill-rule: nonzero; paint-order: stroke; fill: rgb(174, 206, 253); stroke-width: 1px;"></rect>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 444 200" role="img" aria-label="Shefa">
+  <title>Shefa</title>
+  <rect x="50" y="31" width="15" height="25"  fill="#AECEFD"></rect>
+  <rect x="50" y="175" width="15" height="25" fill="#AECEFD"></rect>
+  <rect x="290" y="0" width="15" height="25"  fill="#AECEFD"></rect>
+  <line
+    x1="250"
+    y1="55"
+    x2="330"
+    y2="10"
+    stroke="#AECEFD"
+    stroke-width="15"
+    stroke-linecap="square"
+  />
+  <line
+    x1="400"
+    y1="55"
+    x2="335"
+    y2="10"
+    stroke="#AECEFD"
+    stroke-width="15"
+    stroke-linecap="square"
+  />
+  <text
+    x="0"
+    y="174"
+    fill="white"
+    font-family="Arial, sans-serif"
+    font-size="170"
+  >
+  Shefa
+  </text>
 </svg>

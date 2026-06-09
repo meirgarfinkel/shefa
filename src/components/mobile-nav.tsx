@@ -40,7 +40,7 @@ export function MobileNav({ links, email }: MobileNavProps) {
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((prev) => !prev)}
         >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5 text-white" />}
+          {open ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
         </Button>
       </div>
 

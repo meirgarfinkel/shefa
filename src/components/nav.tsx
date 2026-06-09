@@ -41,7 +41,14 @@ export async function Nav() {
       <header className="bg-popover text-popover-foreground fixed top-0 right-0 left-0 z-50 h-16 shadow-md shadow-black/30">
         <div className="mx-auto flex h-full items-center justify-between px-6">
           <Link href="/">
-            <Image src="/logo1.svg" alt="Shefa" width={100} height={200} priority />
+            <Image
+              src="/logo1.svg"
+              alt="Shefa"
+              priority
+              className="h-10 w-auto"
+              width={100}
+              height={30}
+            />
           </Link>
 
           <div className="flex items-center gap-4">
