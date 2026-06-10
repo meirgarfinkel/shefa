@@ -4,9 +4,9 @@ import { use } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import { CardTitle } from "@/components/ui/card";
+import { Pill } from "@/components/ui/pill";
 
 const INDUSTRY_LABELS: Record<string, string> = {
   FOOD_SERVICE: "Food Service",
@@ -67,9 +67,9 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button variant="secondary">
+            <Pill>
               {company._count.jobs === 1 ? "1 active job" : `${company._count.jobs} jobs`}
-            </Button>
+            </Pill>
 
             {company.website && (
               <Button asChild variant="light">
@@ -81,24 +81,21 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
           </div>
 
           {company.aboutCompany && (
-            <div className="my-8">
+            <div className="mt-8">
               <h2 className="mb-1 font-medium">About {company.companyName}</h2>
-              <p className="bg-secondary/50 rounded-md p-3 text-sm whitespace-pre-wrap">
+              <p className="bg-secondary/50 rounded-md px-3 py-2 text-sm whitespace-pre-wrap">
                 {company.aboutCompany}
               </p>
             </div>
           )}
 
           {company.missionText && (
-            <>
-              {company.aboutCompany && <Separator />}
-              <div>
-                <h2 className="mb-1 font-medium">Company values</h2>
-                <p className="bg-secondary/50 rounded-md p-3 text-sm whitespace-pre-wrap">
-                  {company.missionText}
-                </p>
-              </div>
-            </>
+            <div className="mt-8">
+              <h2 className="mb-1 font-medium">Company values</h2>
+              <p className="rounded-md bg-white/70 px-3 py-2 text-sm whitespace-pre-wrap">
+                {company.missionText}
+              </p>
+            </div>
           )}
         </div>
       </div>

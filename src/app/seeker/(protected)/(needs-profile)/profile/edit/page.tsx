@@ -120,12 +120,11 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
     <div className="p-5">
       <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
-          <PageHeader title="Edit Profile" />
+          <PageHeader title="Edit your profile" />
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-              {/* Name */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-8 grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="firstName"
@@ -135,7 +134,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                         First name <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input variant="secondary" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -150,7 +149,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                         Last name <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input variant="secondary" {...field} />
+                        <Input {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -158,48 +157,25 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 />
               </div>
 
-              {/* Location */}
-              <div className="my-8">
+              <div className="mt-8">
                 <LocationPicker />
               </div>
 
-              {/* Work authorization */}
-              <div>
-                <FormField
-                  control={form.control}
-                  name="workAuthorization"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/40 p-3">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(!!checked)}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        I am authorized to work in the United States
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Days available */}
-              <div className="my-8">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="availableDays"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Select all days you can work.</FormLabel>
+                      <FormLabel>Select all days you can work</FormLabel>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {DAYS.map((day) => (
                           <label
                             key={day.value}
-                            className={`bg-muted/10 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
                               field.value?.includes(day.value)
-                                ? "bg-popover text-white"
-                                : "hover:bg-popover/30"
+                                ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
+                                : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
                             }`}
                           >
                             <input
@@ -225,28 +201,28 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 />
               </div>
 
-              {/* Job seek text */}
-              <FormField
-                control={form.control}
-                name="jobSeekText"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      What kind of job are you seeking? <span className="text-danger">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea {...field} rows={4} maxLength={1000} />
-                    </FormControl>
-                    <FormMessage />
-                    <FormDescription className="text-muted/50 text-end">
-                      {field.value?.length ?? 0}/1000
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+              <div className="mt-8">
+                <FormField
+                  control={form.control}
+                  name="jobSeekText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        What kind of job are you seeking? <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea {...field} rows={4} maxLength={1000} />
+                      </FormControl>
+                      <FormMessage />
+                      <FormDescription className="text-muted/60 text-end">
+                        {field.value?.length ?? 0}/1000
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Education */}
-              <div className="mt-4 mb-8">
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="educationLevel"
@@ -256,7 +232,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -273,8 +249,8 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 />
               </div>
 
-              <div>
-                {languages && languages.length > 0 && (
+              {languages && languages.length > 0 && (
+                <div className="mt-8">
                   <FormField
                     control={form.control}
                     name="languageIds"
@@ -306,10 +282,10 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                       </FormItem>
                     )}
                   />
-                )}
-              </div>
+                </div>
+              )}
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="about"
@@ -320,9 +296,29 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                         <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-5">
+                <FormField
+                  control={form.control}
+                  name="workAuthorization"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/40 px-3 py-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(!!checked)}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        I am authorized to work in the United States
+                      </FormLabel>
                     </FormItem>
                   )}
                 />
@@ -334,7 +330,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                 </p>
               )}
 
-              <div className="flex justify-between">
+              <div className="mt-8 flex justify-between">
                 <span className="flex items-center gap-3">
                   <Button type="submit" disabled={updateProfile.isPending}>
                     {updateProfile.isPending ? "Saving…" : "Save changes"}

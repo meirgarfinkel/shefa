@@ -57,7 +57,7 @@ export default function RoleSelectClient() {
         >
           <CardHeader className="text-center">
             <CardTitle className="text-xl">{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+            <CardDescription className="text-popover">{description}</CardDescription>
           </CardHeader>
         </Card>
       </button>
@@ -65,7 +65,7 @@ export default function RoleSelectClient() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="mt-30 flex min-h-screen justify-center p-5">
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-medium">Welcome to Shefa!</h1>

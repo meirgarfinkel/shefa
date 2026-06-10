@@ -237,24 +237,28 @@ export function EmployerDashboardClient({
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>My Companies</DialogTitle>
+              <DialogTitle className="mt-5 text-xl">My companies</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-2">
               {companies.map((c) => (
                 <div
                   key={c.id}
-                  className="flex items-center justify-between gap-3 rounded-md bg-white/80 px-4 py-3"
+                  className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white/70 px-4 py-3 hover:bg-white/90"
+                  onClick={() => router.push(`/employer/company/${c.id}/edit`)}
                 >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{c.companyName}</p>
-                    <p className="text-popover text-xs">
-                      {c.city}, {c.state} · {c.activeJobsCount} active job
-                      {c.activeJobsCount !== 1 ? "s" : ""}
-                    </p>
+                  <div className="text-popover min-w-0 flex-1">
+                    <p className="truncate text-lg font-medium">{c.companyName}</p>
+
+                    <div className="flex justify-between">
+                      <div>
+                        {c.city}, {c.state}
+                      </div>
+                      <div>
+                        {c.activeJobsCount} active job
+                        {c.activeJobsCount !== 1 ? "s" : ""}
+                      </div>
+                    </div>
                   </div>
-                  <Button asChild size="sm" variant="secondary">
-                    <Link href={`/employer/company/${c.id}/edit`}>Edit</Link>
-                  </Button>
                 </div>
               ))}
             </div>

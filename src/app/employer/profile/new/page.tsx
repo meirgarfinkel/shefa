@@ -48,7 +48,7 @@ export default function EmployerProfileNewPage() {
           <PageHeader title="Create your employer profile" />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
@@ -91,7 +91,6 @@ export default function EmployerProfileNewPage() {
                     <FormLabel>Your role</FormLabel>
                     <FormControl>
                       <Input
-                        variant="secondary"
                         {...field}
                         value={field.value ?? ""}
                         placeholder="e.g. Hiring Manager, CEO, Owner"
@@ -106,7 +105,7 @@ export default function EmployerProfileNewPage() {
                 control={form.control}
                 name="isAdult"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-y-0 space-x-3 rounded-sm bg-white/40 p-4">
+                  <FormItem className="flex flex-row items-start space-y-0 space-x-3 rounded-md bg-white/40 px-3 py-2">
                     <FormControl>
                       <Checkbox
                         checked={field.value === true}
@@ -115,8 +114,7 @@ export default function EmployerProfileNewPage() {
                     </FormControl>
                     <div className="space-y-1 leading-none">
                       <FormLabel>
-                        I confirm I am 18 years of age or older{" "}
-                        <span className="text-danger">*</span>
+                        I confirm I am 18+ years old <span className="text-danger">*</span>
                       </FormLabel>
                       <FormMessage />
                     </div>
@@ -130,7 +128,11 @@ export default function EmployerProfileNewPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full" disabled={createProfile.isPending}>
+              <Button
+                type="submit"
+                className="px-10 text-nowrap"
+                disabled={createProfile.isPending}
+              >
                 {createProfile.isPending ? "Saving…" : "Continue"}
               </Button>
             </form>

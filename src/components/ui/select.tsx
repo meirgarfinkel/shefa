@@ -37,7 +37,8 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "from-primary/40 hover:from-orange/10 flex h-8 cursor-pointer items-center justify-between gap-1 rounded-md bg-white/70 bg-linear-to-t via-transparent to-transparent px-3 text-sm shadow-lg hover:bg-white hover:shadow-none",
+        "from-primary/40 hover:from-orange/10 flex h-8 min-w-0 items-center justify-between gap-1 rounded-md bg-white/70 bg-linear-to-t via-transparent to-transparent px-3 text-sm shadow-lg hover:bg-white hover:shadow-none",
+        "max-w-35 text-nowrap md:max-w-100",
         className,
       )}
       {...props}

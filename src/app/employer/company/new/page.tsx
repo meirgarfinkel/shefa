@@ -88,15 +88,14 @@ export default function CompanyNewPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-              {/* Company basics */}
-              <div className="my-8">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Company Name <span className="text-danger">*</span>
+                        Company name <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input {...field} />
@@ -107,37 +106,39 @@ export default function CompanyNewPage() {
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website</FormLabel>
-                    <FormControl>
-                      <Input
-                        variant="light"
-                        {...field}
-                        value={field.value ?? ""}
-                        type="url"
-                        placeholder="https://example.com"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="mt-8">
+                <FormField
+                  control={form.control}
+                  name="website"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input
+                          variant="light"
+                          {...field}
+                          value={field.value ?? ""}
+                          type="url"
+                          placeholder="https://example.com"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <div className="my-8 grid grid-cols-2 gap-4">
+              <div className="mt-8 grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="companySize"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company Size</FormLabel>
+                      <FormLabel>Company size</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -162,7 +163,7 @@ export default function CompanyNewPage() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent align="start">
@@ -179,15 +180,17 @@ export default function CompanyNewPage() {
                 />
               </div>
 
-              <LocationPicker />
+              <div className="mt-8">
+                <LocationPicker />
+              </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="aboutCompany"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>About the Company</FormLabel>
+                      <FormLabel>About the company</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -198,7 +201,7 @@ export default function CompanyNewPage() {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/2000
                       </FormDescription>
                     </FormItem>
@@ -206,13 +209,13 @@ export default function CompanyNewPage() {
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="missionText"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Company Values</FormLabel>
+                      <FormLabel>Company values</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
@@ -223,7 +226,7 @@ export default function CompanyNewPage() {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
@@ -237,7 +240,11 @@ export default function CompanyNewPage() {
                 </p>
               )}
 
-              <Button type="submit" className="mt-4" disabled={createCompany.isPending}>
+              <Button
+                type="submit"
+                className="mt-5 px-10 text-nowrap"
+                disabled={createCompany.isPending}
+              >
                 {createCompany.isPending
                   ? "Creating…"
                   : isFirstCompany

@@ -121,7 +121,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="my-8">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="name"
@@ -139,7 +139,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                 />
               </div>
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="website"
@@ -148,6 +148,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                       <FormLabel>Website</FormLabel>
                       <FormControl>
                         <Input
+                          variant="light"
                           {...field}
                           value={field.value ?? ""}
                           type="url"
@@ -160,7 +161,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                 />
               </div>
 
-              <div className="my-8 grid grid-cols-2 gap-4">
+              <div className="mt-8 grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="companySize"
@@ -169,8 +170,8 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                       <FormLabel>Company size</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                          <SelectTrigger className="min-w-0">
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -195,7 +196,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                       <Select onValueChange={field.onChange} value={field.value ?? ""}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -212,9 +213,11 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                 />
               </div>
 
-              <LocationPicker />
+              <div className="mt-8">
+                <LocationPicker />
+              </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="aboutCompany"
@@ -231,7 +234,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/2000
                       </FormDescription>
                     </FormItem>
@@ -239,7 +242,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="missionText"
@@ -256,7 +259,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
@@ -270,7 +273,7 @@ function CompanyEditForm({ company }: { company: CompanyRecord }) {
                 </p>
               )}
 
-              <div className="mt-4 flex justify-between">
+              <div className="mt-5 flex justify-between">
                 <span className="flex items-center gap-3">
                   <Button type="submit" disabled={updateCompany.isPending}>
                     {updateCompany.isPending ? "Saving…" : "Save changes"}

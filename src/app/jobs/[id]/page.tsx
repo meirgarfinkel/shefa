@@ -175,7 +175,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </div>
 
-          <div className="my-5">
+          <div className="mt-5">
             <Link
               href={`/company/${job.company.id}`}
               className="hover:text-orange flex items-center gap-1 font-medium"
@@ -186,7 +186,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </div>
 
           <CardContent>
-            <div className="relative flex flex-wrap gap-2">
+            <div className="relative mt-5 flex flex-wrap gap-2">
               <Pill variant="light">
                 <div className="flex items-center gap-1">
                   <MapPin className="text-message-green size-4" strokeWidth={2.5} /> {job.city},{" "}
@@ -215,7 +215,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               )}
             </div>
 
-            <div className="my-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-md font-medium tracking-wide">Pay</p>
                 <p className="text-muted mt-1 text-sm font-medium">
@@ -247,7 +247,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
 
             {/* Description */}
-            <div className="mb-8 space-y-1">
+            <div className="mt-8 space-y-1">
               <div className="flex items-center gap-1 font-medium">
                 <Info className="text-message-green size-4" strokeWidth={2.5} />
                 About the role
@@ -256,7 +256,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
 
             {job.whatWereLookingFor && (
-              <div className="mb-8 space-y-1">
+              <div className="mt-8 space-y-1">
                 <div className="mb-1 flex items-center gap-1 font-medium">
                   <SearchCheck className="text-message-green size-4" strokeWidth={2.5} />
                   What we&apos;re looking for
@@ -280,10 +280,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
               {!isSeeker && <p className="text-muted text-sm">Sign in as a job seeker to apply.</p>}
 
-              {canApply && <Button onClick={() => setDialogOpen(true)}>Apply for this job</Button>}
+              {canApply && (
+                <Button className="mt-8" onClick={() => setDialogOpen(true)}>
+                  Apply for this job
+                </Button>
+              )}
 
               {showApplicationStatus && (
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="mt-8 flex flex-wrap items-center gap-3">
                   <span
                     className={`rounded-full px-3 py-1 text-sm font-medium ${
                       APPLICATION_STATUS_STYLES[currentStatus ?? "SUBMITTED"]

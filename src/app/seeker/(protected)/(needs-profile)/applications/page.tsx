@@ -50,7 +50,7 @@ export default function SeekerApplicationsPage() {
           <p className="text-muted-foreground mb-4 text-sm">
             You haven&apos;t applied to any jobs yet.
           </p>
-          <Button asChild variant="ghost" className="hover:bg-blue-dark-3">
+          <Button asChild variant="ghost">
             <Link href="/jobs">Browse listings</Link>
           </Button>
         </div>

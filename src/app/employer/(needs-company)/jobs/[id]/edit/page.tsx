@@ -161,7 +161,7 @@ function JobEditForm({
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               {!isClosed && (
-                <div className="my-8 space-y-2">
+                <div className="mt-8 space-y-2">
                   <h2 className="font-medium">Status</h2>
                   <FormField
                     control={form.control}
@@ -189,7 +189,7 @@ function JobEditForm({
                 </div>
               )}
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="title"
@@ -207,7 +207,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="description"
@@ -220,7 +220,7 @@ function JobEditForm({
                         <Textarea {...field} rows={6} maxLength={5000} disabled={isClosed} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/80 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
@@ -228,7 +228,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -245,7 +245,7 @@ function JobEditForm({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select…" />
+                              <SelectValue placeholder="Select" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -274,7 +274,7 @@ function JobEditForm({
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Select…" />
+                              <SelectValue placeholder="Select" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -290,11 +290,11 @@ function JobEditForm({
                 </div>
               </div>
 
-              <div className="my-8">
+              <div className="mt-8">
                 <LocationPicker />
               </div>
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="minHourlyRate"
@@ -319,7 +319,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="payNotes"
@@ -336,7 +336,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/80 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
@@ -344,7 +344,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="workDays"
@@ -385,7 +385,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="scheduleNotes"
@@ -402,7 +402,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/80 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
@@ -410,7 +410,7 @@ function JobEditForm({
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="workAuthRequired"
@@ -429,8 +429,8 @@ function JobEditForm({
                 />
               </div>
 
-              <div className="my-8">
-                {languages && languages.length > 0 && (
+              {languages && languages.length > 0 && (
+                <div className="mt-8">
                   <FormField
                     control={form.control}
                     name="requiredLanguageIds"
@@ -463,10 +463,10 @@ function JobEditForm({
                       </FormItem>
                     )}
                   />
-                )}
-              </div>
+                </div>
+              )}
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="whatWereLookingFor"
@@ -483,7 +483,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/80 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
@@ -498,10 +498,10 @@ function JobEditForm({
               )}
 
               {!isClosed && (
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="flex items-center gap-3">
-                    <Button type="submit" disabled={updatePosting.isPending}>
-                      {updatePosting.isPending ? "Saving…" : "Save Changes"}
+                <div className="mt-5 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Button type="submit" className="px-5" disabled={updatePosting.isPending}>
+                      {updatePosting.isPending ? "Saving…" : "Save"}
                     </Button>
                     {saved && <p className="text-success text-sm">Saved.</p>}
                     <Button asChild variant="ghost">

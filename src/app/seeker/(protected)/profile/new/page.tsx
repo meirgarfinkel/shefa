@@ -18,7 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   Select,
   SelectContent,
@@ -83,75 +82,64 @@ export default function SeekerProfileNewPage() {
     <div className="p-5">
       <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
-          <PageHeader
-            title="Create your profile"
-            description="This is how employers will find you."
-          />
+          <PageHeader title="Create your profile" />
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="space-y-4">
-                <h2 className="text-lg font-medium">About you</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          First name <span className="text-danger">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Last name <span className="text-danger">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="mt-8 grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        First name <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Last name <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               {/* Location */}
-              <div className="space-y-4">
-                <h2 className="font-medium">Location</h2>
+              <div className="mt-8">
                 <LocationPicker />
               </div>
 
-              {/* Work preferences */}
-              <div className="space-y-4">
-                <h2 className="text-lg font-medium">Work preferences</h2>
+              {/* Days available */}
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="availableDays"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-medium">
-                        Available days <span className="text-danger">*</span>
-                      </FormLabel>
-                      <FormDescription>Select all days you can work.</FormDescription>
+                      <FormLabel>Select all days you can work</FormLabel>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {DAYS.map((day) => (
                           <label
                             key={day.value}
-                            className={`bg-muted/10 flex cursor-pointer items-center justify-center rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
                               field.value?.includes(day.value)
-                                ? "bg-popover text-white"
-                                : "hover:bg-popover/30"
+                                ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
+                                : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
                             }`}
                           >
                             <input
@@ -177,54 +165,43 @@ export default function SeekerProfileNewPage() {
                 />
               </div>
 
-              <Separator />
+              <div className="mt-8">
+                <FormField
+                  control={form.control}
+                  name="jobSeekText"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        What kind of job are you seeking? <span className="text-danger">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          rows={4}
+                          maxLength={1000}
+                          placeholder="I'm looking for work in food service or retail."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <FormDescription className="text-muted/60 text-end">
+                        {field.value?.length ?? 0}/1000
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              {/* Job seek text */}
-              <FormField
-                control={form.control}
-                name="jobSeekText"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-lg font-medium">
-                      What kind of job are you seeking? <span className="text-danger">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <Textarea
-                        {...field}
-                        rows={4}
-                        maxLength={1000}
-                        placeholder="I'm looking for work in food service or retail."
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    <FormDescription className="text-end">
-                      {field.value?.length ?? 0}/1000
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
-
-              <Separator />
-
-              {/* Optional section */}
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-medium">Optional — add later if you like</h2>
-                  <p className="text-muted-foreground text-sm">
-                    These fields help employers find you but aren&apos;t required to get started.
-                  </p>
-                </div>
-
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="educationLevel"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-medium">Highest education level</FormLabel>
+                      <FormLabel>Highest education level</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select…" />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -239,14 +216,16 @@ export default function SeekerProfileNewPage() {
                     </FormItem>
                   )}
                 />
+              </div>
 
-                {languages && languages.length > 0 && (
+              {languages && languages.length > 0 && (
+                <div className="mt-8">
                   <FormField
                     control={form.control}
                     name="languageIds"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-lg font-medium">Languages spoken</FormLabel>
+                        <FormLabel>Languages spoken</FormLabel>
                         <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
                           {languages.map((lang) => (
                             <label
@@ -272,19 +251,21 @@ export default function SeekerProfileNewPage() {
                       </FormItem>
                     )}
                   />
-                )}
+                </div>
+              )}
 
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="about"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-lg font-medium">About yourself</FormLabel>
+                      <FormLabel>About yourself</FormLabel>
                       <FormControl>
                         <Textarea {...field} value={field.value ?? ""} rows={3} maxLength={1000} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
@@ -292,45 +273,48 @@ export default function SeekerProfileNewPage() {
                 />
               </div>
 
-              {/* Age confirmation */}
-              <FormField
-                control={form.control}
-                name="isAdult"
-                render={({ field }) => (
-                  <FormItem className="bg-secondary flex flex-row items-start space-y-0 space-x-3 rounded-md p-3">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value === true}
-                        onCheckedChange={(checked) => field.onChange(checked ? true : undefined)}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        I confirm I am 18+ years old <span className="text-danger">*</span>
-                      </FormLabel>
-                      <FormMessage />
-                    </div>
-                  </FormItem>
-                )}
-              />
+              <div className="mt-5">
+                <FormField
+                  control={form.control}
+                  name="isAdult"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/40 px-3 py-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value === true}
+                          onCheckedChange={(checked) => field.onChange(checked ? true : undefined)}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I confirm I am 18+ years old <span className="text-danger">*</span>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-              <FormField
-                control={form.control}
-                name="workAuthorization"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-sm bg-white/40 p-3">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={(checked) => field.onChange(!!checked)}
-                      />
-                    </FormControl>
-                    <FormLabel className="font-normal">
-                      I am authorized to work in the United States
-                    </FormLabel>
-                  </FormItem>
-                )}
-              />
+              <div className="mt-5">
+                <FormField
+                  control={form.control}
+                  name="workAuthorization"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/40 px-3 py-2">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => field.onChange(!!checked)}
+                        />
+                      </FormControl>
+                      <FormLabel className="text-sm font-normal">
+                        I am authorized to work in the United States
+                      </FormLabel>
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               {createProfile.isError && (
                 <p className="text-danger text-sm">
@@ -338,7 +322,11 @@ export default function SeekerProfileNewPage() {
                 </p>
               )}
 
-              <Button type="submit" className="w-full" disabled={createProfile.isPending}>
+              <Button
+                type="submit"
+                className="mt-8 px-10 text-nowrap"
+                disabled={createProfile.isPending}
+              >
                 {createProfile.isPending ? "Creating profile…" : "Create profile"}
               </Button>
             </form>

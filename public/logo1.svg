@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 444 200" role="img" aria-label="Shefa">
   <title>Shefa</title>
-  <rect x="50" y="31" width="15" height="25"  fill="#AECEFD"></rect>
-  <rect x="50" y="175" width="15" height="25" fill="#AECEFD"></rect>
+  <rect x="47" y="31" width="15" height="25"  fill="#AECEFD"></rect>
+  <rect x="46" y="175" width="15" height="25" fill="#AECEFD"></rect>
   <rect x="290" y="0" width="15" height="25"  fill="#AECEFD"></rect>
   <line
     x1="250"

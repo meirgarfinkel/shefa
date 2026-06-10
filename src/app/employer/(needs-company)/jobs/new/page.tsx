@@ -90,7 +90,7 @@ export default function PostJobPage() {
     <div className="p-5">
       <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
         <div className="p-5">
-          <PageHeader title="Create new job" />
+          <PageHeader title="Create a new job" />
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)}>
               {/* No companies yet — prompt to create one */}
@@ -108,7 +108,7 @@ export default function PostJobPage() {
 
               {/* Company selector — shown when employer has multiple companies */}
               {showCompanySelector && (
-                <div className="my-8">
+                <div className="mt-8">
                   <FormField
                     control={form.control}
                     name="companyId"
@@ -121,7 +121,7 @@ export default function PostJobPage() {
                           <Select onValueChange={field.onChange} value={field.value ?? ""}>
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select..." />
+                                <SelectValue placeholder="Select" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -143,7 +143,7 @@ export default function PostJobPage() {
                 </div>
               )}
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="title"
@@ -161,7 +161,7 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="description"
@@ -174,7 +174,7 @@ export default function PostJobPage() {
                         <Textarea {...field} rows={6} maxLength={5000} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/5000
                       </FormDescription>
                     </FormItem>
@@ -182,7 +182,7 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-5 grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="jobType"
@@ -194,7 +194,7 @@ export default function PostJobPage() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select..." />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -219,7 +219,7 @@ export default function PostJobPage() {
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select..." />
+                            <SelectValue placeholder="Select" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -234,11 +234,11 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div className="my-8">
+              <div className="mt-8">
                 <LocationPicker />
               </div>
 
-              <div>
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="minHourlyRate"
@@ -247,14 +247,11 @@ export default function PostJobPage() {
                       <FormLabel>
                         Minimum hourly rate ($) <span className="text-danger">*</span>
                       </FormLabel>
-                      <FormDescription>
-                        The minimum pay rate you offer for this role.
-                      </FormDescription>
                       <FormControl>
                         <Input
                           type="number"
-                          step="0.01"
-                          min="0.01"
+                          step="1"
+                          min="10"
                           placeholder="25"
                           {...form.register("minHourlyRate", {
                             setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
@@ -267,7 +264,7 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="payNotes"
@@ -284,7 +281,7 @@ export default function PostJobPage() {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
@@ -292,7 +289,7 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="workDays"
@@ -332,7 +329,7 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div className="mt-8 mb-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="scheduleNotes"
@@ -349,7 +346,7 @@ export default function PostJobPage() {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/500
                       </FormDescription>
                     </FormItem>
@@ -357,25 +354,27 @@ export default function PostJobPage() {
                 />
               </div>
 
-              <div>
+              <div className="mt-5">
                 <FormField
                   control={form.control}
                   name="workAuthRequired"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3">
+                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/70 px-3 py-2">
                       <FormControl>
                         <Checkbox
                           checked={field.value}
                           onCheckedChange={(checked) => field.onChange(!!checked)}
                         />
                       </FormControl>
-                      <FormLabel className="font-normal">US work authorization required</FormLabel>
+                      <FormLabel className="text-sm font-normal">
+                        US work authorization required
+                      </FormLabel>
                     </FormItem>
                   )}
                 />
               </div>
 
-              <div className="my-8">
+              <div className="mt-8">
                 {languages && languages.length > 0 && (
                   <FormField
                     control={form.control}
@@ -411,7 +410,7 @@ export default function PostJobPage() {
                 )}
               </div>
 
-              <div className="my-4">
+              <div className="mt-8">
                 <FormField
                   control={form.control}
                   name="whatWereLookingFor"
@@ -428,7 +427,7 @@ export default function PostJobPage() {
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/50 text-end">
+                      <FormDescription className="text-muted/60 text-end">
                         {field.value?.length ?? 0}/1000
                       </FormDescription>
                     </FormItem>
@@ -442,7 +441,11 @@ export default function PostJobPage() {
                 </p>
               )}
 
-              <Button type="submit" disabled={createPosting.isPending || hasNoCompanies}>
+              <Button
+                type="submit"
+                className="mt-5 px-10 text-nowrap"
+                disabled={createPosting.isPending || hasNoCompanies}
+              >
                 {createPosting.isPending ? "Posting job…" : "Post job"}
               </Button>
             </form>
