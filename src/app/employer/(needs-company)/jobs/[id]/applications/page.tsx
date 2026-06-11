@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "lucide-react";
@@ -8,9 +8,8 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import type { ApplicationStatus } from "@/db/schema";
 import { DAY_LABELS } from "@/lib/constants/labels";
-import { Panel } from "@/components/ui/panel";
-import { PageHeader } from "@/components/ui/page-header";
-import { pluralize } from "@/lib/utils";
+import { CloseJobModal } from "@/components/close-job-modal";
+import { EmployerJobCard } from "@/components/employer-job-card";
 
 const STATUS_LABELS: Record<ApplicationStatus, string> = {
   SUBMITTED: "New",
@@ -44,11 +43,23 @@ export default function EmployerJobApplicationsPage({
 }) {
   const { id: jobId } = use(params);
   const router = useRouter();
+  const [closing, setClosing] = useState(false);
 
   const { data: job } = trpc.jobPosting.getById.useQuery({ id: jobId });
   const { data: applications, isLoading } = trpc.application.listForJob.useQuery({ jobId });
 
   const utils = trpc.useUtils();
+
+  // Job-level actions on the top card mirror the employer jobs list, but reload
+  // this page's single job (getById) rather than the list.
+  const invalidateJob = () => void utils.jobPosting.getById.invalidate({ id: jobId });
+  const updateJob = trpc.jobPosting.update.useMutation({ onSuccess: invalidateJob });
+  const reopenJob = trpc.jobPosting.reopen.useMutation({ onSuccess: invalidateJob });
+  const confirmFreshness = trpc.jobPosting.confirmFreshness.useMutation({
+    onSuccess: invalidateJob,
+  });
+  const jobActionPending = updateJob.isPending || reopenJob.isPending || confirmFreshness.isPending;
+
   const updateStatus = trpc.application.updateStatus.useMutation({
     // Optimistic: flip the badge immediately, reconcile with the server after.
     onMutate: async ({ id, status }) => {
@@ -79,17 +90,21 @@ export default function EmployerJobApplicationsPage({
           My jobs
         </Link>
 
-        <Panel className="mb-3">
-          <PageHeader title={job?.title ?? "Applications"} />
-
-          {job && (
-            <div>
-              <p className="mt-1 text-sm">
-                {job.city}, {job.state} · {pluralize(applications?.length ?? 0, "applicant")}
-              </p>
-            </div>
-          )}
-        </Panel>
+        {job && (
+          <div className="mb-3">
+            <EmployerJobCard
+              job={job}
+              isPending={jobActionPending}
+              showApplicants={false}
+              showDuplicate={false}
+              onConfirmFreshness={() => confirmFreshness.mutate({ id: jobId })}
+              onPause={() => updateJob.mutate({ id: jobId, status: "PAUSED" })}
+              onUnpause={() => updateJob.mutate({ id: jobId, status: "ACTIVE" })}
+              onReopen={() => reopenJob.mutate({ id: jobId })}
+              onClose={() => setClosing(true)}
+            />
+          </div>
+        )}
 
         {isLoading && <p className="text-sm">Your impact is great.</p>}
 
@@ -202,6 +217,15 @@ export default function EmployerJobApplicationsPage({
           </ul>
         )}
       </div>
+
+      {job && (
+        <CloseJobModal
+          jobId={jobId}
+          jobTitle={job.title}
+          open={closing}
+          onClose={() => setClosing(false)}
+        />
+      )}
     </div>
   );
 }
