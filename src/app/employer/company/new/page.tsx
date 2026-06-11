@@ -8,12 +8,13 @@ import { CreateCompanySchema, type CreateCompanyInput } from "@/lib/schemas/empl
 import {
   Form,
   FormControl,
-  FormDescription,
+  FormCharCount,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -75,186 +76,180 @@ export default function CompanyNewPage() {
 
   return (
     <div className="p-5">
-      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
-        <div className="p-5">
-          <PageHeader
-            title={isFirstCompany ? "Add your company" : "Add a company"}
-            description={
-              isFirstCompany
-                ? "Tell candidates about the company you're hiring for."
-                : "Add another company to post jobs under."
-            }
-          />
+      <Panel className="mx-auto max-w-2xl">
+        <PageHeader
+          title={isFirstCompany ? "Add your company" : "Add a company"}
+          description={
+            isFirstCompany
+              ? "Tell candidates about the company you're hiring for."
+              : "Add another company to post jobs under."
+          }
+        />
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Company name <span className="text-danger">*</span>
-                      </FormLabel>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Company name <span className="text-danger">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input
+                        variant="light"
+                        {...field}
+                        value={field.value ?? ""}
+                        type="url"
+                        placeholder="https://example.com"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="companySize"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company size</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        {COMPANY_SIZES.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website</FormLabel>
+              <FormField
+                control={form.control}
+                name="industry"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Industry</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input
-                          variant="light"
-                          {...field}
-                          value={field.value ?? ""}
-                          type="url"
-                          placeholder="https://example.com"
-                        />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent align="start">
+                        {INDUSTRIES.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <div className="mt-8 grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="companySize"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company size</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {COMPANY_SIZES.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            <div className="mt-8">
+              <LocationPicker />
+            </div>
 
-                <FormField
-                  control={form.control}
-                  name="industry"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Industry</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent align="start">
-                          {INDUSTRIES.map((opt) => (
-                            <SelectItem key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="aboutCompany"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>About the company</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={4}
+                        maxLength={2000}
+                        placeholder="e.g. We provide custom software solutions for any need."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={2000} />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <div className="mt-8">
-                <LocationPicker />
-              </div>
+            <div className="mt-5">
+              <FormField
+                control={form.control}
+                name="missionText"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company values</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="e.g. We believe everyone deserves a shot."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={1000} />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="aboutCompany"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>About the company</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value ?? ""}
-                          rows={4}
-                          maxLength={2000}
-                          placeholder="e.g. We provide custom software solutions for any need."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/2000
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
+            {createCompany.isError && (
+              <p className="text-danger text-sm">
+                {createCompany.error.message ?? "Something went wrong. Please try again."}
+              </p>
+            )}
 
-              <div className="mt-5">
-                <FormField
-                  control={form.control}
-                  name="missionText"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Company values</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value ?? ""}
-                          rows={3}
-                          maxLength={1000}
-                          placeholder="e.g. We believe everyone deserves a shot."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/1000
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {createCompany.isError && (
-                <p className="text-danger text-sm">
-                  {createCompany.error.message ?? "Something went wrong. Please try again."}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                className="mt-5 px-10 text-nowrap"
-                disabled={createCompany.isPending}
-              >
-                {createCompany.isPending
-                  ? "Creating…"
-                  : isFirstCompany
-                    ? "Add company"
-                    : "Add another company"}
-              </Button>
-            </form>
-          </Form>
-        </div>
-      </div>
+            <Button
+              type="submit"
+              className="mt-5 px-10 text-nowrap"
+              disabled={createCompany.isPending}
+            >
+              {createCompany.isPending
+                ? "Creating…"
+                : isFirstCompany
+                  ? "Add company"
+                  : "Add another company"}
+            </Button>
+          </form>
+        </Form>
+      </Panel>
     </div>
   );
 }

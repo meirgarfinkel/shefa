@@ -16,6 +16,8 @@ const buttonVariants = cva(
           "bg-white/20 hover:bg-white/60 from-popover/20 bg-linear-to-t via-transparent to-transparent",
         destructive:
           "bg-white/80 text-danger hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",
+        success:
+          "bg-white/80 text-message-green hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",
         link: "underline-offset-4 hover:underline",
         light:
           "from-primary/40 bg-white/70 bg-linear-to-t via-transparent to-transparent hover:bg-white hover:from-orange/10",

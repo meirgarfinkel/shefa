@@ -12,12 +12,14 @@ type FormValues = z.input<typeof CreateJobPostingSchema>;
 import {
   Form,
   FormControl,
-  FormDescription,
+  CheckboxFormItem,
+  FormCharCount,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -88,238 +90,311 @@ export default function PostJobPage() {
 
   return (
     <div className="p-5">
-      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
-        <div className="p-5">
-          <PageHeader title="Create a new job" />
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              {/* No companies yet — prompt to create one */}
-              {hasNoCompanies && (
-                <div className="bg-blue-dark-2 my-8 rounded-md p-4">
-                  <p className="text-sm font-medium">You need a company to post jobs.</p>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    Create your company profile first, then come back to post a job.
-                  </p>
-                  <Button asChild className="mt-3">
-                    <Link href="/employer/company/new">Create company</Link>
-                  </Button>
-                </div>
-              )}
+      <Panel className="mx-auto max-w-2xl">
+        <PageHeader title="Create a new job" />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            {/* No companies yet — prompt to create one */}
+            {hasNoCompanies && (
+              <div className="bg-blue-dark-2 my-8 rounded-md p-4">
+                <p className="text-sm font-medium">You need a company to post jobs.</p>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Create your company profile first, then come back to post a job.
+                </p>
+                <Button asChild className="mt-3">
+                  <Link href="/employer/company/new">Create company</Link>
+                </Button>
+              </div>
+            )}
 
-              {/* Company selector — shown when employer has multiple companies */}
-              {showCompanySelector && (
-                <div className="mt-8">
-                  <FormField
-                    control={form.control}
-                    name="companyId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          Company <span className="text-danger">*</span>
-                        </FormLabel>
-                        <div className="flex items-center gap-2">
-                          <Select onValueChange={field.onChange} value={field.value ?? ""}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {companies?.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.companyName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button asChild type="button">
-                            <Link href="/employer/company/new">+ Company</Link>
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              )}
-
+            {/* Company selector — shown when employer has multiple companies */}
+            {showCompanySelector && (
               <div className="mt-8">
                 <FormField
                   control={form.control}
-                  name="title"
+                  name="companyId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Job title <span className="text-danger">*</span>
+                        Company <span className="text-danger">*</span>
                       </FormLabel>
+                      <div className="flex items-center gap-2">
+                        <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {companies?.map((c) => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.companyName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button asChild type="button">
+                          <Link href="/employer/company/new">+ Company</Link>
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Job title <span className="text-danger">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Kitchen Assistant" maxLength={255} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Job description <span className="text-danger">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea {...field} rows={6} maxLength={5000} />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={5000} />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-5 grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="jobType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Job type <span className="text-danger">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input {...field} placeholder="Kitchen Assistant" maxLength={255} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        <SelectItem value="FULL_TIME">Full-time</SelectItem>
+                        <SelectItem value="PART_TIME">Part-time</SelectItem>
+                        <SelectItem value="EITHER">Either</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Job description <span className="text-danger">*</span>
-                      </FormLabel>
+              <FormField
+                control={form.control}
+                name="workArrangement"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Work arrangement <span className="text-danger">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Textarea {...field} rows={6} maxLength={5000} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/5000
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent>
+                        <SelectItem value="ON_SITE">On-site</SelectItem>
+                        <SelectItem value="REMOTE">Remote</SelectItem>
+                        <SelectItem value="HYBRID">Hybrid</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-4">
+            <div className="mt-8">
+              <LocationPicker />
+            </div>
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="minHourlyRate"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>
+                      Minimum hourly rate ($) <span className="text-danger">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="1"
+                        min="10"
+                        placeholder="25"
+                        {...form.register("minHourlyRate", {
+                          setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
+                        })}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="payNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional payment details</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={2}
+                        maxLength={500}
+                        placeholder="Bonus eligibility, overtime pay, or salary review details"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={500} />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-5">
+              <FormField
+                control={form.control}
+                name="workDays"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Work schedule</FormLabel>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {DAYS.map((day) => (
+                        <label
+                          key={day.value}
+                          className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            field.value?.includes(day.value)
+                              ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
+                              : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="sr-only"
+                            checked={field.value?.includes(day.value) ?? false}
+                            onChange={(e) => {
+                              const current = field.value ?? [];
+                              field.onChange(
+                                e.target.checked
+                                  ? [...current, day.value]
+                                  : current.filter((d) => d !== day.value),
+                              );
+                            }}
+                          />
+                          {day.label}
+                        </label>
+                      ))}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="scheduleNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional schedule details</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={2}
+                        maxLength={500}
+                        placeholder="Vacation days, or optional remote days"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={500} />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-5">
+              <FormField
+                control={form.control}
+                name="workAuthRequired"
+                render={({ field }) => (
+                  <CheckboxFormItem>
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(!!checked)}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm font-normal">
+                      US work authorization required
+                    </FormLabel>
+                  </CheckboxFormItem>
+                )}
+              />
+            </div>
+
+            <div className="mt-8">
+              {languages && languages.length > 0 && (
                 <FormField
                   control={form.control}
-                  name="jobType"
+                  name="requiredLanguageIds"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>
-                        Job type <span className="text-danger">*</span>
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="FULL_TIME">Full-time</SelectItem>
-                          <SelectItem value="PART_TIME">Part-time</SelectItem>
-                          <SelectItem value="EITHER">Either</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="workArrangement"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Work arrangement <span className="text-danger">*</span>
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="ON_SITE">On-site</SelectItem>
-                          <SelectItem value="REMOTE">Remote</SelectItem>
-                          <SelectItem value="HYBRID">Hybrid</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="mt-8">
-                <LocationPicker />
-              </div>
-
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="minHourlyRate"
-                  render={() => (
-                    <FormItem>
-                      <FormLabel>
-                        Minimum hourly rate ($) <span className="text-danger">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="1"
-                          min="10"
-                          placeholder="25"
-                          {...form.register("minHourlyRate", {
-                            setValueAs: (v) => (v === "" ? undefined : parseFloat(v)),
-                          })}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="payNotes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Additional payment details</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value ?? ""}
-                          rows={2}
-                          maxLength={500}
-                          placeholder="Bonus eligibility, overtime pay, or salary review details"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/500
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="mt-5">
-                <FormField
-                  control={form.control}
-                  name="workDays"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Work schedule</FormLabel>
-                      <div className="flex flex-wrap gap-2 pt-1">
-                        {DAYS.map((day) => (
+                      <FormLabel>Required languages</FormLabel>
+                      <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {languages.map((lang) => (
                           <label
-                            key={day.value}
-                            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
-                              field.value?.includes(day.value)
-                                ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
-                                : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
-                            }`}
+                            key={lang.id}
+                            className="flex cursor-pointer items-center space-x-2"
                           >
-                            <input
-                              type="checkbox"
-                              className="sr-only"
-                              checked={field.value?.includes(day.value) ?? false}
-                              onChange={(e) => {
+                            <Checkbox
+                              checked={field.value?.includes(lang.id) ?? false}
+                              onCheckedChange={(checked) => {
                                 const current = field.value ?? [];
                                 field.onChange(
-                                  e.target.checked
-                                    ? [...current, day.value]
-                                    : current.filter((d) => d !== day.value),
+                                  checked
+                                    ? [...current, lang.id]
+                                    : current.filter((id) => id !== lang.id),
                                 );
                               }}
                             />
-                            {day.label}
+                            <span className="text-sm">{lang.name}</span>
                           </label>
                         ))}
                       </div>
@@ -327,131 +402,48 @@ export default function PostJobPage() {
                     </FormItem>
                   )}
                 />
-              </div>
-
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="scheduleNotes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Additional schedule details</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value ?? ""}
-                          rows={2}
-                          maxLength={500}
-                          placeholder="Vacation days, or optional remote days"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/500
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="mt-5">
-                <FormField
-                  control={form.control}
-                  name="workAuthRequired"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/70 px-3 py-2">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(!!checked)}
-                        />
-                      </FormControl>
-                      <FormLabel className="text-sm font-normal">
-                        US work authorization required
-                      </FormLabel>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <div className="mt-8">
-                {languages && languages.length > 0 && (
-                  <FormField
-                    control={form.control}
-                    name="requiredLanguageIds"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Required languages</FormLabel>
-                        <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                          {languages.map((lang) => (
-                            <label
-                              key={lang.id}
-                              className="flex cursor-pointer items-center space-x-2"
-                            >
-                              <Checkbox
-                                checked={field.value?.includes(lang.id) ?? false}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value ?? [];
-                                  field.onChange(
-                                    checked
-                                      ? [...current, lang.id]
-                                      : current.filter((id) => id !== lang.id),
-                                  );
-                                }}
-                              />
-                              <span className="text-sm">{lang.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-              </div>
-
-              <div className="mt-8">
-                <FormField
-                  control={form.control}
-                  name="whatWereLookingFor"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>What we&apos;re looking for</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          {...field}
-                          value={field.value ?? ""}
-                          rows={3}
-                          maxLength={1000}
-                          placeholder="e.g. Someone reliable, eager to learn, and comfortable on their feet. No experience needed."
-                        />
-                      </FormControl>
-                      <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/1000
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {createPosting.isError && (
-                <p className="text-danger text-sm">
-                  {createPosting.error.message ?? "Something went wrong. Please try again."}
-                </p>
               )}
+            </div>
 
-              <Button
-                type="submit"
-                className="mt-5 px-10 text-nowrap"
-                disabled={createPosting.isPending || hasNoCompanies}
-              >
-                {createPosting.isPending ? "Posting job…" : "Post job"}
-              </Button>
-            </form>
-          </Form>
-        </div>
-      </div>
+            <div className="mt-8">
+              <FormField
+                control={form.control}
+                name="whatWereLookingFor"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>What we&apos;re looking for</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        value={field.value ?? ""}
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="e.g. Someone reliable, eager to learn, and comfortable on their feet. No experience needed."
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <FormCharCount value={field.value} max={1000} />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {createPosting.isError && (
+              <p className="text-danger text-sm">
+                {createPosting.error.message ?? "Something went wrong. Please try again."}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              className="mt-5 px-10 text-nowrap"
+              disabled={createPosting.isPending || hasNoCompanies}
+            >
+              {createPosting.isPending ? "Posting job…" : "Post job"}
+            </Button>
+          </form>
+        </Form>
+      </Panel>
     </div>
   );
 }

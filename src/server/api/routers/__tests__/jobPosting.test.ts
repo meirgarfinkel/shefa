@@ -670,6 +670,22 @@ describe("jobPosting.close", () => {
     },
   );
 
+  it("cascades: closes the job's open applications (job update + application update)", async () => {
+    const setSpy = vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: JOB_ID, status: "CLOSED" }]),
+      }),
+    });
+    db.update.mockReturnValue({ set: setSpy });
+
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await caller.close({ id: JOB_ID, reason: "FILLED_ON_SHEFA" });
+
+    // One update for the job, one for the application cascade.
+    expect(db.update).toHaveBeenCalledTimes(2);
+    expect(setSpy).toHaveBeenCalledWith(expect.objectContaining({ status: "CLOSED" }));
+  });
+
   // ── Adversarial ──
 
   it("throws UNAUTHORIZED when no session", async () => {
@@ -703,6 +719,80 @@ describe("jobPosting.close", () => {
     await expect(caller.close({ id: "no-such-job", reason: "OTHER" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
+  });
+});
+
+// ── jobPosting.reopen ────────────────────────────────────────────────────────
+
+describe("jobPosting.reopen", () => {
+  let db: ReturnType<typeof makeMockDb>;
+  const CLOSED_JOB = { id: JOB_ID, employerId: EMPLOYER_USER_ID, status: "CLOSED" };
+
+  beforeEach(() => {
+    db = makeMockDb();
+    db.query.jobPosting.findFirst.mockResolvedValue(CLOSED_JOB);
+    db.update.mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ id: JOB_ID, status: "PAUSED" }]),
+        }),
+      }),
+    });
+  });
+
+  it("reopens a closed job to PAUSED, clearing closure fields", async () => {
+    const setSpy = vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: JOB_ID, status: "PAUSED" }]),
+      }),
+    });
+    db.update.mockReturnValue({ set: setSpy });
+
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    const result = await caller.reopen({ id: JOB_ID });
+
+    expect(result).toMatchObject({ status: "PAUSED" });
+    expect(setSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "PAUSED", closureReason: null, closedAt: null }),
+    );
+  });
+
+  it("cascades: closed applications return to SUBMITTED (job update + application update)", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await caller.reopen({ id: JOB_ID });
+    expect(db.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws BAD_REQUEST when the job is not closed", async () => {
+    db.query.jobPosting.findFirst.mockResolvedValue({ ...CLOSED_JOB, status: "ACTIVE" });
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await expect(caller.reopen({ id: JOB_ID })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(db.update).not.toHaveBeenCalled();
+  });
+
+  it("throws UNAUTHORIZED when no session", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await expect(caller.reopen({ id: JOB_ID })).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+  });
+
+  it("throws FORBIDDEN when called by a SEEKER", async () => {
+    const caller = createCaller(makeCtx("SEEKER", db));
+    await expect(caller.reopen({ id: JOB_ID })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("throws FORBIDDEN when employer does not own the posting", async () => {
+    db.query.jobPosting.findFirst.mockResolvedValue({
+      ...CLOSED_JOB,
+      employerId: OTHER_EMPLOYER_USER_ID,
+    });
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await expect(caller.reopen({ id: JOB_ID })).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("throws NOT_FOUND when job does not exist", async () => {
+    db.query.jobPosting.findFirst.mockResolvedValue(null);
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await expect(caller.reopen({ id: "no-such-job" })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });
 

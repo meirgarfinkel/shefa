@@ -260,19 +260,9 @@ export const conversationRouter = createTRPCRouter({
     });
     if (!conv) throw new TRPCError({ code: "NOT_FOUND" });
 
-    const applicationStatus = conv.jobId
-      ? await ctx.db.query.application
-          .findFirst({
-            where: and(eq(application.seekerId, conv.seekerId), eq(application.jobId, conv.jobId)),
-            columns: { status: true },
-          })
-          .then((a) => a?.status ?? null)
-      : null;
-
     const { job, ...convRest } = conv;
     return {
       ...convRest,
-      applicationStatus,
       job: job
         ? (() => {
             const { company: co, ...jobRest } = job;

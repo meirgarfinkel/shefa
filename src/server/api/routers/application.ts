@@ -9,7 +9,17 @@ import {
 } from "@/lib/schemas/application";
 import { runApplicationNotifyJob } from "@/server/jobs/application-notify.job";
 import { application, seekerProfile, employerProfile, jobPosting } from "@/db/schema";
+import type { ApplicationStatus } from "@/db/schema";
 import { APPLICATIONS_PER_DAY, rateLimitWindowStart } from "@/lib/constants/rate-limits";
+
+// Allowed employer-driven, per-application status transitions. CLOSED is reachable
+// only via the job-close cascade (jobPosting.close), never directly here.
+const ALLOWED_APPLICATION_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
+  SUBMITTED: ["VIEWED", "REJECTED"],
+  VIEWED: ["REJECTED"],
+  REJECTED: ["VIEWED"], // undo reject
+  CLOSED: ["SUBMITTED"], // undo close
+};
 
 export const applicationRouter = createTRPCRouter({
   submit: protectedProcedure.input(ApplySchema).mutation(async ({ ctx, input }) => {
@@ -171,7 +181,7 @@ export const applicationRouter = createTRPCRouter({
 
       const app = await ctx.db.query.application.findFirst({
         where: eq(application.id, input.id),
-        columns: { id: true },
+        columns: { id: true, status: true },
         with: {
           job: { columns: { employerId: true } },
         },
@@ -183,11 +193,22 @@ export const applicationRouter = createTRPCRouter({
         throw new TRPCError({ code: "FORBIDDEN" });
       }
 
+      // Explicit, employer-driven transitions. Terminal states are reversible:
+      // a rejected app can be reopened to VIEWED, and a closed app (set by the
+      // job-close cascade) can be undone back to SUBMITTED. See PROJECT_SPEC §3.
+      if (!ALLOWED_APPLICATION_TRANSITIONS[app.status].includes(input.status)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot change application status from ${app.status} to ${input.status}`,
+        });
+      }
+
       const [updated] = await ctx.db
         .update(application)
         .set({
           status: input.status,
-          ...(input.status === "CLOSED" && { closedAt: new Date() }),
+          // Undoing a close clears the close timestamp; no transition here sets it.
+          ...(input.status === "SUBMITTED" && { closedAt: null }),
         })
         .where(eq(application.id, input.id))
         .returning();

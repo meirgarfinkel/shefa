@@ -69,13 +69,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
               <FormControl>
                 <SelectTrigger>
                   <SelectValue
-                    placeholder={
-                      !stateAbbr
-                        ? "Select state first"
-                        : citiesFetching
-                          ? "Loading…"
-                          : "Select city…"
-                    }
+                    placeholder={!stateAbbr ? "Need State" : citiesFetching ? "..." : "Select city"}
                   />
                 </SelectTrigger>
               </FormControl>

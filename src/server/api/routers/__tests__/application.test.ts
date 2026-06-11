@@ -387,64 +387,84 @@ describe("updateStatus", () => {
     mockDb = makeMockDb();
   });
 
-  it.each(["VIEWED", "REJECTED", "CLOSED"] as const)(
-    "happy path: employer sets status to %s",
-    async (status) => {
-      const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
-      mockDb.query.application.findFirst.mockResolvedValue({
-        id: "app-1",
-        job: { employerId: "user-1" },
-      });
-      mockDb.update.mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([{ id: "app-1", status }]),
-          }),
-        }),
-      });
+  // Helper: stub the update chain and capture the `.set(...)` payload.
+  function stubUpdate(returned: Record<string, unknown>) {
+    const setSpy = vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([returned]),
+      }),
+    });
+    mockDb.update.mockReturnValue({ set: setSpy });
+    return setSpy;
+  }
 
-      const result = await caller.updateStatus({ id: "app-1", status });
-      expect(result).toMatchObject({ status });
-    },
-  );
-
-  it("CLOSED transition sets closedAt", async () => {
+  it.each([
+    { from: "SUBMITTED", to: "VIEWED" },
+    { from: "SUBMITTED", to: "REJECTED" },
+    { from: "VIEWED", to: "REJECTED" },
+    { from: "REJECTED", to: "VIEWED" }, // undo reject
+    { from: "CLOSED", to: "SUBMITTED" }, // undo close
+  ] as const)("happy path: $from → $to", async ({ from, to }) => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
     mockDb.query.application.findFirst.mockResolvedValue({
       id: "app-1",
+      status: from,
       job: { employerId: "user-1" },
     });
-    const closedAt = new Date();
-    mockDb.update.mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{ id: "app-1", status: "CLOSED", closedAt }]),
-        }),
-      }),
-    });
+    stubUpdate({ id: "app-1", status: to });
 
-    const result = await caller.updateStatus({ id: "app-1", status: "CLOSED" });
-    expect(result).toMatchObject({ status: "CLOSED" });
-    expect(mockDb.update).toHaveBeenCalled();
+    const result = await caller.updateStatus({ id: "app-1", status: to });
+    expect(result).toMatchObject({ status: to });
   });
 
-  it("REJECTED transition does not set closedAt", async () => {
+  it("undo close (CLOSED → SUBMITTED) clears closedAt", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
     mockDb.query.application.findFirst.mockResolvedValue({
       id: "app-1",
+      status: "CLOSED",
       job: { employerId: "user-1" },
     });
-    mockDb.update.mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{ id: "app-1", status: "REJECTED" }]),
-        }),
-      }),
+    const setSpy = stubUpdate({ id: "app-1", status: "SUBMITTED", closedAt: null });
+
+    await caller.updateStatus({ id: "app-1", status: "SUBMITTED" });
+    expect(setSpy).toHaveBeenCalledWith(expect.objectContaining({ closedAt: null }));
+  });
+
+  it("reject (SUBMITTED → REJECTED) does not touch closedAt", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.application.findFirst.mockResolvedValue({
+      id: "app-1",
+      status: "SUBMITTED",
+      job: { employerId: "user-1" },
+    });
+    const setSpy = stubUpdate({ id: "app-1", status: "REJECTED" });
+
+    await caller.updateStatus({ id: "app-1", status: "REJECTED" });
+    expect(setSpy).toHaveBeenCalledWith(
+      expect.not.objectContaining({ closedAt: expect.anything() }),
+    );
+  });
+
+  it.each([
+    { from: "SUBMITTED", to: "SUBMITTED" },
+    { from: "VIEWED", to: "VIEWED" },
+    { from: "VIEWED", to: "SUBMITTED" },
+    { from: "REJECTED", to: "SUBMITTED" }, // rejected only undoes to VIEWED
+    { from: "REJECTED", to: "REJECTED" },
+    { from: "CLOSED", to: "VIEWED" }, // closed only undoes to SUBMITTED
+    { from: "CLOSED", to: "REJECTED" },
+  ] as const)("invalid transition $from → $to → BAD_REQUEST", async ({ from, to }) => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
+    mockDb.query.application.findFirst.mockResolvedValue({
+      id: "app-1",
+      status: from,
+      job: { employerId: "user-1" },
     });
 
-    const result = await caller.updateStatus({ id: "app-1", status: "REJECTED" });
-    expect(result).toMatchObject({ status: "REJECTED" });
-    expect(result).not.toHaveProperty("closedAt");
+    await expect(caller.updateStatus({ id: "app-1", status: to })).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(mockDb.update).not.toHaveBeenCalled();
   });
 
   it("unauthenticated → UNAUTHORIZED", async () => {
@@ -480,10 +500,10 @@ describe("updateStatus", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("status SUBMITTED rejected by Zod", async () => {
+  it("status CLOSED rejected by Zod (cascade-only, never a manual target)", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     // @ts-expect-error intentionally invalid status
-    await expect(caller.updateStatus({ id: "app-1", status: "SUBMITTED" })).rejects.toThrow();
+    await expect(caller.updateStatus({ id: "app-1", status: "CLOSED" })).rejects.toThrow();
   });
 
   it("status RESPONDED rejected by Zod (removed from schema)", async () => {

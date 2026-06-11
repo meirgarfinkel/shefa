@@ -1,17 +1,10 @@
 import { z } from "zod";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/server/api/trpc";
 import type { DbClient } from "@/db";
 import { runMessageNotifyJob } from "@/server/jobs/message-notify.job";
-import {
-  conversation,
-  message,
-  jobPosting,
-  application,
-  seekerProfile,
-  employerProfile,
-} from "@/db/schema";
+import { conversation, message, jobPosting, seekerProfile, employerProfile } from "@/db/schema";
 
 const ConversationIdInput = z.object({ conversationId: z.string().min(1) });
 
@@ -49,19 +42,14 @@ export const messageRouter = createTRPCRouter({
 
       if (conv.seekerBlocked || conv.employerBlocked) throw new TRPCError({ code: "FORBIDDEN" });
 
-      const [job, app, seekerProf, employerProf] = await Promise.all([
+      // Application status does NOT gate messaging: a rejected or closed application
+      // still allows the conversation to continue (employer follow-up, reconsideration).
+      // Messaging is gated by job status, block flags, and profile suspension only.
+      // See PROJECT_SPEC §3 (Messaging).
+      const [job, seekerProf, employerProf] = await Promise.all([
         conv.jobId
           ? ctx.db.query.jobPosting.findFirst({
               where: eq(jobPosting.id, conv.jobId),
-              columns: { status: true },
-            })
-          : null,
-        conv.jobId
-          ? ctx.db.query.application.findFirst({
-              where: and(
-                eq(application.seekerId, conv.seekerId),
-                eq(application.jobId, conv.jobId),
-              ),
               columns: { status: true },
             })
           : null,
@@ -77,9 +65,6 @@ export const messageRouter = createTRPCRouter({
 
       if (job && job.status !== "ACTIVE") {
         throw new TRPCError({ code: "FORBIDDEN", message: "This job is no longer active" });
-      }
-      if (app && (app.status === "REJECTED" || app.status === "CLOSED")) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "This application is no longer active" });
       }
       if (seekerProf && seekerProf.status !== "ACTIVE") {
         throw new TRPCError({ code: "FORBIDDEN", message: "Seeker profile is not active" });

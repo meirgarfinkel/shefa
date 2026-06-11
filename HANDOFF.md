@@ -35,6 +35,14 @@
   close, applications + status, dashboard, public company/employer pages.
 - **Jobs:** public listing with filters, haversine geo radius search, sort; public detail.
 - **Messaging:** inbox, thread, send, read receipts, block/unblock, report; hybrid initiation.
+  Application status (`REJECTED`/`CLOSED`) no longer gates messaging — threads stay open for
+  employer follow-up/reconsideration; gated only by block flags, suspension, and `ACTIVE` job.
+- **Application/job lifecycle coupling (new):** closing a job cascades its open
+  (`SUBMITTED`/`VIEWED`) applications to `CLOSED` (rejected ones untouched); new
+  `jobPosting.reopen` reverses it — closed job → `PAUSED`, `CLOSED` apps → `SUBMITTED`.
+  Per-application `Reject`/`Close` collapsed to just `Reject` + an `Undo`
+  (`REJECTED`→`VIEWED`, `CLOSED`→`SUBMITTED`); `CLOSED` is now cascade-only, never a manual
+  per-application target. `application.updateStatus` enforces an explicit transition map.
 - **Freshness:** cron pings → escalation → auto-pause; login-free reactivation.
 - **Notifications/responsiveness:** prefs, inline emails, digest cron, employer badge.
 - **Rate limiting (new):** seekers ≤25 applications/day; employers ≤50 cold DMs/day.
@@ -47,14 +55,15 @@
 - **Account deletion = soft delete (new):** `user.deleteAccount` → `softDeleteAccount`
   (`src/server/account.ts`). One atomic `db.batch`: scrubs User PII (`email` → unique
   non-routable placeholder, `name`/`phone`/`image` → null, sets `deletedAt`), closes the
-  user's open jobs (`CLOSED`/`CANCELLED`), marks profiles `DELETED` with generic names,
+  user's open jobs (`CLOSED`/`CANCELLED`) and their still-open (`SUBMITTED`/`VIEWED`)
+  applications (`CLOSED`, leaving `REJECTED`), marks profiles `DELETED` with generic names,
   drops `NotificationPreferences`, and deletes only `Account`/`Session` rows.
-  Conversations/messages/applications/reports are preserved (the other party keeps history;
-  reports stay as evidence). Re-signup with the real Google email creates a fresh row.
+  Conversation/message/application *rows* are preserved (the other party keeps history;
+  reports stay as evidence) — applications are status-closed, never deleted. Re-signup with the real Google email creates a fresh row.
   `createTRPCContext` drops the session when `deletedAt` is set, so a JWT lingering on
   another device is rejected on its next request. `seeker.getPublicProfile` 404s `DELETED`.
 - **Crons (`vercel.json`):** freshness `0 9 * * *`, responsiveness `0 3 */2 * *`, digest `0 18 * * *`.
-- **Tests:** 432 passing across 22 suites. `npm run check` green.
+- **Tests:** 450 passing across 22 suites. `npm run check` green.
 
 ## Still needed (Phase 8)
 
@@ -166,6 +175,25 @@ npm run db:prod-generate && npm run db:prod-migrate    # same, against productio
   `createTRPCContext` checks `deletedAt` per request and nulls the session — chosen over a
   `protectedProcedure` middleware check, which would have broken the mock-based router test
   suites and run against the module-level `db`.
+
+- **Job close cascades to applications; terminal app states are reversible.**
+  _What changed:_ closing a job now marks its `SUBMITTED`/`VIEWED` applications `CLOSED`
+  (leaving `REJECTED`); reopening (new `jobPosting.reopen`, → `PAUSED`) reverts `CLOSED`
+  apps to `SUBMITTED`. `REJECTED`→`VIEWED` and `CLOSED`→`SUBMITTED` are employer-undoable.
+  Application status no longer blocks messaging. _Alternatives:_ (a) keep per-application
+  `Close` button — rejected: it duplicated `Reject` semantically; closing means "role
+  filled," which is a job-level fact, so `CLOSED` is now driven only by the job cascade.
+  (b) Drop `CLOSED` from the enum — rejected: needs a destructive migration of existing
+  rows; `CLOSED` still carries distinct meaning (closed-by-fill vs. explicitly rejected).
+  (c) Reopen straight to `ACTIVE` — rejected: `PAUSED` makes the employer re-verify before
+  going live, matching the duplicate-as-`PAUSED` and freshness-auto-`PAUSE` patterns.
+  _Reason:_ overrides the former "closing a job never closes applications / terminal states
+  are terminal" invariant (PROJECT_SPEC §3 updated) to give employers reversible control
+  without losing data; cascade is no-transaction sequential (job first, then apps), matching
+  the repo's existing no-transaction convention. _Note:_ `softDeleteAccount` closes jobs via
+  a direct `db.batch` (not `jobPosting.close`), so it replicates the app cascade inline
+  (closes the deleted employer's `SUBMITTED`/`VIEWED` applications, leaves `REJECTED`) to
+  keep the invariant — no `CLOSED` job left with live applications.
 
 ## Blockers
 

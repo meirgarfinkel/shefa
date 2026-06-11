@@ -76,6 +76,11 @@ describe("softDeleteAccount", () => {
         deletes.push(table);
         return { where: () => ({}) };
       },
+      // The application-close cascade builds an inArray(...) subquery via db.select.
+      // It's only serialized at execution (never here), so a lazy stub is enough.
+      select() {
+        return { from: () => ({ where: () => ({}) }) };
+      },
       batch: (_queries: unknown[]) => Promise.resolve([]),
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -95,6 +100,15 @@ describe("softDeleteAccount", () => {
 
     expect(updates.find((u) => u.table === seekerProfile)?.payload.status).toBe("DELETED");
     expect(updates.find((u) => u.table === employerProfile)?.payload.status).toBe("DELETED");
+  });
+
+  it("closes the deleted employer's still-open applications (mirrors the job-close cascade)", async () => {
+    const { db, updates } = makeDb();
+    await softDeleteAccount(db, "usr_1");
+
+    const appUpdate = updates.find((u) => u.table === application);
+    expect(appUpdate?.payload.status).toBe("CLOSED");
+    expect(appUpdate?.payload.closedAt).toBeInstanceOf(Date);
   });
 
   it("severs auth by deleting only Account and Session rows", async () => {

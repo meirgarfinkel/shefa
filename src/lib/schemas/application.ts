@@ -11,7 +11,9 @@ export const ListForJobSchema = z.object({
   jobId: z.string().min(1),
 });
 
+// Per-application employer actions. CLOSED is never set here — it is driven only by
+// the job-close cascade (jobPosting.close). SUBMITTED is the undo-close target.
 export const UpdateApplicationStatusSchema = z.object({
   id: z.string().min(1),
-  status: z.enum(["VIEWED", "REJECTED", "CLOSED"]),
+  status: z.enum(["SUBMITTED", "VIEWED", "REJECTED"]),
 });

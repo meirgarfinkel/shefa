@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import type { ReportStatus } from "@/db/schema";
 import { BLOCK_FLAG_THRESHOLD } from "@/lib/constants/moderation";
+import { pluralize } from "@/lib/utils";
 
 const STATUS_FILTERS: { value: ReportStatus | "ALL"; label: string }[] = [
   { value: "OPEN", label: "Open" },
@@ -63,12 +64,26 @@ function ReportsView() {
   const [filter, setFilter] = useState<ReportStatus | "ALL">("OPEN");
 
   const utils = trpc.useUtils();
-  const { data: reports, isLoading } = trpc.admin.listReports.useQuery(
-    filter === "ALL" ? {} : { status: filter },
-  );
+  const listInput = filter === "ALL" ? {} : { status: filter };
+  const { data: reports, isLoading } = trpc.admin.listReports.useQuery(listInput);
 
   const invalidate = () => void utils.admin.listReports.invalidate();
-  const updateStatus = trpc.admin.updateReportStatus.useMutation({ onSuccess: invalidate });
+  const updateStatus = trpc.admin.updateReportStatus.useMutation({
+    // Optimistic: flip the report's status badge immediately; once the server
+    // confirms and the list refetches, it settles out of any active filter.
+    onMutate: async ({ reportId, status }) => {
+      await utils.admin.listReports.cancel(listInput);
+      const previous = utils.admin.listReports.getData(listInput);
+      utils.admin.listReports.setData(listInput, (old) =>
+        old?.map((r) => (r.id === reportId ? { ...r, status } : r)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) utils.admin.listReports.setData(listInput, ctx.previous);
+    },
+    onSettled: invalidate,
+  });
   const setSuspension = trpc.admin.setUserSuspension.useMutation({ onSuccess: invalidate });
 
   const busy = updateStatus.isPending || setSuspension.isPending;
@@ -248,7 +263,7 @@ function MostBlockedView() {
                   <span
                     className={`text-sm font-semibold ${flagged ? "text-danger" : "text-muted-foreground"}`}
                   >
-                    {row.blockCount} block{row.blockCount === 1 ? "" : "s"}
+                    {pluralize(row.blockCount, "block")}
                   </span>
                   <Button
                     variant="ghost"

@@ -99,7 +99,9 @@ export default function ConversationPage({
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground mx-auto max-w-2xl px-4 py-16 text-center">Loading…</div>
+      <div className="text-muted-foreground mx-auto max-w-2xl px-4 py-16 text-center">
+        Keep it up.
+      </div>
     );
   }
 
@@ -127,8 +129,8 @@ export default function ConversationPage({
     if (seekerProfileStatus === "SUSPENDED" || employerProfileStatus === "SUSPENDED")
       return "suspended";
     if (callerProfileStatus === "PAUSED") return "own-profile-paused";
-    if (conv.applicationStatus === "REJECTED" || conv.applicationStatus === "CLOSED")
-      return "application-closed";
+    // Application status (REJECTED/CLOSED) does not halt messaging — the
+    // conversation stays open for follow-up. See PROJECT_SPEC §3 (Messaging).
     if (conv.job?.status === "CLOSED") return "job-closed";
     if (conv.seekerBlocked || conv.employerBlocked)
       return callerBlocked ? "caller-blocked" : "other-blocked";
@@ -145,10 +147,6 @@ export default function ConversationPage({
         return callerIsSeeker
           ? "Your profile is paused. Reactivate it to send messages."
           : "Your profile is paused. Reactivate it to send messages.";
-      case "application-closed":
-        return conv.applicationStatus === "REJECTED"
-          ? "This application was not selected. Messaging has been disabled."
-          : "This application is closed. Messaging has been disabled.";
       case "job-closed":
         return "This job is no longer open. Messaging has been disabled.";
       case "caller-blocked":

@@ -1,3 +1,5 @@
+import { pluralize } from "@/lib/utils";
+
 export interface MessageGroup {
   conversationId: string;
   senderEmail: string;
@@ -53,8 +55,7 @@ export function buildDailyDigestEmail({
   ${applicationGroups
     .map((g) => {
       const url = `${appUrl}/employer/jobs/${g.jobId}/applications`;
-      const countLabel =
-        g.applicationCount === 1 ? "1 new application" : `${g.applicationCount} new applications`;
+      const countLabel = pluralize(g.applicationCount, "new application");
       return `
   <div style="margin-bottom:16px;padding:12px 16px;border:1px solid #e5e7eb;border-radius:6px;">
     <p style="margin:0 0 6px;font-weight:600;">${escapeHtml(g.jobTitle)}</p>

@@ -26,6 +26,7 @@ import type { z } from "zod";
 import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
 import { CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import { pluralize } from "@/lib/utils";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -142,16 +143,29 @@ export function EmployerDashboardClient({
   profile: Profile;
   companies: Company[];
 }) {
-  const { data: jobs } = trpc.jobPosting.list.useQuery({
+  const listInput = {
     myJobs: true,
-    status: ["ACTIVE"],
-    sortBy: "newest",
-  });
+    status: ["ACTIVE" as const],
+    sortBy: "newest" as const,
+  };
+
+  const { data: jobs } = trpc.jobPosting.list.useQuery(listInput);
   const { data: recentApps } = trpc.employer.getRecentApplications.useQuery();
 
   const utils = trpc.useUtils();
   const updateJob = trpc.jobPosting.update.useMutation({
-    onSuccess: () => void utils.jobPosting.list.invalidate(),
+    // Optimistic: this feed only shows ACTIVE jobs, so pausing one drops it from
+    // the list immediately, then the server confirmation reconciles on settle.
+    onMutate: async ({ id }) => {
+      await utils.jobPosting.list.cancel(listInput);
+      const previous = utils.jobPosting.list.getData(listInput);
+      utils.jobPosting.list.setData(listInput, (old) => old?.filter((job) => job.id !== id));
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) utils.jobPosting.list.setData(listInput, ctx.previous);
+    },
+    onSettled: () => void utils.jobPosting.list.invalidate(),
   });
 
   // All companies selected by default; unchecking narrows the active jobs list.
@@ -253,10 +267,7 @@ export function EmployerDashboardClient({
                       <div>
                         {c.city}, {c.state}
                       </div>
-                      <div>
-                        {c.activeJobsCount} active job
-                        {c.activeJobsCount !== 1 ? "s" : ""}
-                      </div>
+                      <div>{pluralize(c.activeJobsCount, "active job")}</div>
                     </div>
                   </div>
                 </div>

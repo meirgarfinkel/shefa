@@ -10,12 +10,14 @@ import { UpdateJobPostingSchema, JobClosureReasonEnum } from "@/lib/schemas/jobP
 import {
   Form,
   FormControl,
-  FormDescription,
+  CheckboxFormItem,
+  FormCharCount,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -144,12 +146,12 @@ function JobEditForm({
       <div className="mx-auto max-w-2xl">
         <Link
           href="/employer/jobs"
-          className="hover:text-orange mb-2 inline-flex items-center gap-1 transition-colors duration-100"
+          className="hover:text-orange mb-3 inline-flex items-center gap-1 transition-colors duration-100"
         >
           <ArrowLeftIcon className="size-3.5" />
           My jobs
         </Link>
-        <div className="bg-card/30 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
+        <Panel>
           <PageHeader title="Edit job posting" />
 
           {isClosed && (
@@ -220,9 +222,7 @@ function JobEditForm({
                         <Textarea {...field} rows={6} maxLength={5000} disabled={isClosed} />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/500
-                      </FormDescription>
+                      <FormCharCount value={field.value} max={5000} />
                     </FormItem>
                   )}
                 />
@@ -336,9 +336,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/500
-                      </FormDescription>
+                      <FormCharCount value={field.value} max={500} />
                     </FormItem>
                   )}
                 />
@@ -402,9 +400,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/500
-                      </FormDescription>
+                      <FormCharCount value={field.value} max={500} />
                     </FormItem>
                   )}
                 />
@@ -415,7 +411,7 @@ function JobEditForm({
                   control={form.control}
                   name="workAuthRequired"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center space-y-0 space-x-3 rounded-md bg-white/60 p-2">
+                    <CheckboxFormItem>
                       <FormControl>
                         <Checkbox
                           checked={field.value}
@@ -424,7 +420,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormLabel className="font-normal">US work authorization required</FormLabel>
-                    </FormItem>
+                    </CheckboxFormItem>
                   )}
                 />
               </div>
@@ -483,9 +479,7 @@ function JobEditForm({
                         />
                       </FormControl>
                       <FormMessage />
-                      <FormDescription className="text-muted/60 text-end">
-                        {field.value?.length ?? 0}/1000
-                      </FormDescription>
+                      <FormCharCount value={field.value} max={1000} />
                     </FormItem>
                   )}
                 />
@@ -581,7 +575,7 @@ function JobEditForm({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
+        </Panel>
       </div>
     </div>
   );
@@ -595,7 +589,9 @@ export default function JobEditPage() {
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Keep making waves.</div>
+    );
   }
 
   if (!job) {

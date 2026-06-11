@@ -120,18 +120,36 @@ export default function EmployerJobsPage() {
   const multiCompany = (companies?.length ?? 0) > 1;
   const utils = trpc.useUtils();
 
-  const { data: jobs, isLoading: jobsLoading } = trpc.jobPosting.list.useQuery(
-    {
-      myJobs: true,
-      status: statusFilter !== "all" ? [statusFilter] : undefined,
-    },
-    { enabled: companies !== undefined && companies.length > 0 },
-  );
+  const listInput = {
+    myJobs: true,
+    status: statusFilter !== "all" ? [statusFilter] : undefined,
+  };
+
+  const { data: jobs, isLoading: jobsLoading } = trpc.jobPosting.list.useQuery(listInput, {
+    enabled: companies !== undefined && companies.length > 0,
+  });
 
   const updateJob = trpc.jobPosting.update.useMutation({
-    onSuccess: () => void utils.jobPosting.list.invalidate(),
+    // Optimistic: flip the status badge immediately; the item settles into the
+    // correct filter bucket once the server confirms and the list refetches.
+    onMutate: async ({ id, status }) => {
+      if (!status) return;
+      await utils.jobPosting.list.cancel(listInput);
+      const previous = utils.jobPosting.list.getData(listInput);
+      utils.jobPosting.list.setData(listInput, (old) =>
+        old?.map((job) => (job.id === id ? { ...job, status } : job)),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) utils.jobPosting.list.setData(listInput, ctx.previous);
+    },
+    onSettled: () => void utils.jobPosting.list.invalidate(),
   });
   const duplicateJob = trpc.jobPosting.duplicate.useMutation({
+    onSuccess: () => void utils.jobPosting.list.invalidate(),
+  });
+  const reopenJob = trpc.jobPosting.reopen.useMutation({
     onSuccess: () => void utils.jobPosting.list.invalidate(),
   });
   const confirmFreshness = trpc.jobPosting.confirmFreshness.useMutation({
@@ -139,7 +157,11 @@ export default function EmployerJobsPage() {
   });
 
   const isLoading = companiesLoading || jobsLoading;
-  const isPending = updateJob.isPending || duplicateJob.isPending || confirmFreshness.isPending;
+  const isPending =
+    updateJob.isPending ||
+    duplicateJob.isPending ||
+    confirmFreshness.isPending ||
+    reopenJob.isPending;
 
   const pageSubtitle = multiCompany ? "All companies" : (companies?.[0]?.companyName ?? undefined);
   const router = useRouter();
@@ -175,7 +197,7 @@ export default function EmployerJobsPage() {
         </div>
 
         {isLoading && (
-          <div className="text-muted-foreground py-16 text-center text-sm">Loading…</div>
+          <div className="text-muted-foreground py-16 text-center text-sm">Your work matters.</div>
         )}
 
         {!isLoading && jobs?.length === 0 && (
@@ -322,6 +344,21 @@ export default function EmployerJobsPage() {
                           }}
                         >
                           Unpause
+                        </Button>
+                      )}
+                      {isClosed && (
+                        <Button
+                          variant="light"
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={isPending}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            reopenJob.mutate({ id: job.id });
+                          }}
+                        >
+                          Reopen
                         </Button>
                       )}
                       <Button

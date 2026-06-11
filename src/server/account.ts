@@ -1,10 +1,11 @@
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, ne, inArray } from "drizzle-orm";
 import type { DbClient } from "@/db";
 import {
   users,
   accounts,
   sessions,
   jobPosting,
+  application,
   seekerProfile,
   employerProfile,
   notificationPreferences,
@@ -64,6 +65,27 @@ export async function softDeleteAccount(db: DbClient, userId: string): Promise<v
       .update(jobPosting)
       .set({ status: "CLOSED", closureReason: "CANCELLED", closedAt: now })
       .where(and(eq(jobPosting.employerId, userId), ne(jobPosting.status, "CLOSED"))),
+
+    // Mirror the job-close cascade (jobPosting.close): close the deleted employer's
+    // still-open applications so no CLOSED job is left with live applications. A
+    // REJECTED application stays REJECTED. We replicate the cascade inline here
+    // because db.batch can't invoke the procedure, and the account is gone so the
+    // job can never be reopened to undo it.
+    db
+      .update(application)
+      .set({ status: "CLOSED", closedAt: now })
+      .where(
+        and(
+          inArray(
+            application.jobId,
+            db
+              .select({ id: jobPosting.id })
+              .from(jobPosting)
+              .where(eq(jobPosting.employerId, userId)),
+          ),
+          inArray(application.status, ["SUBMITTED", "VIEWED"]),
+        ),
+      ),
 
     db
       .update(seekerProfile)

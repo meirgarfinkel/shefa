@@ -132,6 +132,29 @@ const FormDescription = React.forwardRef<
 });
 FormDescription.displayName = "FormDescription";
 
+const FormCharCount = ({ value, max }: { value?: string | null; max: number }) => (
+  <FormDescription className="text-muted/60 text-end">
+    {value?.length ?? 0}/{max}
+  </FormDescription>
+);
+FormCharCount.displayName = "FormCharCount";
+
+const CheckboxFormItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & { align?: "center" | "start" }
+>(({ className, align = "center", ...props }, ref) => (
+  <FormItem
+    ref={ref}
+    className={cn(
+      "flex flex-row space-y-0 space-x-3 rounded-md bg-white/60 px-3 py-2",
+      align === "start" ? "items-start" : "items-center",
+      className,
+    )}
+    {...props}
+  />
+));
+CheckboxFormItem.displayName = "CheckboxFormItem";
+
 const FormMessage = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
@@ -163,6 +186,8 @@ export {
   FormLabel,
   FormControl,
   FormDescription,
+  FormCharCount,
+  CheckboxFormItem,
   FormMessage,
   FormField,
 };

@@ -21,6 +21,7 @@ import {
   hasActiveFilters,
   activeFilterCount as computeActiveFilterCount,
 } from "@/app/jobs/_filter-state";
+import { pluralize } from "@/lib/utils";
 
 function JobsContent() {
   const searchParams = useSearchParams();
@@ -270,12 +271,12 @@ function JobsContent() {
       ? isSearchMode
         ? displayJobs.length === 0
           ? `No results for "${debouncedQuery}"`
-          : `${displayJobs.length} result${displayJobs.length === 1 ? "" : "s"} for "${debouncedQuery}"`
+          : `${pluralize(displayJobs.length, "result")} for "${debouncedQuery}"`
         : displayJobs.length === 0
           ? hasFilters
             ? "No jobs match your filters."
             : "No open positions yet. Check back soon."
-          : `${displayJobs.length} job${displayJobs.length === 1 ? "" : "s"} found`
+          : `${pluralize(displayJobs.length, "job")} found`
       : null;
 
   const filterProps = {

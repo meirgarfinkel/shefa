@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
+import { Surface } from "@/components/ui/surface";
 import { Pencil, Building, Car, Clock, MapPin, Info, Check, SearchCheck } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { CardTitle, CardContent } from "@/components/ui/card";
@@ -118,7 +120,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground mx-auto max-w-3xl px-3 py-16 text-center">Loading…</div>
+      <div className="text-muted-foreground mx-auto max-w-3xl px-3 py-16 text-center">
+        One step closer.
+      </div>
     );
   }
 
@@ -156,7 +160,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           ← Back to listings
         </Link>
 
-        <div className="bg-card/30 mt-5 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
+        <Panel className="mt-5">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <CardTitle>{job.title}</CardTitle>
             <div className="flex items-center gap-2">
@@ -252,7 +256,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <Info className="text-message-green size-4" strokeWidth={2.5} />
                 About the role
               </div>
-              <div className="rounded-sm bg-white/70 px-3 py-2 shadow-xl">{job.description}</div>
+              <Surface className="shadow-xl">{job.description}</Surface>
             </div>
 
             {job.whatWereLookingFor && (
@@ -261,9 +265,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   <SearchCheck className="text-message-green size-4" strokeWidth={2.5} />
                   What we&apos;re looking for
                 </div>
-                <div className="rounded-sm bg-white/70 px-3 py-2 shadow-xl">
-                  {job.whatWereLookingFor}
-                </div>
+                <Surface className="shadow-xl">{job.whatWereLookingFor}</Surface>
               </div>
             )}
 
@@ -325,7 +327,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               />
             )}
           </CardContent>
-        </div>
+        </Panel>
       </div>
     </div>
   );

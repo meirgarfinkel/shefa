@@ -124,6 +124,26 @@ describe("send", () => {
     await expect(caller.send({ conversationId: "conv-1", body: "Hi back" })).resolves.toBeDefined();
   });
 
+  it("application status (REJECTED/CLOSED) does not block messaging on an ACTIVE job", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
+    mockDb.query.conversation.findFirst.mockResolvedValue({ ...OPEN_CONV, jobId: "job-1" });
+    mockDb.query.jobPosting.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.query.employerProfile.findFirst.mockResolvedValue({ status: "ACTIVE" });
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([CREATED_MESSAGE]),
+      }),
+    });
+
+    // Even if the seeker's application is rejected/closed, the thread stays open.
+    await expect(
+      caller.send({ conversationId: "conv-1", body: "Following up" }),
+    ).resolves.toBeDefined();
+    // The application table is no longer consulted by message.send.
+    expect(mockDb.query.application.findFirst).not.toHaveBeenCalled();
+  });
+
   it("updates lastMessageAt and lastMessagePreview on the conversation", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_ID));
     mockDb.query.conversation.findFirst.mockResolvedValue(OPEN_CONV);

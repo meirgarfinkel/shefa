@@ -17,6 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Panel } from "@/components/ui/panel";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,7 +73,9 @@ export default function EmployerProfileEditPage() {
   }
 
   if (isLoading) {
-    return <div className="text-muted-foreground px-4 py-16 text-center text-sm">Loading…</div>;
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Jobs change lives.</div>
+    );
   }
 
   if (!profile) {
@@ -88,84 +91,82 @@ export default function EmployerProfileEditPage() {
 
   return (
     <div className="p-5">
-      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
-        <div className="p-5">
-          <PageHeader title="Edit your profile" />
+      <Panel className="mx-auto max-w-2xl">
+        <PageHeader title="Edit your profile" />
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        First name <span className="text-danger">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input variant="secondary" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Last name <span className="text-danger">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input variant="secondary" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="roleAtCompany"
+                name="firstName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Your role</FormLabel>
+                    <FormLabel>
+                      First name <span className="text-danger">*</span>
+                    </FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value ?? ""}
-                        placeholder="Hiring Manager, CEO, Owner"
-                      />
+                      <Input variant="secondary" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              {updateProfile.isError && (
-                <p className="text-danger text-sm">
-                  {updateProfile.error.message ?? "Something went wrong. Please try again."}
-                </p>
-              )}
+              <FormField
+                control={form.control}
+                name="lastName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Last name <span className="text-danger">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input variant="secondary" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-              <div className="flex justify-between">
-                <span className="flex items-center gap-3">
-                  <Button type="submit" disabled={updateProfile.isPending}>
-                    {updateProfile.isPending ? "Saving…" : "Save changes"}
-                  </Button>
-                  {saved && <p className="text-success text-sm">Saved.</p>}
-                </span>
-                <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
-                  Delete account
+            <FormField
+              control={form.control}
+              name="roleAtCompany"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Your role</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      placeholder="Hiring Manager, CEO, Owner"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {updateProfile.isError && (
+              <p className="text-danger text-sm">
+                {updateProfile.error.message ?? "Something went wrong. Please try again."}
+              </p>
+            )}
+
+            <div className="flex justify-between">
+              <span className="flex items-center gap-3">
+                <Button type="submit" disabled={updateProfile.isPending}>
+                  {updateProfile.isPending ? "Saving…" : "Save changes"}
                 </Button>
-              </div>
-            </form>
-          </Form>
-        </div>
+                {saved && <p className="text-success text-sm">Saved.</p>}
+              </span>
+              <Button variant="destructive" onClick={() => setDeleteAccountOpen(true)}>
+                Delete account
+              </Button>
+            </div>
+          </form>
+        </Form>
 
         <Dialog open={deleteAccountOpen} onOpenChange={setDeleteAccountOpen}>
           <DialogContent className="sm:max-w-md">
@@ -198,7 +199,7 @@ export default function EmployerProfileEditPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+      </Panel>
     </div>
   );
 }

@@ -122,15 +122,24 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
   conversations; mutates no related entities.
 - **CLOSED** — hiring done; historical data preserved; carries a `closureReason`
   (`FILLED_ON_SHEFA` / `FILLED_ELSEWHERE` / `HIRING_FROZEN` / `CANCELLED` / `OTHER`).
-- Closing or pausing a job **never** auto-rejects applications or closes conversations.
+- **Pausing** a job mutates no related entities. **Closing** a job cascades to its
+  open applications: every `SUBMITTED`/`VIEWED` application becomes `CLOSED`
+  (a `REJECTED` application is left untouched — rejection is the employer's explicit
+  verdict, not a side effect of filling the role). Neither pausing nor closing ever
+  closes a conversation.
+- **Reopening** a closed job (`reopen`) returns it to `PAUSED`, clears
+  `closureReason`/`closedAt`, and reverses the close cascade: applications that were
+  `CLOSED` return to `SUBMITTED`; `REJECTED` applications stay `REJECTED`.
 
 ### Applications
 
 - One application per seeker per job (DB-unique).
-- Status transitions are explicit and employer-driven; terminal states
-  (`REJECTED`, `CLOSED`) are terminal.
-- Application status is decoupled from job status — a closed job can still have
-  `SUBMITTED` applications until an employer acts on them.
+- Status transitions are explicit and employer-driven. `REJECTED` and `CLOSED` are
+  **reversible** by the employer: a rejection can be undone (`REJECTED` → `VIEWED`),
+  and a closed application can be undone (`CLOSED` → `SUBMITTED`). `CLOSED` is never
+  set directly per-application — it is reached only via the job-close cascade above.
+- Application status is decoupled from job status — a job-status change only touches
+  applications through the close/reopen cascade described above.
 
 ### Messaging initiation (hybrid)
 
@@ -139,6 +148,9 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
 - `conversation.create` is idempotent per `(seeker, employer, job)` — same triple
   returns the existing thread; a different `jobId` creates a separate thread.
 - Either side's block flag halts messaging in **both** directions for that thread.
+- Application status (`REJECTED`/`CLOSED`) does **not** gate messaging — the thread
+  stays open so the employer can follow up or reconsider. Messaging is gated only by
+  block flags, profile suspension, and job status (sending requires an `ACTIVE` job).
 - Conversations persist after job closure.
 
 ### Reports & moderation

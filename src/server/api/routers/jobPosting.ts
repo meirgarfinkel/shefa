@@ -454,19 +454,70 @@ export const jobPostingRouter = createTRPCRouter({
     if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
 
     try {
+      const now = new Date();
       const [result] = await ctx.db
         .update(jobPosting)
         .set({
           status: "CLOSED",
           closureReason: input.reason,
-          closedAt: new Date(),
+          closedAt: now,
         })
         .where(eq(jobPosting.id, input.id))
         .returning({ id: jobPosting.id, status: jobPosting.status });
+
+      // Cascade: closing a job closes its still-open applications. Rejected
+      // applications are left as-is (a rejection is the employer's explicit
+      // verdict, not a side effect of filling the role). See PROJECT_SPEC §3.
+      await ctx.db
+        .update(application)
+        .set({ status: "CLOSED", closedAt: now })
+        .where(
+          and(
+            eq(application.jobId, input.id),
+            inArray(application.status, ["SUBMITTED", "VIEWED"]),
+          ),
+        );
+
       return result!;
     } catch (e) {
       console.error("[jobPosting.close] DB update failed:", e);
       throw e;
     }
   }),
+
+  reopen: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
+
+      const posting = await ctx.db.query.jobPosting.findFirst({
+        where: eq(jobPosting.id, input.id),
+        columns: { id: true, employerId: true, status: true },
+      });
+
+      if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
+      if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+      if (posting.status !== "CLOSED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Only closed listings can be reopened",
+        });
+      }
+
+      // Reopen to PAUSED so the employer re-verifies before going live again.
+      const [result] = await ctx.db
+        .update(jobPosting)
+        .set({ status: "PAUSED", closureReason: null, closedAt: null })
+        .where(eq(jobPosting.id, input.id))
+        .returning({ id: jobPosting.id, status: jobPosting.status });
+
+      // Undo the close cascade: applications closed by the job-close return to
+      // SUBMITTED. Rejected applications stay rejected. See PROJECT_SPEC §3.
+      await ctx.db
+        .update(application)
+        .set({ status: "SUBMITTED", closedAt: null })
+        .where(and(eq(application.jobId, input.id), eq(application.status, "CLOSED")));
+
+      return result!;
+    }),
 });

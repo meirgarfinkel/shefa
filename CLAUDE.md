@@ -150,9 +150,12 @@ safe to `/clear`. After major architecture changes, follow the Graphify + Handof
   npx drizzle-kit migrate
   ```
 
-- Respect the lifecycle invariants: closing/pausing a job preserves applications and
-  conversations; application status is independent of job status; terminal states are
-  terminal; conversations persist after job closure. (See `PROJECT_SPEC.md §3`.)
+- Respect the lifecycle invariants: pausing a job mutates no related entities; closing
+  a job cascades open (`SUBMITTED`/`VIEWED`) applications to `CLOSED` and reopening
+  reverses it (`CLOSED` → `SUBMITTED`), while `REJECTED` is never touched by either;
+  `REJECTED`/`CLOSED` applications are employer-reversible, not permanently terminal;
+  no job-status change ever closes a conversation; conversations persist after job
+  closure; application status never gates messaging. (See `PROJECT_SPEC.md §3`.)
 
 ---
 

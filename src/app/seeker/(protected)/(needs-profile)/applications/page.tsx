@@ -43,7 +43,7 @@ export default function SeekerApplicationsPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
       <PageHeader title="My applications" description="Jobs you've applied to." />
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground text-sm">Believe in yourself.</p>}
 
       {!isLoading && applications?.length === 0 && (
         <div className="py-12 text-center">

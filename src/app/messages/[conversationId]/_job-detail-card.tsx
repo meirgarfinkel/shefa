@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Building, Car, Check, Clock, Info, MapPin, SearchCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
 import { CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
@@ -34,7 +35,7 @@ export function JobDetailCard({ job }: { job: ConvJob }) {
   const sortedDays = [...job.workDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
 
   return (
-    <div className="bg-card/30 rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent p-5">
+    <Panel>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <CardTitle>{job.title}</CardTitle>
         <ResponsiveBadge
@@ -142,6 +143,6 @@ export function JobDetailCard({ job }: { job: ConvJob }) {
           </Button>
         </div>
       </CardContent>
-    </div>
+    </Panel>
   );
 }

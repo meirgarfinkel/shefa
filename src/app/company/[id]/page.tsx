@@ -4,9 +4,12 @@ import { use } from "react";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
+import { Panel } from "@/components/ui/panel";
+import { Surface } from "@/components/ui/surface";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import { CardTitle } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
+import { pluralize } from "@/lib/utils";
 
 const INDUSTRY_LABELS: Record<string, string> = {
   FOOD_SERVICE: "Food Service",
@@ -34,7 +37,7 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
   const { data: company, isLoading, error } = trpc.company.getPublic.useQuery({ id });
 
   if (isLoading) {
-    return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Loading…</div>;
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Good things await.</div>;
   }
 
   if (error || !company) {
@@ -50,55 +53,49 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="p-5">
-      <div className="bg-card/30 mx-auto max-w-2xl rounded-md bg-linear-to-b from-white/10 via-transparent to-transparent">
-        <div className="p-5">
-          <div className="flex flex-wrap items-start gap-3">
-            <div className="flex-1">
-              <CardTitle>{company.companyName}</CardTitle>
-              <p className="mt-1 text-sm">
-                {company.city}, {company.state}
-                {company.industry && ` · ${INDUSTRY_LABELS[company.industry] ?? company.industry}`}
-              </p>
-            </div>
-            <ResponsiveBadge
-              isResponsive={company.employer.isResponsive}
-              isNew={company.employer.isNew}
-            />
+      <Panel className="mx-auto max-w-2xl">
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex-1">
+            <CardTitle>{company.companyName}</CardTitle>
+            <p className="mt-1 text-sm">
+              {company.city}, {company.state}
+              {company.industry && ` · ${INDUSTRY_LABELS[company.industry] ?? company.industry}`}
+            </p>
           </div>
+          <ResponsiveBadge
+            isResponsive={company.employer.isResponsive}
+            isNew={company.employer.isNew}
+          />
+        </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Pill>
-              {company._count.jobs === 1 ? "1 active job" : `${company._count.jobs} jobs`}
-            </Pill>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Pill>{pluralize(company._count.jobs, "active job", "jobs")}</Pill>
 
-            {company.website && (
-              <Button asChild variant="light">
-                <Link href={company.website} target="_blank" rel="noopener noreferrer">
-                  Website ↗
-                </Link>
-              </Button>
-            )}
-          </div>
-
-          {company.aboutCompany && (
-            <div className="mt-8">
-              <h2 className="mb-1 font-medium">About {company.companyName}</h2>
-              <p className="bg-secondary/50 rounded-md px-3 py-2 text-sm whitespace-pre-wrap">
-                {company.aboutCompany}
-              </p>
-            </div>
-          )}
-
-          {company.missionText && (
-            <div className="mt-8">
-              <h2 className="mb-1 font-medium">Company values</h2>
-              <p className="rounded-md bg-white/70 px-3 py-2 text-sm whitespace-pre-wrap">
-                {company.missionText}
-              </p>
-            </div>
+          {company.website && (
+            <Button asChild variant="light">
+              <Link href={company.website} target="_blank" rel="noopener noreferrer">
+                Website ↗
+              </Link>
+            </Button>
           )}
         </div>
-      </div>
+
+        {company.aboutCompany && (
+          <div className="mt-8">
+            <h2 className="mb-1 font-medium">About {company.companyName}</h2>
+            <Surface prose variant="muted">
+              {company.aboutCompany}
+            </Surface>
+          </div>
+        )}
+
+        {company.missionText && (
+          <div className="mt-8">
+            <h2 className="mb-1 font-medium">Company values</h2>
+            <Surface prose>{company.missionText}</Surface>
+          </div>
+        )}
+      </Panel>
     </div>
   );
 }
