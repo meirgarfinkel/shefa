@@ -1,0 +1,2 @@
+ALTER TABLE "NotificationPreferences" ADD COLUMN "lastDigestSentAt" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "Conversation_seekerId_employerId_coldDm_key" ON "Conversation" USING btree ("seekerId","employerId") WHERE "jobId" is null;

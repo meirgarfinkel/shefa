@@ -1,5 +1,16 @@
 import { z } from "zod";
-import { eq, and, arrayOverlaps, desc, inArray, notInArray, ilike, sql, count } from "drizzle-orm";
+import {
+  eq,
+  and,
+  ne,
+  arrayOverlaps,
+  desc,
+  inArray,
+  notInArray,
+  ilike,
+  sql,
+  count,
+} from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
 import {
@@ -19,6 +30,10 @@ import {
   employerProfile,
 } from "@/db/schema";
 import { assertActorActive } from "@/server/api/guards";
+
+// Hard cap on rows returned by the public list. The client only ever displays the top 50
+// (see sortJobs), so a generous cap bounds the query without changing what users see.
+const LIST_LIMIT = 100;
 
 async function lookupCityCoords(
   db: DbClient,
@@ -95,6 +110,18 @@ export const jobPostingRouter = createTRPCRouter({
       const coords = await lookupCityCoords(ctx.db, input.city, input.state);
 
       if (coords) {
+        // Bounding-box pre-filter so the (lat, lon) btree index can prune candidates
+        // before the exact haversine refinement runs. ~69 miles per degree of latitude;
+        // longitude degrees shrink by cos(latitude). The box is a superset of the circle,
+        // so the `dist <=` clause still does the precise radius cut.
+        const latDelta = input.radiusMiles / 69.0;
+        const cosLat = Math.cos((coords.lat * Math.PI) / 180);
+        const lonDelta = input.radiusMiles / (69.0 * Math.max(0.01, Math.abs(cosLat)));
+        const minLat = coords.lat - latDelta;
+        const maxLat = coords.lat + latDelta;
+        const minLon = coords.lon - lonDelta;
+        const maxLon = coords.lon + lonDelta;
+
         const result = await ctx.db.execute<{ id: string }>(
           sql`
         SELECT id FROM (
@@ -109,9 +136,12 @@ export const jobPostingRouter = createTRPCRouter({
           FROM "JobPosting"
           WHERE lat IS NOT NULL
             AND lon IS NOT NULL
+            AND lat BETWEEN ${minLat} AND ${maxLat}
+            AND lon BETWEEN ${minLon} AND ${maxLon}
         ) _sub
         WHERE dist <= ${input.radiusMiles}
         ORDER BY dist
+        LIMIT ${LIST_LIMIT}
       `,
         );
 
@@ -168,6 +198,7 @@ export const jobPostingRouter = createTRPCRouter({
         company: { columns: { id: true, name: true, city: true, state: true } },
       },
       orderBy: desc(jobPosting.createdAt),
+      limit: LIST_LIMIT,
     });
 
     if (jobs.length === 0) return [];
@@ -282,6 +313,9 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     const { minHourlyRate: rawRate, ...otherFields } = fields;
+    // Guard the closed-state in the predicate itself: a concurrent `close` between the
+    // read above and this write would otherwise be silently overwritten (resurrecting a
+    // closed listing). Zero rows updated means it was closed out from under us.
     const [updated] = await ctx.db
       .update(jobPosting)
       .set({
@@ -289,9 +323,12 @@ export const jobPostingRouter = createTRPCRouter({
         ...(rawRate !== undefined && { minHourlyRate: String(rawRate) }),
         ...(coords && { lat: coords.lat, lon: coords.lon }),
       })
-      .where(eq(jobPosting.id, id))
+      .where(and(eq(jobPosting.id, id), ne(jobPosting.status, "CLOSED")))
       .returning();
-    return updated!;
+    if (!updated) {
+      throw new TRPCError({ code: "CONFLICT", message: "This listing was closed; reload to edit" });
+    }
+    return updated;
   }),
 
   search: publicProcedure

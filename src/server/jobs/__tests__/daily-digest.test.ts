@@ -19,6 +19,11 @@ function makeMockDb() {
         where: vi.fn().mockReturnValue({}),
       }),
     }),
+    update: vi.fn().mockReturnValue({
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
+    }),
   };
 }
 
@@ -289,6 +294,44 @@ describe("runDailyDigestJob", () => {
     expect(call.html).not.toContain("<b>");
     expect(call.html).toContain("&lt;b&gt;");
     expect(call.html).toContain("&amp;");
+  });
+
+  // ── Idempotency & tombstones ─────────────────────────────────────────────────
+
+  it("user already sent a digest within the window → skipped (no email)", async () => {
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([
+      { ...MSG_PREFS_A, lastDigestSentAt: new Date() },
+    ]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
+
+    const { sendEmail } = await import("@/server/emails");
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
+  });
+
+  it("sends → stamps lastDigestSentAt so a retry within the window won't re-send", async () => {
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([MSG_PREFS_A]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
+
+    expect(mockDb.update).toHaveBeenCalledOnce();
+  });
+
+  it("soft-deleted (tombstoned) user → skipped, never emailed", async () => {
+    mockDb.query.notificationPreferences.findMany.mockResolvedValue([
+      { ...MSG_PREFS_A, user: { ...USER_A, deletedAt: new Date() } },
+    ]);
+    mockDb.query.message.findMany.mockResolvedValue([UNREAD_MSG]);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await runDailyDigestJob(mockDb as any as DbClient);
+
+    const { sendEmail } = await import("@/server/emails");
+    expect(vi.mocked(sendEmail)).not.toHaveBeenCalled();
   });
 
   // ── Adversarial: sendEmail failure ───────────────────────────────────────────

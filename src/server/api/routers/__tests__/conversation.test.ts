@@ -157,6 +157,23 @@ describe("create", () => {
     expect(mockDb.insert).not.toHaveBeenCalled();
   });
 
+  it("cold-DM race: insert hits the unique constraint (23505) → returns the winning row", async () => {
+    const caller = createCaller(makeCtx("EMPLOYER", mockDb, EMPLOYER_USER_ID));
+    mockDb.query.seekerProfile.findFirst.mockResolvedValue(ACTIVE_SEEKER_PROFILE);
+    // First lookup (pre-insert) misses; the concurrent create wins the insert; the
+    // post-conflict re-query returns the winner.
+    mockDb.query.conversation.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(CONV);
+    mockDb.insert.mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockRejectedValue({ code: "23505" }),
+      }),
+    });
+
+    const result = await caller.create({ targetId: SEEKER_PROFILE_ID });
+
+    expect(result).toEqual(CONV);
+  });
+
   // ── SEEKER happy paths ──
 
   it("seeker creates conversation with employer after applying to their job", async () => {

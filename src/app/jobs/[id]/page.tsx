@@ -26,7 +26,7 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 };
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
-  SUBMITTED: "bg-blue-dark-3 text-muted-foreground",
+  SUBMITTED: "bg-white text-success",
   VIEWED: "bg-warning/15 text-warning",
   REJECTED: "bg-danger/15 text-danger",
   CLOSED: "bg-blue-dark-3 text-muted-foreground",

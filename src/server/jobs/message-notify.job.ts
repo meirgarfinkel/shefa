@@ -3,6 +3,7 @@ import { db as defaultDb } from "@/db";
 import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import { buildMessageNotifyEmail } from "@/server/emails/message-notify";
+import { getAppUrl } from "@/server/app-url";
 import { notificationPreferences, users, message } from "@/db/schema";
 
 export async function runMessageNotifyJob(
@@ -32,7 +33,7 @@ export async function runMessageNotifyJob(
 
   if (!recipient || !latestMessage) return;
 
-  const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
+  const appUrl = getAppUrl();
   const emailContent = buildMessageNotifyEmail({
     senderEmail: latestMessage.sender.email,
     messagePreview: latestMessage.body,

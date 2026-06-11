@@ -141,11 +141,33 @@ export const conversationRouter = createTRPCRouter({
         }
       }
 
-      const [created] = await ctx.db
-        .insert(conversation)
-        .values({ seekerId, employerId, jobId: jobId ?? null })
-        .returning();
-      return created!;
+      try {
+        const [created] = await ctx.db
+          .insert(conversation)
+          .values({ seekerId, employerId, jobId: jobId ?? null })
+          .returning();
+        return created!;
+      } catch (e) {
+        // A concurrent create raced us. The unique constraints — composite
+        // (seekerId, employerId, jobId) for job threads, partial unique for cold DMs
+        // (jobId IS NULL) — guarantee idempotency, so return the row the other request made.
+        if (
+          typeof e === "object" &&
+          e !== null &&
+          "code" in e &&
+          (e as { code: string }).code === "23505"
+        ) {
+          const winner = await ctx.db.query.conversation.findFirst({
+            where: and(
+              eq(conversation.seekerId, seekerId),
+              eq(conversation.employerId, employerId),
+              jobId ? eq(conversation.jobId, jobId) : isNull(conversation.jobId),
+            ),
+          });
+          if (winner) return winner;
+        }
+        throw e;
+      }
     }),
 
   list: protectedProcedure.query(async ({ ctx }) => {

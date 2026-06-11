@@ -310,7 +310,7 @@ function JobsContent() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
+    <div className="mx-auto max-w-4xl px-4 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
       <MobileFilterBar {...filterProps} />
 
       {/* ── Desktop page header ── */}

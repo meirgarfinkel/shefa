@@ -1,4 +1,14 @@
-import { pgTable, text, varchar, boolean, timestamp, unique, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  boolean,
+  timestamp,
+  unique,
+  uniqueIndex,
+  index,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { users } from "./auth";
 import { jobPosting } from "./job";
@@ -28,6 +38,12 @@ export const conversation = pgTable(
   },
   (t) => [
     unique("Conversation_seekerId_employerId_jobId_key").on(t.seekerId, t.employerId, t.jobId),
+    // Postgres treats NULLs as distinct in a UNIQUE constraint, so the composite key above
+    // does NOT dedupe cold DMs (jobId IS NULL). This partial unique index enforces a single
+    // cold-DM thread per (seeker, employer) so concurrent creates can't race in duplicates.
+    uniqueIndex("Conversation_seekerId_employerId_coldDm_key")
+      .on(t.seekerId, t.employerId)
+      .where(sql`"jobId" is null`),
     index("Conversation_seekerId_idx").on(t.seekerId),
     index("Conversation_employerId_idx").on(t.employerId),
     index("Conversation_seekerId_lastMessageAt_idx").on(t.seekerId, t.lastMessageAt),

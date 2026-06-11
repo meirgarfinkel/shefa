@@ -1,6 +1,14 @@
 import { and, eq, ne } from "drizzle-orm";
 import type { DbClient } from "@/db";
-import { users, accounts, sessions, jobPosting, seekerProfile, employerProfile } from "@/db/schema";
+import {
+  users,
+  accounts,
+  sessions,
+  jobPosting,
+  seekerProfile,
+  employerProfile,
+  notificationPreferences,
+} from "@/db/schema";
 
 /**
  * Account deletion is a *soft* delete: the User row is preserved so that records the
@@ -44,28 +52,35 @@ export const anonymizedEmployerProfileFields = {
 
 export async function softDeleteAccount(db: DbClient, userId: string): Promise<void> {
   const now = new Date();
-  await db.transaction(async (tx) => {
-    await tx.update(users).set(anonymizedUserFields(userId, now)).where(eq(users.id, userId));
+  // The Neon HTTP driver does not support interactive transactions (`db.transaction`
+  // throws), so we use `db.batch`, which executes the statements atomically in a single
+  // round trip. Each statement is keyed by userId and idempotent, so a retry is safe.
+  await db.batch([
+    db.update(users).set(anonymizedUserFields(userId, now)).where(eq(users.id, userId)),
 
     // Close any still-open jobs; leave already-closed jobs (and their original closure
     // reason/timestamp) untouched.
-    await tx
+    db
       .update(jobPosting)
       .set({ status: "CLOSED", closureReason: "CANCELLED", closedAt: now })
-      .where(and(eq(jobPosting.employerId, userId), ne(jobPosting.status, "CLOSED")));
+      .where(and(eq(jobPosting.employerId, userId), ne(jobPosting.status, "CLOSED"))),
 
-    await tx
+    db
       .update(seekerProfile)
       .set(anonymizedSeekerProfileFields)
-      .where(eq(seekerProfile.userId, userId));
-    await tx
+      .where(eq(seekerProfile.userId, userId)),
+    db
       .update(employerProfile)
       .set(anonymizedEmployerProfileFields)
-      .where(eq(employerProfile.userId, userId));
+      .where(eq(employerProfile.userId, userId)),
+
+    // Drop notification preferences so the digest cron can never email the tombstoned
+    // (non-routable) address after deletion.
+    db.delete(notificationPreferences).where(eq(notificationPreferences.userId, userId)),
 
     // Sever the auth identity. The Google account link is removed so re-signup is clean;
     // the JWT client signs itself out after the mutation resolves.
-    await tx.delete(accounts).where(eq(accounts.userId, userId));
-    await tx.delete(sessions).where(eq(sessions.userId, userId));
-  });
+    db.delete(accounts).where(eq(accounts.userId, userId)),
+    db.delete(sessions).where(eq(sessions.userId, userId)),
+  ]);
 }

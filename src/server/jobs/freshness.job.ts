@@ -8,8 +8,9 @@ import {
   buildJobInitialPingEmail,
   buildJobWarningEmail,
 } from "@/server/emails/freshness-ping";
-import { seekerProfile, jobPosting, verificationPing } from "@/db/schema";
+import { seekerProfile, jobPosting, verificationPing, freshnessToken } from "@/db/schema";
 import { createFreshnessTokensForPing } from "./token";
+import { getAppUrl } from "@/server/app-url";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -64,58 +65,73 @@ async function checkSeekerProfiles(db: DbClient, now: Date): Promise<void> {
   for (const profile of profiles) {
     if (!profile.user) continue;
 
-    const pingsInCycle = profile.verificationPings.filter(
-      (p) => p.sentAt >= profile.lastVerifiedAt,
-    );
-    const action = computeFreshnessAction(profile.lastVerifiedAt, pingsInCycle, now);
+    // Isolate each profile: a single failing send must not abort the whole batch.
+    try {
+      const pingsInCycle = profile.verificationPings.filter(
+        (p) => p.sentAt >= profile.lastVerifiedAt,
+      );
+      const action = computeFreshnessAction(profile.lastVerifiedAt, pingsInCycle, now);
 
-    if (action === "no-action") continue;
+      if (action === "no-action") continue;
 
-    if (action === "auto-pause") {
-      await db
-        .update(seekerProfile)
-        .set({ status: "PAUSED" })
-        .where(eq(seekerProfile.id, profile.id));
-      if (pingsInCycle.length > 0) {
-        const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
+      if (action === "auto-pause") {
         await db
-          .update(verificationPing)
-          .set({ respondedAt: now, response: "NO_RESPONSE" })
-          .where(eq(verificationPing.id, latestPing.id));
+          .update(seekerProfile)
+          .set({ status: "PAUSED" })
+          .where(eq(seekerProfile.id, profile.id));
+        if (pingsInCycle.length > 0) {
+          const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
+          await db
+            .update(verificationPing)
+            .set({ respondedAt: now, response: "NO_RESPONSE" })
+            .where(eq(verificationPing.id, latestPing.id));
+        }
+        continue;
       }
-      continue;
+
+      const [ping] = await db
+        .insert(verificationPing)
+        .values({ type: "SEEKER_STILL_LOOKING", userId: profile.user.id })
+        .returning();
+
+      // Tokens must exist before the email (the links embed them). If the send fails,
+      // roll the ping + tokens back so this undelivered ping isn't counted toward
+      // escalation — otherwise a transient Resend failure could march an active user to
+      // PAUSED without them ever receiving a warning.
+      try {
+        const tokens = await createFreshnessTokensForPing(
+          ping!.id,
+          "SEEKER_PROFILE",
+          profile.id,
+          ["CONFIRMED", "PAUSED", "NOT_LOOKING"],
+          db,
+        );
+
+        const appUrl = getAppUrl();
+        const tokenUrls = {
+          confirm: `${appUrl}/api/verify/${tokens.CONFIRMED}`,
+          pause: `${appUrl}/api/verify/${tokens.PAUSED}`,
+          notLooking: `${appUrl}/api/verify/${tokens.NOT_LOOKING}`,
+        };
+
+        const emailContent =
+          action === "send-initial-ping"
+            ? buildSeekerInitialPingEmail(profile.user.email, tokenUrls)
+            : buildSeekerWarningEmail(profile.user.email, tokenUrls);
+
+        await sendEmail({
+          to: profile.user.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        });
+      } catch (sendErr) {
+        await db.delete(freshnessToken).where(eq(freshnessToken.pingId, ping!.id));
+        await db.delete(verificationPing).where(eq(verificationPing.id, ping!.id));
+        throw sendErr;
+      }
+    } catch (err) {
+      console.error(`[freshness] Failed to process seeker profile ${profile.id}:`, err);
     }
-
-    const [ping] = await db
-      .insert(verificationPing)
-      .values({ type: "SEEKER_STILL_LOOKING", userId: profile.user.id })
-      .returning();
-
-    const tokens = await createFreshnessTokensForPing(
-      ping!.id,
-      "SEEKER_PROFILE",
-      profile.id,
-      ["CONFIRMED", "PAUSED", "NOT_LOOKING"],
-      db,
-    );
-
-    const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
-    const tokenUrls = {
-      confirm: `${appUrl}/api/verify/${tokens.CONFIRMED}`,
-      pause: `${appUrl}/api/verify/${tokens.PAUSED}`,
-      notLooking: `${appUrl}/api/verify/${tokens.NOT_LOOKING}`,
-    };
-
-    const emailContent =
-      action === "send-initial-ping"
-        ? buildSeekerInitialPingEmail(profile.user.email, tokenUrls)
-        : buildSeekerWarningEmail(profile.user.email, tokenUrls);
-
-    await sendEmail({
-      to: profile.user.email,
-      subject: emailContent.subject,
-      html: emailContent.html,
-    });
   }
 }
 
@@ -134,52 +150,65 @@ async function checkJobPostings(db: DbClient, now: Date): Promise<void> {
   });
 
   for (const job of jobs) {
-    const pingsInCycle = job.verificationPings.filter((p) => p.sentAt >= job.lastVerifiedAt);
-    const action = computeFreshnessAction(job.lastVerifiedAt, pingsInCycle, now);
+    // Isolate each job: a single failing send must not abort the whole batch.
+    try {
+      const pingsInCycle = job.verificationPings.filter((p) => p.sentAt >= job.lastVerifiedAt);
+      const action = computeFreshnessAction(job.lastVerifiedAt, pingsInCycle, now);
 
-    if (action === "no-action") continue;
+      if (action === "no-action") continue;
 
-    if (action === "auto-pause") {
-      await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, job.id));
-      if (pingsInCycle.length > 0) {
-        const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
-        await db
-          .update(verificationPing)
-          .set({ respondedAt: now, response: "NO_RESPONSE" })
-          .where(eq(verificationPing.id, latestPing.id));
+      if (action === "auto-pause") {
+        await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, job.id));
+        if (pingsInCycle.length > 0) {
+          const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
+          await db
+            .update(verificationPing)
+            .set({ respondedAt: now, response: "NO_RESPONSE" })
+            .where(eq(verificationPing.id, latestPing.id));
+        }
+        continue;
       }
-      continue;
+
+      const [ping] = await db
+        .insert(verificationPing)
+        .values({ type: "JOB_STILL_OPEN", jobId: job.id })
+        .returning();
+
+      // See the seeker loop: send after tokens exist, roll back on failure so an
+      // undelivered ping doesn't push an active listing toward auto-pause.
+      try {
+        const tokens = await createFreshnessTokensForPing(
+          ping!.id,
+          "JOB_POSTING",
+          job.id,
+          ["CONFIRMED", "PAUSED", "FILLED"],
+          db,
+        );
+
+        const appUrl = getAppUrl();
+        const tokenUrls = {
+          confirm: `${appUrl}/api/verify/${tokens.CONFIRMED}`,
+          pause: `${appUrl}/api/verify/${tokens.PAUSED}`,
+          filled: `${appUrl}/api/verify/${tokens.FILLED}`,
+        };
+
+        const emailContent =
+          action === "send-initial-ping"
+            ? buildJobInitialPingEmail(job.employer.email, job.title, tokenUrls)
+            : buildJobWarningEmail(job.employer.email, job.title, tokenUrls);
+
+        await sendEmail({
+          to: job.employer.email,
+          subject: emailContent.subject,
+          html: emailContent.html,
+        });
+      } catch (sendErr) {
+        await db.delete(freshnessToken).where(eq(freshnessToken.pingId, ping!.id));
+        await db.delete(verificationPing).where(eq(verificationPing.id, ping!.id));
+        throw sendErr;
+      }
+    } catch (err) {
+      console.error(`[freshness] Failed to process job posting ${job.id}:`, err);
     }
-
-    const [ping] = await db
-      .insert(verificationPing)
-      .values({ type: "JOB_STILL_OPEN", jobId: job.id })
-      .returning();
-
-    const tokens = await createFreshnessTokensForPing(
-      ping!.id,
-      "JOB_POSTING",
-      job.id,
-      ["CONFIRMED", "PAUSED", "FILLED"],
-      db,
-    );
-
-    const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
-    const tokenUrls = {
-      confirm: `${appUrl}/api/verify/${tokens.CONFIRMED}`,
-      pause: `${appUrl}/api/verify/${tokens.PAUSED}`,
-      filled: `${appUrl}/api/verify/${tokens.FILLED}`,
-    };
-
-    const emailContent =
-      action === "send-initial-ping"
-        ? buildJobInitialPingEmail(job.employer.email, job.title, tokenUrls)
-        : buildJobWarningEmail(job.employer.email, job.title, tokenUrls);
-
-    await sendEmail({
-      to: job.employer.email,
-      subject: emailContent.subject,
-      html: emailContent.html,
-    });
   }
 }

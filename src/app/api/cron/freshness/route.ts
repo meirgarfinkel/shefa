@@ -1,12 +1,9 @@
 import { runFreshnessCheck } from "@/server/jobs/freshness.job";
+import { verifyCronRequest } from "@/server/cron-auth";
 import { NextResponse } from "next/server";
 
-function verifyCron(req: Request): boolean {
-  return req.headers.get("authorization") === `Bearer ${process.env.CRON_SECRET}`;
-}
-
 export async function GET(req: Request) {
-  if (!verifyCron(req)) {
+  if (!verifyCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

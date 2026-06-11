@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { TRPCProvider } from "@/lib/trpc/provider";
@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shefa",
   description: "A nonprofit job board connecting employers with candidates eager to learn.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a334e",
 };
 
 export default function RootLayout({

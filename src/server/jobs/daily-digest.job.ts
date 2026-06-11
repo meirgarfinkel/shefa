@@ -7,10 +7,18 @@ import {
   type MessageGroup,
   type ApplicationGroup,
 } from "@/server/emails/daily-digest";
-import { message, conversation, application, jobPosting } from "@/db/schema";
+import {
+  message,
+  conversation,
+  application,
+  jobPosting,
+  notificationPreferences,
+} from "@/db/schema";
+import { getAppUrl } from "@/server/app-url";
 
 export async function runDailyDigestJob(db: DbClient = defaultDb): Promise<void> {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const now = new Date();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
   const prefsWithUsers = await db.query.notificationPreferences.findMany({
     where: (p, { or, eq }) =>
@@ -19,12 +27,17 @@ export async function runDailyDigestJob(db: DbClient = defaultDb): Promise<void>
         eq(p.applicationNotifications, "DAILY_DIGEST"),
       ),
     with: {
-      user: { columns: { id: true, email: true } },
+      user: { columns: { id: true, email: true, deletedAt: true } },
     },
   });
 
   for (const prefs of prefsWithUsers) {
     if (!prefs.user) continue;
+    // Never email a soft-deleted (tombstoned, non-routable) account.
+    if (prefs.user.deletedAt) continue;
+    // Idempotency: if a digest already went out within the window, skip. Keeps Vercel
+    // cron retries / manual re-triggers from double-sending.
+    if (prefs.lastDigestSentAt && prefs.lastDigestSentAt >= since) continue;
 
     try {
       const messageGroups: MessageGroup[] = [];
@@ -107,7 +120,7 @@ export async function runDailyDigestJob(db: DbClient = defaultDb): Promise<void>
 
       if (messageGroups.length === 0 && applicationGroups.length === 0) continue;
 
-      const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
+      const appUrl = getAppUrl();
       const emailContent = buildDailyDigestEmail({ messageGroups, applicationGroups, appUrl });
 
       await sendEmail({
@@ -115,6 +128,12 @@ export async function runDailyDigestJob(db: DbClient = defaultDb): Promise<void>
         subject: emailContent.subject,
         html: emailContent.html,
       });
+
+      // Stamp delivery so a retry within the window doesn't re-send.
+      await db
+        .update(notificationPreferences)
+        .set({ lastDigestSentAt: now })
+        .where(eq(notificationPreferences.userId, prefs.userId));
     } catch (err) {
       console.error(`[daily-digest] Failed to send digest to ${prefs.user.email}:`, err);
     }

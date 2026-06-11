@@ -60,23 +60,23 @@ describe("softDeleteAccount", () => {
   function makeDb() {
     const updates: RecordedUpdate[] = [];
     const deletes: unknown[] = [];
-    const tx = {
+    // softDeleteAccount uses db.batch (the Neon HTTP driver has no interactive
+    // transactions). The builders record synchronously at construction; batch just
+    // awaits the lazy query objects, so a no-op resolve is enough here.
+    const db = {
       update(table: unknown) {
         return {
           set(payload: Record<string, unknown>) {
             updates.push({ table, payload });
-            return { where: () => Promise.resolve() };
+            return { where: () => ({}) };
           },
         };
       },
       delete(table: unknown) {
         deletes.push(table);
-        return { where: () => Promise.resolve() };
+        return { where: () => ({}) };
       },
-    };
-    const db = {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      transaction: (cb: (tx: any) => Promise<void>) => cb(tx),
+      batch: (_queries: unknown[]) => Promise.resolve([]),
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return { db: db as any, updates, deletes };

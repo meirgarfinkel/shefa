@@ -3,6 +3,7 @@ import { db as defaultDb } from "@/db";
 import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
 import { buildApplicationNotifyEmail } from "@/server/emails/application-notify";
+import { getAppUrl } from "@/server/app-url";
 import { notificationPreferences, users, jobPosting } from "@/db/schema";
 
 export async function runApplicationNotifyJob(
@@ -31,7 +32,7 @@ export async function runApplicationNotifyJob(
 
   if (!employer || !job) return;
 
-  const appUrl = process.env.AUTH_URL ?? "http://localhost:3000";
+  const appUrl = getAppUrl();
   const emailContent = buildApplicationNotifyEmail({ jobTitle: job.title, jobId, appUrl });
 
   await sendEmail({

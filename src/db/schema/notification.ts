@@ -17,6 +17,9 @@ export const notificationPreferences = pgTable("NotificationPreferences", {
   applicationNotifications: notificationFrequencyEnum("applicationNotifications")
     .notNull()
     .default("PER_MESSAGE"),
+  // Last time a daily digest was sent to this user. Used to keep the digest cron
+  // idempotent across Vercel retries / manual re-triggers (skip if sent within the window).
+  lastDigestSentAt: timestamp("lastDigestSentAt", { withTimezone: true, mode: "date" }),
   updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" })
     .notNull()
     .defaultNow()

@@ -4,16 +4,28 @@
 
 ## ⚠️ Action required before deploy
 
-- **Run the pending migration** (schema changed this session — additive only: the new
-  application index, plus `User.deletedAt` and the `ProfileStatus.DELETED` enum value for
-  account soft-delete):
+- **Run the pending migration.** `drizzle/0003_eager_siren.sql` was generated this session
+  (additive: `NotificationPreferences.lastDigestSentAt` + a partial unique index on
+  `Conversation(seekerId, employerId) WHERE jobId IS NULL` for cold-DM dedup). The earlier
+  `0001`/`0002` (app index, `User.deletedAt`, `ProfileStatus.DELETED`) are also pending if
+  not yet applied.
   ```bash
-  npm run db:dev-generate && npm run db:dev-migrate     # dev
-  npm run db:prod-generate && npm run db:prod-migrate   # production
+  npm run db:dev-migrate     # dev  (the 0003 file is already generated; just migrate)
+  npm run db:prod-migrate    # production
   ```
+  - **⚠️ The partial unique index will FAIL to create if the live DB already has duplicate
+    cold-DM conversations** (two rows sharing seeker+employer with `jobId IS NULL`). Check
+    first and dedupe if needed:
+    ```sql
+    SELECT "seekerId","employerId", count(*) FROM "Conversation"
+    WHERE "jobId" IS NULL GROUP BY 1,2 HAVING count(*) > 1;
+    ```
+- **Set production env vars per the rewritten `env.production.example`.** Critically
+  **`AUTH_URL`** (the app now throws in production if it's unset — see fix H1) and
+  **`CRON_SECRET`** (cron routes now fail closed without it — fix H2). The old example
+  documented `NEXTAUTH_URL` and Redis/Railway; that was wrong and is gone.
 - **Seed an admin**: there is no UI to grant `ADMIN`. Set a user's `role` to `ADMIN`
   directly in the DB to access `/admin`.
-- **Set `CRON_SECRET` in production** (see security finding S1).
 
 ## Built & working
 
@@ -33,51 +45,79 @@
   data, but cannot apply, post jobs, or start conversations, and are hidden from public
   seeker/company/job views.
 - **Account deletion = soft delete (new):** `user.deleteAccount` → `softDeleteAccount`
-  (`src/server/account.ts`). One transaction: scrubs User PII (`email` → unique
+  (`src/server/account.ts`). One atomic `db.batch`: scrubs User PII (`email` → unique
   non-routable placeholder, `name`/`phone`/`image` → null, sets `deletedAt`), closes the
   user's open jobs (`CLOSED`/`CANCELLED`), marks profiles `DELETED` with generic names,
-  and deletes only `Account`/`Session` rows. Conversations/messages/applications/reports
-  are preserved (the other party keeps history; reports stay as evidence). Re-signup with
-  the real Google email creates a fresh row. `createTRPCContext` drops the session when
-  `deletedAt` is set, so a JWT lingering on another device is rejected on its next request.
-  `seeker.getPublicProfile` 404s `DELETED` profiles.
+  drops `NotificationPreferences`, and deletes only `Account`/`Session` rows.
+  Conversations/messages/applications/reports are preserved (the other party keeps history;
+  reports stay as evidence). Re-signup with the real Google email creates a fresh row.
+  `createTRPCContext` drops the session when `deletedAt` is set, so a JWT lingering on
+  another device is rejected on its next request. `seeker.getPublicProfile` 404s `DELETED`.
 - **Crons (`vercel.json`):** freshness `0 9 * * *`, responsiveness `0 3 */2 * *`, digest `0 18 * * *`.
-- **Tests:** 428 passing across 22 suites. `npm run check` green.
+- **Tests:** 432 passing across 22 suites. `npm run check` green.
 
 ## Still needed (Phase 8)
 
 - **Seeker dashboard** — none; seekers land on `/jobs` after login.
-- **Error-handling polish** — friendlier user-facing messages.
-- Address security findings S1–S2 below.
-- Pre-ship audit — confirm prod env vars + `CRON_SECRET`.
+- ~~Error-handling polish~~ — custom `not-found`/`error`/`global-error` pages added this
+  session (audit M1). Friendlier per-field messages still a nice-to-have.
+- ~~Address security findings~~ — full pre-launch audit (`AUDIT.md`) done and all
+  Critical/High/Medium + L4 findings fixed this session (see below).
 
-## Security audit (this session — basic/moderate)
+## Pre-launch audit (this session) — `AUDIT.md`
 
-**Clean:** All mutating procedures derive identity from `ctx.session.user.id` and verify
-ownership (job/company/conversation/application) — no IDOR, no `userId` from input. The
-haversine raw SQL is parameterized via Drizzle `sql` bindings (no injection). Admin is
-gated by `adminProcedure` (role check) + server layout + middleware. Self-report,
-self-suspend, and suspending an admin are all blocked.
+Full audit across auth/authz, concurrency, performance, validation, error handling, rate
+limiting, code quality, and ops. **All Critical + High + Medium findings and L4 are now
+fixed** (this session). Remaining backlog: L1–L3, L5–L6 (low — see `AUDIT.md`).
 
-**Findings:**
+**Fixed this session:**
 
-- **S1 (medium) — cron auth fails open if `CRON_SECRET` is unset.** Routes compare the
-  header to `` `Bearer ${process.env.CRON_SECRET}` ``; if the env var is missing, a request
-  with `Authorization: Bearer undefined` matches. Fix: assert the secret is set (reject if
-  not) and prefer a constant-time compare. Mitigation today: ensure `CRON_SECRET` is set in prod.
-- **S2 — RESOLVED (this session).** `user.deleteAccount` was hard-deleting the `User` row
-  and throwing on FK constraints (e.g. `JobLanguage`), and conflicted with "no automatic
-  deletion of user data." Replaced with `softDeleteAccount` (see "Account deletion" above
-  and the decision record below). No FK/cascade changes were needed — the `User` row now
-  survives, so the constraint problem disappears entirely.
-  - _Follow-up (low):_ audit `src/server/jobs/` crons (freshness/responsiveness/digest) to
-    skip users where `deletedAt IS NOT NULL` / profiles with `status = 'DELETED'`, so a
-    tombstoned account isn't pinged or emailed. Their jobs are `CLOSED` and `Account`/
-    `Session` are gone, so impact is limited, but worth confirming.
-- **S3 (low) — `report.submit` does not verify `targetId` exists.** Bogus targets are
-  possible; admin UI shows "target no longer exists." Acceptable for v1.
-- **S4 (low) — unsuspend sets status to `ACTIVE` unconditionally**, which would un-pause a
-  freshness-PAUSED account. Rare; revisit if it bites.
+- **C1 — account deletion was broken in prod.** `softDeleteAccount` used `db.transaction`,
+  which the Neon HTTP driver throws on (`"No transactions support"`); the test passed only
+  because it mocked `transaction`. Rewrote onto **`db.batch`** (atomic, supported). Test
+  mock updated to `db.batch`.
+- **H1 — `AUTH_URL`.** New `src/server/app-url.ts#getAppUrl()`: returns `AUTH_URL`, **throws
+  in production if unset**, falls back to localhost in dev. Replaced all 5 `?? localhost`
+  fallbacks + the `process.env.AUTH_URL!` in the verify route. Env example fixed (H1/M6).
+- **H2 — cron auth.** New `src/server/cron-auth.ts#verifyCronRequest()`: **fails closed**
+  when `CRON_SECRET` is unset, constant-time compare (`timingSafeEqual`). Wired into all
+  three cron routes. (Supersedes old S1.)
+- **H3 — cold-DM duplicate race.** Added a **partial unique index** on
+  `Conversation(seekerId, employerId) WHERE jobId IS NULL` (migration `0003`) and a `23505`
+  catch in `conversation.create` that returns the winning row. Idempotency now enforced by
+  the DB, not a pre-check. Test added.
+- **H4 — apply message length.** `ApplySchema.message` 1000 → **500** to match the
+  `varchar(500)` column and spec (UI already capped at 500).
+- **H5 — unbounded list.** `jobPosting.list` now capped at `LIST_LIMIT = 100` (findMany +
+  geo SQL `LIMIT`). Client still displays top 50.
+- **H6 — haversine full scan.** Added a **bounding-box pre-filter** (`lat/lon BETWEEN`)
+  before the acos refinement so the `(lat, lon)` index prunes candidates.
+- **H7 — security headers.** `next.config.ts` now sets HSTS, `X-Frame-Options: DENY`,
+  `nosniff`, `Referrer-Policy`, `Permissions-Policy`, and a baseline CSP (allows Google
+  OAuth/avatars + Next inline runtime). Verify the CSP against OAuth in staging.
+- **M1 — error pages.** Added `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`.
+- **M2 — digest idempotency.** Added `NotificationPreferences.lastDigestSentAt` (migration
+  `0003`); digest skips users sent within the window and stamps the column on send. Tests added.
+- **M3/M4 — freshness resilience.** Each profile/job iteration is wrapped in `try/catch`
+  (one failed send no longer aborts the batch), and an **undelivered ping + its tokens are
+  rolled back** on send failure so a transient Resend error can't march an active user to
+  PAUSED.
+- **M5 — job update status race.** `jobPosting.update` now guards `ne(status, "CLOSED")` in
+  the WHERE and throws `CONFLICT` on zero rows (can't resurrect a concurrently-closed job).
+- **M6 — env example.** `env.production.example` rewritten: dropped Redis/Railway, added
+  `AUTH_URL` + `CRON_SECRET`, fixed `NEXTAUTH_URL` → `AUTH_URL`.
+- **M7 — sender address.** `sendEmail` reads `RESEND_FROM_EMAIL` (falls back to the literal).
+- **L4 — tombstones in crons.** `softDeleteAccount` deletes `NotificationPreferences`; the
+  digest job also skips `deletedAt` users defensively.
+
+**Still clean (verified, unchanged):** identity from `ctx.session.user.id`, ownership checks
+(no IDOR / no `userId` from input), parameterized raw SQL, admin gating, self-report/
+self-suspend/suspend-admin blocks, trigram indexes in use, no N+1, no `as any` in source.
+
+**Backlog (low, deferred):** S3/L2 (`report.submit` doesn't verify target exists);
+S4/L3 (unsuspend → `ACTIVE` can un-pause a freshness-PAUSED account); L1 (inline label maps
+should move to `labels.ts`); L5 (`minHourlyRate` upper bound vs `decimal(8,2)`); L6 (seeker
+city/state not validated against geo tables).
 
 ## Intentionally missing (not bugs)
 
