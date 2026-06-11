@@ -44,6 +44,7 @@ const AUDIENCES = [
 
 export default async function SignInPage() {
   const session = await auth();
+  if (session?.user?.role === "ADMIN") redirect("/admin");
   if (session?.user?.role === "EMPLOYER") redirect("/employer/dashboard");
   if (session?.user?.role === "SEEKER") redirect("/jobs");
   if (session?.user && !session.user.role) redirect("/role-select");

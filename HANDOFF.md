@@ -4,26 +4,6 @@
 
 ## ⚠️ Action required before deploy
 
-- **Run the pending migration.** `drizzle/0003_eager_siren.sql` was generated this session
-  (additive: `NotificationPreferences.lastDigestSentAt` + a partial unique index on
-  `Conversation(seekerId, employerId) WHERE jobId IS NULL` for cold-DM dedup). The earlier
-  `0001`/`0002` (app index, `User.deletedAt`, `ProfileStatus.DELETED`) are also pending if
-  not yet applied.
-  ```bash
-  npm run db:dev-migrate     # dev  (the 0003 file is already generated; just migrate)
-  npm run db:prod-migrate    # production
-  ```
-  - **⚠️ The partial unique index will FAIL to create if the live DB already has duplicate
-    cold-DM conversations** (two rows sharing seeker+employer with `jobId IS NULL`). Check
-    first and dedupe if needed:
-    ```sql
-    SELECT "seekerId","employerId", count(*) FROM "Conversation"
-    WHERE "jobId" IS NULL GROUP BY 1,2 HAVING count(*) > 1;
-    ```
-- **Set production env vars per the rewritten `env.production.example`.** Critically
-  **`AUTH_URL`** (the app now throws in production if it's unset — see fix H1) and
-  **`CRON_SECRET`** (cron routes now fail closed without it — fix H2). The old example
-  documented `NEXTAUTH_URL` and Redis/Railway; that was wrong and is gone.
 - **Seed an admin**: there is no UI to grant `ADMIN`. Set a user's `role` to `ADMIN`
   directly in the DB to access `/admin`.
 

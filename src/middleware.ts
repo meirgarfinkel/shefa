@@ -12,8 +12,10 @@ export default auth((req) => {
   }
   if (pathname === "/") {
     const role = req.auth.user.role;
-    if (role !== "SEEKER") return NextResponse.redirect(new URL("/employer/dashboard", req.url));
-    else return NextResponse.redirect(new URL("/jobs", req.url));
+    if (role === "ADMIN") return NextResponse.redirect(new URL("/admin", req.url));
+    if (role === "EMPLOYER") return NextResponse.redirect(new URL("/employer/dashboard", req.url));
+    if (role === "SEEKER") return NextResponse.redirect(new URL("/jobs", req.url));
+    return NextResponse.redirect(new URL("/role-select", req.url));
   }
   return NextResponse.next();
 });
