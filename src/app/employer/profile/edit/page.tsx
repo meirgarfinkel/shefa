@@ -41,7 +41,7 @@ export default function EmployerProfileEditPage() {
 
   const form = useForm<UpdateEmployerProfileInput>({
     resolver: zodResolver(UpdateEmployerProfileSchema),
-    defaultValues: { firstName: "", lastName: "", roleAtCompany: "" },
+    defaultValues: { firstName: "", lastName: "", roleAtBusiness: "" },
   });
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export default function EmployerProfileEditPage() {
     form.reset({
       firstName: profile.firstName,
       lastName: profile.lastName,
-      roleAtCompany: profile.roleAtCompany ?? "",
+      roleAtBusiness: profile.roleAtBusiness ?? "",
     });
   }, [profile, form]);
 
@@ -132,7 +132,7 @@ export default function EmployerProfileEditPage() {
 
             <FormField
               control={form.control}
-              name="roleAtCompany"
+              name="roleAtBusiness"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Your role</FormLabel>
@@ -173,7 +173,7 @@ export default function EmployerProfileEditPage() {
             <DialogHeader>
               <DialogTitle>Delete account?</DialogTitle>
               <DialogDescription>
-                This will permanently delete your account, profile, companies, job postings and all
+                This will permanently delete your account, profile, businesses, job postings and all
                 your data (this cannot be undone!)
               </DialogDescription>
             </DialogHeader>

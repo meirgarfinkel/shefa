@@ -31,19 +31,19 @@ const INDUSTRY_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default function CompanyPublicPage({ params }: { params: Promise<{ id: string }> }) {
+export default function BusinessPublicPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { data: company, isLoading, error } = trpc.company.getPublic.useQuery({ id });
+  const { data: business, isLoading, error } = trpc.business.getPublic.useQuery({ id });
 
   if (isLoading) {
     return <div className="mx-auto max-w-3xl px-4 py-16 text-center">Good things await.</div>;
   }
 
-  if (error || !company) {
+  if (error || !business) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p>This company was not found.</p>
+        <p>This business was not found.</p>
         <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
@@ -56,43 +56,43 @@ export default function CompanyPublicPage({ params }: { params: Promise<{ id: st
       <Panel className="mx-auto max-w-2xl">
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex-1">
-            <CardTitle>{company.companyName}</CardTitle>
+            <CardTitle>{business.businessName}</CardTitle>
             <p className="mt-1 text-sm">
-              {company.city}, {company.state}
-              {company.industry && ` · ${INDUSTRY_LABELS[company.industry] ?? company.industry}`}
+              {business.city}, {business.state}
+              {business.industry && ` · ${INDUSTRY_LABELS[business.industry] ?? business.industry}`}
             </p>
           </div>
           <ResponsiveBadge
-            isResponsive={company.employer.isResponsive}
-            isNew={company.employer.isNew}
+            isResponsive={business.employer.isResponsive}
+            isNew={business.employer.isNew}
           />
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          <Pill>{pluralize(company._count.jobs, "active job", "jobs")}</Pill>
+          <Pill>{pluralize(business._count.jobs, "active job", "jobs")}</Pill>
 
-          {company.website && (
+          {business.website && (
             <Button asChild variant="light">
-              <Link href={company.website} target="_blank" rel="noopener noreferrer">
+              <Link href={business.website} target="_blank" rel="noopener noreferrer">
                 Website ↗
               </Link>
             </Button>
           )}
         </div>
 
-        {company.aboutCompany && (
+        {business.aboutBusiness && (
           <div className="mt-8">
-            <h2 className="mb-1 font-medium">About {company.companyName}</h2>
+            <h2 className="mb-1 font-medium">About {business.businessName}</h2>
             <Surface prose variant="muted">
-              {company.aboutCompany}
+              {business.aboutBusiness}
             </Surface>
           </div>
         )}
 
-        {company.missionText && (
+        {business.missionText && (
           <div className="mt-8">
-            <h2 className="mb-1 font-medium">Company values</h2>
-            <Surface prose>{company.missionText}</Surface>
+            <h2 className="mb-1 font-medium">Business values</h2>
+            <Surface prose>{business.missionText}</Surface>
           </div>
         )}
       </Panel>

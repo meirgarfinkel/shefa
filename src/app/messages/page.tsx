@@ -10,11 +10,11 @@ function displayName(
   participant: {
     id: string;
     seekerProfile: { id: string; firstName: string; lastName: string } | null;
-    companies: { id: string; name: string }[];
+    businesses: { id: string; name: string }[];
   } | null,
 ): string {
   if (!participant) return "Unknown";
-  if (participant.companies.length > 0) return participant.companies[0]!.name;
+  if (participant.businesses.length > 0) return participant.businesses[0]!.name;
   if (participant.seekerProfile)
     return `${participant.seekerProfile.firstName} ${participant.seekerProfile.lastName}`;
   return "Unknown";

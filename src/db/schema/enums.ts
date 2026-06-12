@@ -50,7 +50,7 @@ export const notificationFrequencyEnum = pgEnum("NotificationFrequency", [
 ]);
 export const jobTypeEnum = pgEnum("JobType", ["FULL_TIME", "PART_TIME", "EITHER"]);
 export const workArrangementEnum = pgEnum("WorkArrangement", ["REMOTE", "ON_SITE", "HYBRID"]);
-export const companySizeEnum = pgEnum("CompanySize", [
+export const businessSizeEnum = pgEnum("BusinessSize", [
   "SIZE_1_10",
   "SIZE_11_50",
   "SIZE_51_200",
@@ -100,7 +100,7 @@ export type FeedbackStatus = (typeof feedbackStatusEnum.enumValues)[number];
 export type NotificationFrequency = (typeof notificationFrequencyEnum.enumValues)[number];
 export type JobType = (typeof jobTypeEnum.enumValues)[number];
 export type WorkArrangement = (typeof workArrangementEnum.enumValues)[number];
-export type CompanySize = (typeof companySizeEnum.enumValues)[number];
+export type BusinessSize = (typeof businessSizeEnum.enumValues)[number];
 export type EducationLevel = (typeof educationLevelEnum.enumValues)[number];
 export type Industry = (typeof industryEnum.enumValues)[number];
 export type DayOfWeek = (typeof dayOfWeekEnum.enumValues)[number];

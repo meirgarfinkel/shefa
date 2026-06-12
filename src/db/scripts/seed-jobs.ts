@@ -4,7 +4,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { DayOfWeek, JobType, WorkArrangement } from "../schema";
 import { users } from "../schema/auth";
-import { employerProfile, company } from "../schema/employer";
+import { employerProfile, business } from "../schema/employer";
 import { seekerProfile } from "../schema/seeker";
 import { jobPosting } from "../schema/job";
 import { application } from "../schema/application";
@@ -26,7 +26,7 @@ type JobTemplate = {
   whatWereLookingFor?: string;
 };
 
-const COMPANY_ONE_JOBS: JobTemplate[] = [
+const BUSINESS_ONE_JOBS: JobTemplate[] = [
   {
     title: "Junior Software Developer",
     description:
@@ -179,7 +179,7 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
   {
     title: "Delivery Driver",
     description:
-      "Pick up and deliver packages and documents within the metro area using a company vehicle. You will plan efficient routes and communicate proactively about any delays.",
+      "Pick up and deliver packages and documents within the metro area using a business vehicle. You will plan efficient routes and communicate proactively about any delays.",
     jobType: "EITHER",
     workArrangement: "ON_SITE",
     city: "New York City",
@@ -250,7 +250,7 @@ const COMPANY_ONE_JOBS: JobTemplate[] = [
   },
 ];
 
-const COMPANY_TWO_JOBS: JobTemplate[] = [
+const BUSINESS_TWO_JOBS: JobTemplate[] = [
   {
     title: "Retail Sales Associate",
     description:
@@ -368,7 +368,7 @@ const COMPANY_TWO_JOBS: JobTemplate[] = [
   {
     title: "Loss Prevention Associate",
     description:
-      "Protect store assets by monitoring for theft, reviewing security footage, and working with management on prevention strategies. All investigations must follow company protocols.",
+      "Protect store assets by monitoring for theft, reviewing security footage, and working with management on prevention strategies. All investigations must follow business protocols.",
     jobType: "FULL_TIME",
     workArrangement: "ON_SITE",
     city: "Brooklyn",
@@ -474,10 +474,10 @@ const APPLICATION_MESSAGES = [
   "This role looks like a great match for my interests and goals. I am available to start immediately and am fully committed to the position.",
   "I have been looking for exactly this kind of opportunity. I bring a positive attitude and genuine enthusiasm for the work.",
   "I would love the chance to learn from your team. I am reliable, punctual, and ready to give everything I have to this role.",
-  "Your company's mission really resonates with me. I am confident I can contribute meaningfully once given the chance to get started.",
+  "Your business's mission really resonates with me. I am confident I can contribute meaningfully once given the chance to get started.",
   "I am eager to prove myself. I may not have formal experience yet but I am a hard worker and a quick study.",
   "This looks like a wonderful place to begin my career. I am very motivated and would not take this opportunity for granted.",
-  "I have read everything I can find about your company and I am genuinely excited. Please give me the chance to show what I can do.",
+  "I have read everything I can find about your business and I am genuinely excited. Please give me the chance to show what I can do.",
 ];
 
 async function main() {
@@ -501,7 +501,7 @@ async function main() {
         userId: employer.id,
         firstName: "Employer",
         lastName: "One",
-        roleAtCompany: "Hiring Manager",
+        roleAtBusiness: "Hiring Manager",
       })
       .onConflictDoNothing();
 
@@ -533,51 +533,51 @@ async function main() {
       })
       .onConflictDoNothing();
 
-    console.log("Creating companies...");
-    const [company1] = await db
-      .insert(company)
+    console.log("Creating businesses...");
+    const [business1] = await db
+      .insert(business)
       .values({
         ownerId: employer.id,
-        name: "Company One",
+        name: "Business One",
         city: "New York City",
         state: "NY",
         industry: "TECHNOLOGY",
-        companySize: "SIZE_51_200",
-        aboutCompany:
-          "Company One builds software tools that help small nonprofits manage their operations. We are a mission-driven team that values learning, inclusion, and getting things done.",
+        businessSize: "SIZE_51_200",
+        aboutBusiness:
+          "Business One builds software tools that help small nonprofits manage their operations. We are a mission-driven team that values learning, inclusion, and getting things done.",
         missionText:
           "Technology should work for every organization, not just the well-funded ones.",
       })
       .onConflictDoUpdate({
-        target: [company.ownerId, company.name],
+        target: [business.ownerId, business.name],
         set: { name: sql`excluded.name` },
       })
-      .returning({ id: company.id });
+      .returning({ id: business.id });
 
-    const [company2] = await db
-      .insert(company)
+    const [business2] = await db
+      .insert(business)
       .values({
         ownerId: employer.id,
-        name: "Company Two",
+        name: "Business Two",
         city: "Brooklyn",
         state: "NY",
         industry: "RETAIL",
-        companySize: "SIZE_11_50",
-        aboutCompany:
-          "Company Two is a neighborhood retail store serving Brooklyn for over 20 years. We carry a wide range of products and pride ourselves on knowing every customer by name.",
+        businessSize: "SIZE_11_50",
+        aboutBusiness:
+          "Business Two is a neighborhood retail store serving Brooklyn for over 20 years. We carry a wide range of products and pride ourselves on knowing every customer by name.",
         missionText: "Great retail is about relationships, not just transactions.",
       })
       .onConflictDoUpdate({
-        target: [company.ownerId, company.name],
+        target: [business.ownerId, business.name],
         set: { name: sql`excluded.name` },
       })
-      .returning({ id: company.id });
+      .returning({ id: business.id });
 
     console.log("Cleaning up existing test jobs and conversations...");
     const existingJobs = await db
       .select({ id: jobPosting.id })
       .from(jobPosting)
-      .where(inArray(jobPosting.companyId, [company1.id, company2.id]));
+      .where(inArray(jobPosting.businessId, [business1.id, business2.id]));
     const existingJobIds = existingJobs.map((j) => j.id);
 
     if (existingJobIds.length > 0) {
@@ -605,13 +605,13 @@ async function main() {
       );
     }
 
-    console.log("Creating 15 jobs for Company One...");
+    console.log("Creating 15 jobs for Business One...");
     const jobs1 = await db
       .insert(jobPosting)
       .values(
-        COMPANY_ONE_JOBS.map((t) => ({
+        BUSINESS_ONE_JOBS.map((t) => ({
           employerId: employer.id,
-          companyId: company1.id,
+          businessId: business1.id,
           title: t.title,
           description: t.description,
           jobType: t.jobType,
@@ -629,13 +629,13 @@ async function main() {
       )
       .returning({ id: jobPosting.id, title: jobPosting.title });
 
-    console.log("Creating 15 jobs for Company Two...");
+    console.log("Creating 15 jobs for Business Two...");
     const jobs2 = await db
       .insert(jobPosting)
       .values(
-        COMPANY_TWO_JOBS.map((t) => ({
+        BUSINESS_TWO_JOBS.map((t) => ({
           employerId: employer.id,
-          companyId: company2.id,
+          businessId: business2.id,
           title: t.title,
           description: t.description,
           jobType: t.jobType,
@@ -653,7 +653,7 @@ async function main() {
       )
       .returning({ id: jobPosting.id, title: jobPosting.title });
 
-    console.log("Creating 8 applications (4 per company)...");
+    console.log("Creating 8 applications (4 per business)...");
     const appliedJobs = [...jobs1.slice(0, 4), ...jobs2.slice(0, 4)];
 
     const conversations = await Promise.all(
@@ -725,7 +725,7 @@ async function main() {
     await db.insert(message).values({
       conversationId: freeConversation.id,
       senderId: seeker.id,
-      body: "Hi, I came across your company profile and I am really impressed by your mission. I know I have already applied to a few of your roles, but I just wanted to reach out directly to express how much I would love to work with your team.",
+      body: "Hi, I came across your business profile and I am really impressed by your mission. I know I have already applied to a few of your roles, but I just wanted to reach out directly to express how much I would love to work with your team.",
       createdAt: new Date(freeConversationTime.getTime() - 20 * 60 * 1000),
     });
 
@@ -739,9 +739,9 @@ async function main() {
     console.log("\n✓ Dev seed complete:");
     console.log(`  Employer: e1@gmail.com (id: ${employer.id})`);
     console.log(`  Seeker:   s1@gmail.com (id: ${seeker.id})`);
-    console.log(`  Company One: ${company1.id} — 15 jobs`);
-    console.log(`  Company Two: ${company2.id} — 15 jobs`);
-    console.log(`  Applications: 8 (4 per company)`);
+    console.log(`  Business One: ${business1.id} — 15 jobs`);
+    console.log(`  Business Two: ${business2.id} — 15 jobs`);
+    console.log(`  Applications: 8 (4 per business)`);
     console.log(`  Conversations with job: ${conversations.length}`);
     console.log(`  Conversations without job: 1`);
     console.log(`  Messages per job conversation: 3`);

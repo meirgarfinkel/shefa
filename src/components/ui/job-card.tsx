@@ -18,7 +18,7 @@ interface JobCardProps {
   workArrangement: WorkArrangement;
   minHourlyRate: number;
   status: JobStatus;
-  companyName: string;
+  businessName: string;
   href: string;
   applicationCount: number;
   className?: string;
@@ -31,7 +31,7 @@ export function JobCard({
   jobType,
   workArrangement,
   minHourlyRate,
-  companyName,
+  businessName,
   href,
   applicationCount,
   className,
@@ -42,7 +42,7 @@ export function JobCard({
         <div className="mb-3 flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h3 className="truncate text-lg font-medium capitalize">{title}</h3>
-            <p className="mt-0.5 text-xs">{companyName}</p>
+            <p className="mt-0.5 text-xs">{businessName}</p>
           </div>
           {applicationCount > 0 && <Pill>{applicationCount} Applied</Pill>}
         </div>

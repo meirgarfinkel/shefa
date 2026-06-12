@@ -165,8 +165,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <CardTitle>{job.title}</CardTitle>
             <div className="flex items-center gap-2">
               <ResponsiveBadge
-                isResponsive={job.company.employer.isResponsive}
-                isNew={job.company.employer.isNew}
+                isResponsive={job.business.employer.isResponsive}
+                isNew={job.business.employer.isNew}
               />
               {isOwner && (
                 <Button asChild size="sm" className="gap-1 text-sm">
@@ -181,11 +181,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
           <div className="mt-5">
             <Link
-              href={`/company/${job.company.id}`}
+              href={`/business/${job.business.id}`}
               className="hover:text-orange flex items-center gap-1 font-medium"
             >
               <Building className="text-message-green size-4" strokeWidth={2.5} />
-              {job.company.name}
+              {job.business.name}
             </Link>
           </div>
 

@@ -7,7 +7,7 @@ import { seekerProfile } from "@/db/schema";
 /**
  * Onboarding gate for seekers. A logged-in SEEKER who has not yet created a
  * seekerProfile is redirected to profile creation, mirroring how the employer
- * `(needs-company)` layout gates employers who haven't finished onboarding.
+ * `(needs-business)` layout gates employers who haven't finished onboarding.
  *
  * No-op for unauthenticated visitors, EMPLOYERs, and ADMINs — their gates (or
  * lack thereof) live elsewhere. The SEEKER role-gate itself lives in the seeker

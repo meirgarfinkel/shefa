@@ -11,7 +11,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 function makeMockDb() {
   return {
     query: {
-      company: { findFirst: vi.fn(), findMany: vi.fn() },
+      business: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
       employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
       application: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -73,16 +73,16 @@ const createCaller = createCallerFactory(jobPostingRouter);
 
 const EMPLOYER_USER_ID = "user-1";
 const OTHER_EMPLOYER_USER_ID = "user-2";
-const COMPANY_ID = "company-1";
-const OTHER_COMPANY_ID = "company-2";
+const BUSINESS_ID = "business-1";
+const OTHER_BUSINESS_ID = "business-2";
 const JOB_ID = "job-1";
 
-const MOCK_COMPANY = { id: COMPANY_ID, ownerId: EMPLOYER_USER_ID };
+const MOCK_BUSINESS = { id: BUSINESS_ID, ownerId: EMPLOYER_USER_ID };
 
 const MOCK_JOB = {
   id: JOB_ID,
   employerId: EMPLOYER_USER_ID,
-  companyId: COMPANY_ID,
+  businessId: BUSINESS_ID,
   title: "Line Cook",
   description: "Help in the kitchen.",
   jobType: "FULL_TIME",
@@ -101,8 +101,8 @@ const MOCK_JOB = {
   createdAt: new Date(),
   updatedAt: new Date(),
   requiredLanguages: [],
-  company: {
-    id: COMPANY_ID,
+  business: {
+    id: BUSINESS_ID,
     name: "Mama's Kitchen",
     city: "Brooklyn",
     state: "NY",
@@ -114,13 +114,13 @@ const MOCK_JOB = {
   },
 };
 
-// Shape returned by search's findMany (includes company + _count)
+// Shape returned by search's findMany (includes business + _count)
 const MOCK_JOB_SEARCH_RESULT = {
   ...MOCK_JOB,
   lat: 40.65,
   lon: -73.95,
   requiredLanguages: [],
-  company: { id: COMPANY_ID, name: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
+  business: { id: BUSINESS_ID, name: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
 };
 const MOCK_JOB_CLOSED = { ...MOCK_JOB, status: "CLOSED" };
 
@@ -133,7 +133,7 @@ const VALID_CREATE_INPUT = {
   state: "NY",
   minHourlyRate: 15,
   workAuthRequired: false,
-  companyId: COMPANY_ID,
+  businessId: BUSINESS_ID,
 };
 
 // ── jobPosting.create ─────────────────────────────────────────────────────────
@@ -145,7 +145,7 @@ describe("jobPosting.create", () => {
 
   beforeEach(() => {
     db = makeMockDb();
-    db.query.company.findFirst.mockResolvedValue(MOCK_COMPANY);
+    db.query.business.findFirst.mockResolvedValue(MOCK_BUSINESS);
     // City lookup: select().from().innerJoin().where().limit()
     db.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -183,10 +183,10 @@ describe("jobPosting.create", () => {
     expect(db.insert).toHaveBeenCalled();
   });
 
-  it("sets companyId from input after validating ownership", async () => {
+  it("sets businessId from input after validating ownership", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     const result = await caller.create(VALID_CREATE_INPUT);
-    expect(result).toMatchObject({ companyId: COMPANY_ID });
+    expect(result).toMatchObject({ businessId: BUSINESS_ID });
   });
 
   it("new posting defaults to ACTIVE status", async () => {
@@ -283,17 +283,17 @@ describe("jobPosting.create", () => {
     });
   });
 
-  it("throws NOT_FOUND when company does not exist", async () => {
-    db.query.company.findFirst.mockResolvedValue(null);
+  it("throws NOT_FOUND when business does not exist", async () => {
+    db.query.business.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(caller.create(VALID_CREATE_INPUT)).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
 
-  it("throws NOT_FOUND when company belongs to a different employer", async () => {
-    db.query.company.findFirst.mockResolvedValue({
-      id: COMPANY_ID,
+  it("throws NOT_FOUND when business belongs to a different employer", async () => {
+    db.query.business.findFirst.mockResolvedValue({
+      id: BUSINESS_ID,
       ownerId: OTHER_EMPLOYER_USER_ID,
     });
     const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
@@ -310,7 +310,7 @@ describe("jobPosting.list", () => {
 
   beforeEach(() => {
     db = makeMockDb();
-    db.query.company.findFirst.mockResolvedValue(null);
+    db.query.business.findFirst.mockResolvedValue(null);
     db.query.jobPosting.findMany.mockResolvedValue([]);
     // count queries
     db.select.mockReturnValue({
@@ -360,31 +360,31 @@ describe("jobPosting.list", () => {
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
-  it("EMPLOYER querying another employer's company only sees ACTIVE", async () => {
-    db.query.company.findFirst.mockResolvedValue(null); // other employer's company → not found for this user
+  it("EMPLOYER querying another employer's business only sees ACTIVE", async () => {
+    db.query.business.findFirst.mockResolvedValue(null); // other employer's business → not found for this user
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ companyId: OTHER_COMPANY_ID });
+    await caller.list({ businessId: OTHER_BUSINESS_ID });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
-  it("EMPLOYER querying own company sees all statuses by default", async () => {
-    db.query.company.findFirst.mockResolvedValue(MOCK_COMPANY);
+  it("EMPLOYER querying own business sees all statuses by default", async () => {
+    db.query.business.findFirst.mockResolvedValue(MOCK_BUSINESS);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ companyId: COMPANY_ID });
+    await caller.list({ businessId: BUSINESS_ID });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
   it("EMPLOYER can filter own postings to a specific status", async () => {
-    db.query.company.findFirst.mockResolvedValue(MOCK_COMPANY);
+    db.query.business.findFirst.mockResolvedValue(MOCK_BUSINESS);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ companyId: COMPANY_ID, status: ["ACTIVE"] });
+    await caller.list({ businessId: BUSINESS_ID, status: ["ACTIVE"] });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
-  it("applies companyId filter to query when provided", async () => {
-    db.query.company.findFirst.mockResolvedValue(MOCK_COMPANY);
+  it("applies businessId filter to query when provided", async () => {
+    db.query.business.findFirst.mockResolvedValue(MOCK_BUSINESS);
     const caller = createCaller(makeCtx("EMPLOYER", db));
-    await caller.list({ companyId: COMPANY_ID });
+    await caller.list({ businessId: BUSINESS_ID });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 

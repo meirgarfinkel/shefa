@@ -47,7 +47,7 @@ export const anonymizedSeekerProfileFields = {
 export const anonymizedEmployerProfileFields = {
   firstName: "Former",
   lastName: "member",
-  roleAtCompany: null,
+  roleAtBusiness: null,
   status: "DELETED",
 } satisfies Partial<typeof employerProfile.$inferInsert>;
 

@@ -1,6 +1,6 @@
 import { pgTable, text, varchar, boolean, timestamp, unique, index } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
-import { profileStatusEnum, industryEnum, companySizeEnum } from "./enums";
+import { profileStatusEnum, industryEnum, businessSizeEnum } from "./enums";
 import { users } from "./auth";
 
 export const employerProfile = pgTable(
@@ -15,7 +15,7 @@ export const employerProfile = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     firstName: text("firstName").notNull(),
     lastName: text("lastName").notNull(),
-    roleAtCompany: varchar("roleAtCompany", { length: 200 }),
+    roleAtBusiness: varchar("roleAtBusiness", { length: 200 }),
     status: profileStatusEnum("status").notNull().default("ACTIVE"),
     isResponsive: boolean("isResponsive").notNull().default(false),
     responsivenessUpdatedAt: timestamp("responsivenessUpdatedAt", {
@@ -31,8 +31,8 @@ export const employerProfile = pgTable(
   (t) => [index("EmployerProfile_status_idx").on(t.status)],
 );
 
-export const company = pgTable(
-  "Company",
+export const business = pgTable(
+  "Business",
   {
     id: text("id")
       .primaryKey()
@@ -45,12 +45,12 @@ export const company = pgTable(
     state: text("state").notNull(),
     website: text("website"),
     industry: industryEnum("industry"),
-    companySize: companySizeEnum("companySize"),
-    aboutCompany: varchar("aboutCompany", { length: 2000 }),
+    businessSize: businessSizeEnum("businessSize"),
+    aboutBusiness: varchar("aboutBusiness", { length: 2000 }),
     missionText: varchar("missionText", { length: 1000 }),
   },
   (t) => [
-    unique("Company_ownerId_name_key").on(t.ownerId, t.name),
-    index("Company_ownerId_idx").on(t.ownerId),
+    unique("Business_ownerId_name_key").on(t.ownerId, t.name),
+    index("Business_ownerId_idx").on(t.ownerId),
   ],
 );

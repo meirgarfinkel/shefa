@@ -32,7 +32,7 @@ export default function PrivacyPage() {
             </li>
             <li>
               <strong>Profile information.</strong> Details you provide as a job seeker or employer,
-              such as your contact details, company information, job postings, and applications.
+              such as your contact details, business information, job postings, and applications.
             </li>
             <li>
               <strong>Communications.</strong> Messages you exchange with other users through the

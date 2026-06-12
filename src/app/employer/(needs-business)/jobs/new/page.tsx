@@ -48,13 +48,13 @@ const DAYS = [
 export default function PostJobPage() {
   const router = useRouter();
 
-  const { data: companies } = trpc.company.listMine.useQuery();
+  const { data: businesses } = trpc.business.listMine.useQuery();
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(CreateJobPostingSchema),
     defaultValues: {
-      companyId: "",
+      businessId: "",
       title: "",
       description: "",
       jobType: undefined,
@@ -70,12 +70,12 @@ export default function PostJobPage() {
     },
   });
 
-  // Auto-select the company when there's only one
+  // Auto-select the business when there's only one
   useEffect(() => {
-    if (companies?.length === 1 && !form.getValues("companyId")) {
-      form.setValue("companyId", companies[0]!.id);
+    if (businesses?.length === 1 && !form.getValues("businessId")) {
+      form.setValue("businessId", businesses[0]!.id);
     }
-  }, [companies, form]);
+  }, [businesses, form]);
 
   const createPosting = trpc.jobPosting.create.useMutation({
     onSuccess: () => router.push("/employer/jobs"),
@@ -85,8 +85,8 @@ export default function PostJobPage() {
     createPosting.mutate(data as CreateJobPostingInput);
   }
 
-  const hasNoCompanies = companies !== undefined && companies.length === 0;
-  const showCompanySelector = (companies?.length ?? 0) > 1;
+  const hasNoBusinesses = businesses !== undefined && businesses.length === 0;
+  const showBusinessSelector = (businesses?.length ?? 0) > 1;
 
   return (
     <div className="p-5">
@@ -94,29 +94,29 @@ export default function PostJobPage() {
         <PageHeader title="Create a new job" />
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            {/* No companies yet — prompt to create one */}
-            {hasNoCompanies && (
+            {/* No businesses yet — prompt to create one */}
+            {hasNoBusinesses && (
               <div className="bg-blue-dark-2 my-8 rounded-md p-4">
-                <p className="text-sm font-medium">You need a company to post jobs.</p>
+                <p className="text-sm font-medium">You need a business to post jobs.</p>
                 <p className="text-muted-foreground mt-1 text-sm">
-                  Create your company profile first, then come back to post a job.
+                  Create your business profile first, then come back to post a job.
                 </p>
                 <Button asChild className="mt-3">
-                  <Link href="/employer/company/new">Create company</Link>
+                  <Link href="/employer/business/new">Create business</Link>
                 </Button>
               </div>
             )}
 
-            {/* Company selector — shown when employer has multiple companies */}
-            {showCompanySelector && (
+            {/* Business selector — shown when employer has multiple businesses */}
+            {showBusinessSelector && (
               <div className="mt-8">
                 <FormField
                   control={form.control}
-                  name="companyId"
+                  name="businessId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Company <span className="text-danger">*</span>
+                        Business <span className="text-danger">*</span>
                       </FormLabel>
                       <div className="flex items-center gap-2">
                         <Select onValueChange={field.onChange} value={field.value ?? ""}>
@@ -126,15 +126,15 @@ export default function PostJobPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {companies?.map((c) => (
+                            {businesses?.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {c.companyName}
+                                {c.businessName}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <Button asChild type="button">
-                          <Link href="/employer/company/new">+ Company</Link>
+                          <Link href="/employer/business/new">+ Business</Link>
                         </Button>
                       </div>
                       <FormMessage />
@@ -437,7 +437,7 @@ export default function PostJobPage() {
             <Button
               type="submit"
               className="mt-5 px-10 text-nowrap"
-              disabled={createPosting.isPending || hasNoCompanies}
+              disabled={createPosting.isPending || hasNoBusinesses}
             >
               {createPosting.isPending ? "Posting job…" : "Post job"}
             </Button>

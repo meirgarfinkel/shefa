@@ -125,7 +125,7 @@ export const applicationRouter = createTRPCRouter({
             employerId: true,
           },
           with: {
-            company: { columns: { id: true, name: true } },
+            business: { columns: { id: true, name: true } },
           },
         },
       },

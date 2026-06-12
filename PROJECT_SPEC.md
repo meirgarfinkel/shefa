@@ -24,7 +24,7 @@ hire on potential rather than credentials.
 **Audience / roles:**
 
 - **Seekers** — job seekers building a profile and applying to jobs.
-- **Employers** — a contact human who owns one or more companies and posts jobs under them.
+- **Employers** — a contact human who owns one or more businesses and posts jobs under them.
 - **Admins** — moderation and platform operations (minimal tooling for v1).
 
 ---
@@ -50,16 +50,16 @@ that lives only on employers.
 ### EmployerProfile (1:1 with User)
 
 The **contact human**, not the business. Holds `firstName`, `lastName`,
-`roleAtCompany`, a `status`, and the responsiveness fields (`isResponsive`,
-`responsivenessUpdatedAt`). Company details live on a separate entity.
+`roleAtBusiness`, a `status`, and the responsiveness fields (`isResponsive`,
+`responsivenessUpdatedAt`). Business details live on a separate entity.
 
-### Company (many-to-one with User via `ownerId`)
+### Business (many-to-one with User via `ownerId`)
 
-The business itself. One employer (user) can own **multiple** companies, unique per
+The business itself. One employer (user) can own **multiple** businesses, unique per
 `(ownerId, name)`. Holds `name`, `city`/`state`, `website`, `industry`,
-`companySize`, `aboutCompany`, and `missionText` ("why we want to give people a chance").
+`businessSize`, `aboutBusiness`, and `missionText` ("why we want to give people a chance").
 
-### JobPosting (belongs to a User via `employerId` and a Company via `companyId`)
+### JobPosting (belongs to a User via `employerId` and a Business via `businessId`)
 
 A job listing. Carries title, description, `jobType`, `workArrangement`,
 location (`city`/`state` plus geocoded `lat`/`lon`), `minHourlyRate`, optional pay and
@@ -120,8 +120,8 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
 
 - A user picks a role once (`/role-select`); the role is stored on the JWT and the User row.
 - Creating a profile requires confirming age ≥ 18 (`isAdult`).
-- An employer must create at least one Company before posting jobs (enforced by the
-  `(needs-company)` route group).
+- An employer must create at least one Business before posting jobs (enforced by the
+  `(needs-business)` route group).
 
 ### Job lifecycle
 
@@ -216,9 +216,9 @@ All eight build phases are complete except final polish (Phase 8 in progress).
 **Seeker:** create/edit profile, browse jobs, apply, view own applications with live
 status, public profile page (`/seeker/[profileId]`).
 
-**Employer:** create/edit the contact profile; create/edit/list companies; create,
+**Employer:** create/edit the contact profile; create/edit/list businesses; create,
 edit, duplicate, pause, and close jobs; view applications per job and update their
-status; dashboard with recent applications; public company page (`/company/[id]`) and
+status; dashboard with recent applications; public business page (`/business/[id]`) and
 public employer page (`/employer/[profileId]`).
 
 **Jobs (public):** listing with filters (status, job type, work arrangement, work days),
@@ -262,15 +262,15 @@ dashboard. No other role/onboarding logic. Imports only `auth.config.ts` and Nex
 
 **Authorization:** role checks and onboarding redirects live in **server component
 layouts / page wrappers**, never in middleware or client components. The `employer` and
-`seeker` segment layouts gate by role; the `(needs-company)` group additionally requires
-an owned company.
+`seeker` segment layouts gate by role; the `(needs-business)` group additionally requires
+an owned business.
 
 **API layer (tRPC):** `createTRPCContext` injects `{ session, db, headers }`.
 `publicProcedure` is open; `protectedProcedure` enforces a session and narrows
 `ctx.user`. Procedures own all business logic; components are presentation-only.
 Identity always comes from `ctx.session.user.id` — **never** from input.
 
-**Routers** (`src/server/api/root.ts`): `user`, `seeker`, `employer`, `company`,
+**Routers** (`src/server/api/root.ts`): `user`, `seeker`, `employer`, `business`,
 `taxonomy`, `jobPosting`, `application`, `conversation`, `message`, `notification`,
 `report`, `feedback`, `location`, `admin`.
 
@@ -306,14 +306,14 @@ src/
       change-email/
     employer/
       profile/{new,edit}/
-      company/{new,[id]/edit}/
-      (needs-company)/      # route group: requires an owned company
+      business/{new,[id]/edit}/
+      (needs-business)/      # route group: requires an owned business
         dashboard/  jobs/{new,[id]/{edit,applications}}/
     seeker/
       (protected)/profile/{new,edit}  (protected)/applications/
       (public)/[profileId]/           # public seeker profile
     jobs/[id]/              # public listing + detail
-    company/[id]/           # public company page
+    business/[id]/           # public business page
     employer/[profileId]/   # public employer page
     messages/[conversationId]/
     {sign-in,role-select,verify/*,verify-request}/
@@ -380,9 +380,9 @@ inferred `PascalCaseInput` type alongside.
 
 ## 8. Important Decisions
 
-- **Company is separate from EmployerProfile.** The employer profile is the contact
-  human; companies are owned entities (one user → many companies). This replaced the
-  earlier model where company fields lived on the employer profile.
+- **Business is separate from EmployerProfile.** The employer profile is the contact
+  human; businesses are owned entities (one user → many businesses). This replaced the
+  earlier model where business fields lived on the employer profile.
 - **Skills were removed entirely.** There is no skills taxonomy and no required/preferred
   skills on jobs or profiles. Languages are the only curated taxonomy. This reinforces
   the "hire on potential" mission and avoids credential-style gatekeeping.
@@ -428,4 +428,4 @@ filtering; no automatic deletion of user data.
 
 **Deferred to v2+:** mobile apps (React Native over the same tRPC API), SMS
 notifications/verification, real-time messaging, message attachments, profile photos /
-company logos, inbox search, and user-extensible taxonomies.
+business logos, inbox search, and user-extensible taxonomies.

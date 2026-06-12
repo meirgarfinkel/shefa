@@ -20,8 +20,8 @@ export default function EmployerJobsPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | JobStatus>("all");
   const [closingJob, setClosingJob] = useState<{ id: string; title: string } | null>(null);
 
-  const { data: companies, isLoading: companiesLoading } = trpc.company.listMine.useQuery();
-  const multiCompany = (companies?.length ?? 0) > 1;
+  const { data: businesses, isLoading: businessesLoading } = trpc.business.listMine.useQuery();
+  const multiBusiness = (businesses?.length ?? 0) > 1;
   const utils = trpc.useUtils();
 
   const listInput = {
@@ -30,7 +30,7 @@ export default function EmployerJobsPage() {
   };
 
   const { data: jobs, isLoading: jobsLoading } = trpc.jobPosting.list.useQuery(listInput, {
-    enabled: companies !== undefined && companies.length > 0,
+    enabled: businesses !== undefined && businesses.length > 0,
   });
 
   const updateJob = trpc.jobPosting.update.useMutation({
@@ -60,14 +60,16 @@ export default function EmployerJobsPage() {
     onSuccess: () => void utils.jobPosting.list.invalidate(),
   });
 
-  const isLoading = companiesLoading || jobsLoading;
+  const isLoading = businessesLoading || jobsLoading;
   const isPending =
     updateJob.isPending ||
     duplicateJob.isPending ||
     confirmFreshness.isPending ||
     reopenJob.isPending;
 
-  const pageSubtitle = multiCompany ? "All companies" : (companies?.[0]?.companyName ?? undefined);
+  const pageSubtitle = multiBusiness
+    ? "All businesses"
+    : (businesses?.[0]?.businessName ?? undefined);
 
   return (
     <div className="p-5">
@@ -117,7 +119,7 @@ export default function EmployerJobsPage() {
               <EmployerJobCard
                 key={job.id}
                 job={job}
-                multiCompany={multiCompany}
+                multiBusiness={multiBusiness}
                 isPending={isPending}
                 applicationsCount={job._count.applications}
                 onConfirmFreshness={() => confirmFreshness.mutate({ id: job.id })}

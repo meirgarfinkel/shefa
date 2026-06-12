@@ -18,7 +18,7 @@ import {
   dayOfWeekEnum,
 } from "./enums";
 import { users } from "./auth";
-import { company } from "./employer";
+import { business } from "./employer";
 import { language } from "./taxonomy";
 
 export const jobPosting = pgTable(
@@ -30,9 +30,9 @@ export const jobPosting = pgTable(
     employerId: text("employerId")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    companyId: text("companyId")
+    businessId: text("businessId")
       .notNull()
-      .references(() => company.id, { onDelete: "cascade" }),
+      .references(() => business.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     description: varchar("description", { length: 5000 }).notNull(),
     jobType: jobTypeEnum("jobType").notNull(),
@@ -70,7 +70,7 @@ export const jobPosting = pgTable(
     index("JobPosting_status_workArrangement_idx").on(t.status, t.workArrangement),
     index("JobPosting_status_createdAt_idx").on(t.status, t.createdAt),
     index("JobPosting_employerId_idx").on(t.employerId),
-    index("JobPosting_companyId_idx").on(t.companyId),
+    index("JobPosting_businessId_idx").on(t.businessId),
     index("JobPosting_lat_lon_idx").on(t.lat, t.lon),
     index("JobPosting_closedAt_idx").on(t.closedAt),
   ],

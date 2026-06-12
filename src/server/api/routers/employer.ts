@@ -87,7 +87,7 @@ export const employerRouter = createTRPCRouter({
         job: {
           columns: { id: true, title: true },
           with: {
-            company: { columns: { name: true } },
+            business: { columns: { name: true } },
           },
         },
         seeker: {

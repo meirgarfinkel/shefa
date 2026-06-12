@@ -31,12 +31,12 @@ export default function EmployerProfileNewPage() {
     defaultValues: {
       firstName: "",
       lastName: "",
-      roleAtCompany: "",
+      roleAtBusiness: "",
     },
   });
 
   const createProfile = trpc.employer.createProfile.useMutation({
-    onSuccess: () => router.push("/employer/company/new"),
+    onSuccess: () => router.push("/employer/business/new"),
   });
 
   function onSubmit(data: CreateEmployerProfileInput) {
@@ -86,7 +86,7 @@ export default function EmployerProfileNewPage() {
 
             <FormField
               control={form.control}
-              name="roleAtCompany"
+              name="roleAtBusiness"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Your role</FormLabel>

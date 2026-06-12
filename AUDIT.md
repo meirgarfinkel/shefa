@@ -177,7 +177,7 @@
 
 ### L1 — Duplicated enum→label maps live inline in pages instead of `labels.ts`
 
-**Location:** `INDUSTRY_LABELS` in `src/app/company/[id]/page.tsx:11`; `EDUCATION_LABELS` in `src/app/seeker/(public)/[profileId]/page.tsx:14`; `APPLICATION_STATUS_LABELS`/`APPLICATION_STATUS_STYLES` in `src/app/jobs/[id]/page.tsx:22,28`; `TARGET_LABEL` in `src/app/admin/page.tsx:17`.
+**Location:** `INDUSTRY_LABELS` in `src/app/business/[id]/page.tsx:11`; `EDUCATION_LABELS` in `src/app/seeker/(public)/[profileId]/page.tsx:14`; `APPLICATION_STATUS_LABELS`/`APPLICATION_STATUS_STYLES` in `src/app/jobs/[id]/page.tsx:22,28`; `TARGET_LABEL` in `src/app/admin/page.tsx:17`.
 
 **Problem.** `CLAUDE.md §1` and `PROJECT_SPEC.md §6` mandate one label map per concept in `src/lib/constants/labels.ts`. These four maps are defined ad hoc in components. Risk is drift when an enum value is added.
 
@@ -229,16 +229,16 @@
 
 ## Clean — verified, no action needed
 
-- **Identity & IDOR.** Every mutating procedure derives identity from `ctx.session.user.id`; no procedure accepts a `userId`. Ownership is checked on jobs, companies, applications, and conversations before any write. `userId` never appears in a URL or input (public routes take profile/company ids).
-- **Public read leakage.** `seeker.getPublicProfile` strips `userId` and 404s `SUSPENDED`/`DELETED`; it returns no `email`/`phone`/`isAdult` (those live on `User`, never selected). Public job/company reads expose only intended fields and hide suspended employers.
-- **Middleware is Edge-safe.** `src/middleware.ts` imports only `auth.config.ts` + Next built-ins; `auth.config.ts` carries no DB/adapter. Auth gating is presence-only; role/onboarding gating lives in server layouts (`admin`, `employer`, `seeker`, `(needs-company)`), as the spec requires.
+- **Identity & IDOR.** Every mutating procedure derives identity from `ctx.session.user.id`; no procedure accepts a `userId`. Ownership is checked on jobs, businesses, applications, and conversations before any write. `userId` never appears in a URL or input (public routes take profile/business ids).
+- **Public read leakage.** `seeker.getPublicProfile` strips `userId` and 404s `SUSPENDED`/`DELETED`; it returns no `email`/`phone`/`isAdult` (those live on `User`, never selected). Public job/business reads expose only intended fields and hide suspended employers.
+- **Middleware is Edge-safe.** `src/middleware.ts` imports only `auth.config.ts` + Next built-ins; `auth.config.ts` carries no DB/adapter. Auth gating is presence-only; role/onboarding gating lives in server layouts (`admin`, `employer`, `seeker`, `(needs-business)`), as the spec requires.
 - **Session invalidation on delete.** `createTRPCContext` drops the session when `users.deletedAt` is set, so a lingering JWT can't act (independent of the C1 bug, which is on the write side).
 - **Apply de-dup is correct.** `application.submit` relies on the real `(seekerId, jobId)` unique constraint and catches `23505` — the correct race-safe pattern. (Contrast H3, which lacks the constraint.)
 - **SQL injection.** The haversine and trigram raw SQL use Drizzle `sql` parameter bindings throughout; no string interpolation of user input.
 - **Trigram search.** `pg_trgm` extension + GIN indexes on `JobPosting.title`/`description` exist (`drizzle/0000…sql:299-301`) and `jobPosting.search` uses `<%`/`word_similarity`, which those indexes serve. Search is capped at `LIMIT 100`.
 - **N+1.** List endpoints (jobs, inbox, applications, admin queue) batch their aggregates with `inArray` + `groupBy` and resolve targets in bulk — no per-row round trips.
 - **Indexing.** Status/filter/sort columns, FK columns, rate-limit windows (`Application(seekerId, createdAt)`), and inbox ordering (`Conversation(employerId/seekerId, lastMessageAt)`) all have supporting indexes.
-- **Blocked/suspended enforcement.** `message.send` blocks on either-side block flag and on non-ACTIVE job/profile; `assertActorActive` gates apply/post/DM for suspended actors; suspended employers' jobs/companies are hidden from public reads.
+- **Blocked/suspended enforcement.** `message.send` blocks on either-side block flag and on non-ACTIVE job/profile; `assertActorActive` gates apply/post/DM for suspended actors; suspended employers' jobs/businesses are hidden from public reads.
 - **Type hygiene.** No `as any`, `@ts-ignore`, or `@ts-expect-error` in non-test source. No `console.log` in production paths (only seed scripts). `npm run check` is green.
 - **Secrets.** `.env`, `.env.production`, `.env.local` are git-ignored and not tracked.
 

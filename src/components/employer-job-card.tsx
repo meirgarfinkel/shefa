@@ -24,12 +24,12 @@ export type EmployerJobCardJob = {
   minHourlyRate: string | number;
   lastVerifiedAt: string | Date;
   closureReason?: JobClosureReason | null;
-  company: { name: string };
+  business: { name: string };
 };
 
 export function EmployerJobCard({
   job,
-  multiCompany = false,
+  multiBusiness = false,
   isPending = false,
   showApplicants = true,
   showDuplicate = true,
@@ -42,7 +42,7 @@ export function EmployerJobCard({
   onClose,
 }: {
   job: EmployerJobCardJob;
-  multiCompany?: boolean;
+  multiBusiness?: boolean;
   isPending?: boolean;
   /** Hide the Applicants button (e.g. when already on the applicants page). */
   showApplicants?: boolean;
@@ -127,9 +127,9 @@ export function EmployerJobCard({
       </div>
 
       <p className="relative z-10 mt-0.5 text-xs">
-        {multiCompany && (
+        {multiBusiness && (
           <>
-            {job.company.name}
+            {job.business.name}
             {" · "}
           </>
         )}{" "}

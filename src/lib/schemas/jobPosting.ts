@@ -33,7 +33,7 @@ const JobPostingFields = {
 };
 
 export const CreateJobPostingSchema = z.object({
-  companyId: z.string(),
+  businessId: z.string(),
   ...JobPostingFields,
 });
 
@@ -57,7 +57,7 @@ export const UpdateJobPostingSchema = z.object({
 
 export const ListJobPostingsSchema = z.object({
   status: z.array(JobStatusEnum).optional(),
-  companyId: z.string().optional(),
+  businessId: z.string().optional(),
   myJobs: z.boolean().optional(),
   city: JobPostingFields.city.optional(),
   state: JobPostingFields.state.optional(),

@@ -51,7 +51,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">Employers &amp; Job Seekers</h2>
           <p className="text-md">
-            Employers are responsible for the accuracy and lawfulness of the jobs and company
+            Employers are responsible for the accuracy and lawfulness of the jobs and business
             information they post. Job seekers are responsible for the accuracy of their profiles
             and applications. Shefa facilitates connections but is not a party to any employment
             relationship and does not guarantee any hiring outcome.

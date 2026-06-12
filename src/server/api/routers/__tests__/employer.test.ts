@@ -15,7 +15,7 @@ function makeMockDb() {
       employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
       application: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
-      company: { findFirst: vi.fn(), findMany: vi.fn() },
+      business: { findFirst: vi.fn(), findMany: vi.fn() },
       seekerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     insert: vi.fn().mockReturnValue({
@@ -72,7 +72,7 @@ const STORED_PROFILE = {
   userId: "user-1",
   firstName: "Ada",
   lastName: "Lovelace",
-  roleAtCompany: null,
+  roleAtBusiness: null,
   isResponsive: false,
   responsivenessUpdatedAt: null,
   createdAt: new Date(),
@@ -161,15 +161,15 @@ describe("employer.createProfile", () => {
     expect(result).toMatchObject({ userId: "user-42" });
   });
 
-  it("stores optional roleAtCompany when provided", async () => {
+  it("stores optional roleAtBusiness when provided", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     db.insert.mockReturnValue({
       values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([{ ...STORED_PROFILE, roleAtCompany: "CEO" }]),
+        returning: vi.fn().mockResolvedValue([{ ...STORED_PROFILE, roleAtBusiness: "CEO" }]),
       }),
     });
-    const result = await caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "CEO" });
-    expect(result).toMatchObject({ roleAtCompany: "CEO" });
+    const result = await caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtBusiness: "CEO" });
+    expect(result).toMatchObject({ roleAtBusiness: "CEO" });
   });
 
   it("sets isAdult on user when not already an adult", async () => {
@@ -203,17 +203,17 @@ describe("employer.createProfile", () => {
     ).rejects.toThrow(TRPCError);
   });
 
-  it("accepts roleAtCompany at exactly 200 chars", async () => {
+  it("accepts roleAtBusiness at exactly 200 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "a".repeat(200) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtBusiness: "a".repeat(200) }),
     ).resolves.toBeDefined();
   });
 
-  it("rejects roleAtCompany longer than 200 chars", async () => {
+  it("rejects roleAtBusiness longer than 200 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", db));
     await expect(
-      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtCompany: "a".repeat(201) }),
+      caller.createProfile({ ...VALID_PROFILE_INPUT, roleAtBusiness: "a".repeat(201) }),
     ).rejects.toThrow(TRPCError);
   });
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { createCallerFactory } from "@/server/api/trpc";
-import { companyRouter } from "../company";
+import { businessRouter } from "../business";
 
 vi.mock("@/db", () => ({ db: {} }));
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
@@ -11,7 +11,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 function makeMockDb() {
   return {
     query: {
-      company: { findFirst: vi.fn(), findMany: vi.fn() },
+      business: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     insert: vi.fn().mockReturnValue({
@@ -41,15 +41,15 @@ function makeMockDb() {
   };
 }
 
-function makePublicCompany(overrides: Record<string, unknown> = {}) {
+function makePublicBusiness(overrides: Record<string, unknown> = {}) {
   return {
-    id: "company-1",
+    id: "business-1",
     name: "Acme Corp",
     city: "New York",
     state: "NY",
     industry: "RETAIL",
     website: "https://acme.com",
-    aboutCompany: "We do things.",
+    aboutBusiness: "We do things.",
     missionText: "Give people a chance.",
     owner: {
       id: "owner-1",
@@ -79,7 +79,7 @@ function makeCtx(role: Role | null, db: ReturnType<typeof makeMockDb>, userId = 
   };
 }
 
-const createCaller = createCallerFactory(companyRouter);
+const createCaller = createCallerFactory(businessRouter);
 
 const VALID_CREATE_INPUT = {
   name: "Acme Corp",
@@ -87,9 +87,9 @@ const VALID_CREATE_INPUT = {
   state: "NY",
 };
 
-// ── company.getPublic ─────────────────────────────────────────────────────────
+// ── business.getPublic ─────────────────────────────────────────────────────────
 
-describe("company.getPublic", () => {
+describe("business.getPublic", () => {
   let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
@@ -102,55 +102,55 @@ describe("company.getPublic", () => {
     });
   });
 
-  it("returns public company fields for a valid id", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+  it("returns public business fields for a valid id", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result).toMatchObject({
-      id: "company-1",
-      companyName: "Acme Corp",
+      id: "business-1",
+      businessName: "Acme Corp",
       city: "New York",
       state: "NY",
     });
   });
 
   it("works for an unauthenticated caller", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx(null, mockDb));
-    await expect(caller.getPublic({ id: "company-1" })).resolves.toBeDefined();
+    await expect(caller.getPublic({ id: "business-1" })).resolves.toBeDefined();
   });
 
   it("works for a seeker caller", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx("SEEKER", mockDb));
-    await expect(caller.getPublic({ id: "company-1" })).resolves.toBeDefined();
+    await expect(caller.getPublic({ id: "business-1" })).resolves.toBeDefined();
   });
 
   it("includes _count.jobs", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 5 }]),
       }),
     });
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result._count.jobs).toBe(5);
   });
 
   it("returns employer.isResponsive: false and employer.isNew: true when owner has no employerProfile", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(
-      makePublicCompany({ owner: { id: "owner-1", employerProfile: null } }),
+    mockDb.query.business.findFirst.mockResolvedValue(
+      makePublicBusiness({ owner: { id: "owner-1", employerProfile: null } }),
     );
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result.employer.isResponsive).toBe(false);
     expect(result.employer.isNew).toBe(true);
   });
 
   it("returns employer.isNew: true when responsivenessUpdatedAt is null", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(
-      makePublicCompany({
+    mockDb.query.business.findFirst.mockResolvedValue(
+      makePublicBusiness({
         owner: {
           id: "owner-1",
           employerProfile: { isResponsive: false, responsivenessUpdatedAt: null },
@@ -158,54 +158,54 @@ describe("company.getPublic", () => {
       }),
     );
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result.employer.isNew).toBe(true);
   });
 
   it("returns employer.isNew: false when responsivenessUpdatedAt is set", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result.employer.isNew).toBe(false);
   });
 
   it("does NOT expose responseRate or medianResponseHours", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result).not.toHaveProperty("responseRate");
     expect(result).not.toHaveProperty("medianResponseHours");
   });
 
   it("returns null optional fields when not set", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(
-      makePublicCompany({ industry: null, website: null, aboutCompany: null, missionText: null }),
+    mockDb.query.business.findFirst.mockResolvedValue(
+      makePublicBusiness({ industry: null, website: null, aboutBusiness: null, missionText: null }),
     );
     const caller = createCaller(makeCtx(null, mockDb));
-    const result = await caller.getPublic({ id: "company-1" });
+    const result = await caller.getPublic({ id: "business-1" });
     expect(result.industry).toBeNull();
     expect(result.website).toBeNull();
   });
 
   it("throws NOT_FOUND for a non-existent id", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(null);
+    mockDb.query.business.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx(null, mockDb));
     await expect(caller.getPublic({ id: "does-not-exist" })).rejects.toMatchObject({
       code: "NOT_FOUND",
     });
   });
 
-  it("queries by company id, not ownerId", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(makePublicCompany());
+  it("queries by business id, not ownerId", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue(makePublicBusiness());
     const caller = createCaller(makeCtx(null, mockDb));
-    await caller.getPublic({ id: "company-1" });
-    expect(mockDb.query.company.findFirst).toHaveBeenCalled();
+    await caller.getPublic({ id: "business-1" });
+    expect(mockDb.query.business.findFirst).toHaveBeenCalled();
   });
 });
 
-// ── company.listMine ──────────────────────────────────────────────────────────
+// ── business.listMine ──────────────────────────────────────────────────────────
 
-describe("company.listMine", () => {
+describe("business.listMine", () => {
   let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
@@ -220,15 +220,15 @@ describe("company.listMine", () => {
     });
   });
 
-  it("returns empty array when employer has no companies", async () => {
-    mockDb.query.company.findMany.mockResolvedValue([]);
+  it("returns empty array when employer has no businesses", async () => {
+    mockDb.query.business.findMany.mockResolvedValue([]);
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     const result = await caller.listMine();
     expect(result).toEqual([]);
   });
 
-  it("returns all companies for the employer", async () => {
-    mockDb.query.company.findMany.mockResolvedValue([
+  it("returns all businesses for the employer", async () => {
+    mockDb.query.business.findMany.mockResolvedValue([
       { id: "c1", name: "Acme", city: "NYC", state: "NY" },
       { id: "c2", name: "Beta", city: "LA", state: "CA" },
     ]);
@@ -236,14 +236,14 @@ describe("company.listMine", () => {
     mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          groupBy: vi.fn().mockResolvedValue([{ companyId: "c1", count: 2 }]),
+          groupBy: vi.fn().mockResolvedValue([{ businessId: "c1", count: 2 }]),
         }),
       }),
     });
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     const result = await caller.listMine();
     expect(result).toHaveLength(2);
-    expect(result[0]).toMatchObject({ id: "c1", companyName: "Acme", activeJobsCount: 2 });
+    expect(result[0]).toMatchObject({ id: "c1", businessName: "Acme", activeJobsCount: 2 });
   });
 
   it("throws FORBIDDEN for a SEEKER", async () => {
@@ -256,17 +256,17 @@ describe("company.listMine", () => {
     await expect(caller.listMine()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 
-  it("filters by ownerId from session, not all companies", async () => {
-    mockDb.query.company.findMany.mockResolvedValue([]);
+  it("filters by ownerId from session, not all businesses", async () => {
+    mockDb.query.business.findMany.mockResolvedValue([]);
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-42"));
     await caller.listMine();
-    expect(mockDb.query.company.findMany).toHaveBeenCalled();
+    expect(mockDb.query.business.findMany).toHaveBeenCalled();
   });
 });
 
-// ── company.create ────────────────────────────────────────────────────────────
+// ── business.create ────────────────────────────────────────────────────────────
 
-describe("company.create", () => {
+describe("business.create", () => {
   let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
@@ -275,15 +275,15 @@ describe("company.create", () => {
       values: vi.fn().mockReturnValue({
         returning: vi
           .fn()
-          .mockResolvedValue([{ id: "company-1", ownerId: "user-1", name: "Acme Corp" }]),
+          .mockResolvedValue([{ id: "business-1", ownerId: "user-1", name: "Acme Corp" }]),
       }),
     });
   });
 
-  it("creates a company and returns it", async () => {
+  it("creates a business and returns it", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     const result = await caller.create(VALID_CREATE_INPUT);
-    expect(result).toMatchObject({ id: "company-1" });
+    expect(result).toMatchObject({ id: "business-1" });
   });
 
   it("always sets ownerId from session, not from input", async () => {
@@ -292,7 +292,7 @@ describe("company.create", () => {
       values: vi.fn().mockReturnValue({
         returning: vi
           .fn()
-          .mockResolvedValue([{ id: "company-1", ownerId: "user-42", name: "Acme Corp" }]),
+          .mockResolvedValue([{ id: "business-1", ownerId: "user-42", name: "Acme Corp" }]),
       }),
     });
     const result = await caller.create(VALID_CREATE_INPUT);
@@ -311,17 +311,17 @@ describe("company.create", () => {
     expect(mockDb.insert).toHaveBeenCalled();
   });
 
-  it("accepts aboutCompany at exactly 2000 chars", async () => {
+  it("accepts aboutBusiness at exactly 2000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(
-      caller.create({ ...VALID_CREATE_INPUT, aboutCompany: "a".repeat(2000) }),
+      caller.create({ ...VALID_CREATE_INPUT, aboutBusiness: "a".repeat(2000) }),
     ).resolves.toBeDefined();
   });
 
-  it("rejects aboutCompany longer than 2000 chars", async () => {
+  it("rejects aboutBusiness longer than 2000 chars", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(
-      caller.create({ ...VALID_CREATE_INPUT, aboutCompany: "a".repeat(2001) }),
+      caller.create({ ...VALID_CREATE_INPUT, aboutBusiness: "a".repeat(2001) }),
     ).rejects.toThrow(TRPCError);
   });
 
@@ -356,50 +356,50 @@ describe("company.create", () => {
 
   it("does not accept isAdult in input (isAdult now belongs to createProfile)", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
-    // isAdult is no longer part of CreateCompanySchema — extra fields are stripped
+    // isAdult is no longer part of CreateBusinessSchema — extra fields are stripped
     const inputWithAdult = { ...VALID_CREATE_INPUT, isAdult: true };
     await expect(caller.create(inputWithAdult)).resolves.toBeDefined();
   });
 });
 
-// ── company.update ────────────────────────────────────────────────────────────
+// ── business.update ────────────────────────────────────────────────────────────
 
-describe("company.update", () => {
+describe("business.update", () => {
   let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
     mockDb = makeMockDb();
-    mockDb.query.company.findFirst.mockResolvedValue({ ownerId: "user-1" });
+    mockDb.query.business.findFirst.mockResolvedValue({ ownerId: "user-1" });
     mockDb.update.mockReturnValue({
       set: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([{ id: "company-1", name: "Updated" }]),
+          returning: vi.fn().mockResolvedValue([{ id: "business-1", name: "Updated" }]),
         }),
       }),
     });
   });
 
-  it("updates the company and returns it", async () => {
+  it("updates the business and returns it", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     const result = await caller.update({
-      id: "company-1",
+      id: "business-1",
       name: "Updated",
       city: "NYC",
       state: "NY",
     });
-    expect(result).toMatchObject({ id: "company-1" });
+    expect(result).toMatchObject({ id: "business-1" });
   });
 
-  it("throws FORBIDDEN when company belongs to a different user", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue({ ownerId: "other-user" });
+  it("throws FORBIDDEN when business belongs to a different user", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue({ ownerId: "other-user" });
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
     await expect(
-      caller.update({ id: "company-1", name: "X", city: "NYC", state: "NY" }),
+      caller.update({ id: "business-1", name: "X", city: "NYC", state: "NY" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("throws NOT_FOUND when company does not exist", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(null);
+  it("throws NOT_FOUND when business does not exist", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(
       caller.update({ id: "missing", name: "X", city: "NYC", state: "NY" }),
@@ -409,19 +409,19 @@ describe("company.update", () => {
   it("throws FORBIDDEN for a SEEKER", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockDb));
     await expect(
-      caller.update({ id: "company-1", name: "X", city: "NYC", state: "NY" }),
+      caller.update({ id: "business-1", name: "X", city: "NYC", state: "NY" }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });
 
-// ── company.delete ────────────────────────────────────────────────────────────
+// ── business.delete ────────────────────────────────────────────────────────────
 
-describe("company.delete", () => {
+describe("business.delete", () => {
   let mockDb: ReturnType<typeof makeMockDb>;
 
   beforeEach(() => {
     mockDb = makeMockDb();
-    mockDb.query.company.findFirst.mockResolvedValue({ ownerId: "user-1" });
+    mockDb.query.business.findFirst.mockResolvedValue({ ownerId: "user-1" });
     // select for non-closed count: returns 0
     mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -430,43 +430,43 @@ describe("company.delete", () => {
     });
     mockDb.delete.mockReturnValue({
       where: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([{ id: "company-1" }]),
+        returning: vi.fn().mockResolvedValue([{ id: "business-1" }]),
       }),
     });
   });
 
-  it("deletes the company when no active jobs", async () => {
+  it("deletes the business when no active jobs", async () => {
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
-    await expect(caller.delete({ id: "company-1" })).resolves.toBeDefined();
+    await expect(caller.delete({ id: "business-1" })).resolves.toBeDefined();
     expect(mockDb.delete).toHaveBeenCalled();
   });
 
-  it("throws BAD_REQUEST when company has non-closed jobs", async () => {
+  it("throws BAD_REQUEST when business has non-closed jobs", async () => {
     mockDb.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([{ count: 2 }]),
       }),
     });
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
-    await expect(caller.delete({ id: "company-1" })).rejects.toMatchObject({
+    await expect(caller.delete({ id: "business-1" })).rejects.toMatchObject({
       code: "BAD_REQUEST",
     });
   });
 
-  it("throws FORBIDDEN when company belongs to a different user", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue({ ownerId: "other-user" });
+  it("throws FORBIDDEN when business belongs to a different user", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue({ ownerId: "other-user" });
     const caller = createCaller(makeCtx("EMPLOYER", mockDb, "user-1"));
-    await expect(caller.delete({ id: "company-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.delete({ id: "business-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("throws NOT_FOUND for a non-existent company", async () => {
-    mockDb.query.company.findFirst.mockResolvedValue(null);
+  it("throws NOT_FOUND for a non-existent business", async () => {
+    mockDb.query.business.findFirst.mockResolvedValue(null);
     const caller = createCaller(makeCtx("EMPLOYER", mockDb));
     await expect(caller.delete({ id: "missing" })).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
   it("throws FORBIDDEN for a SEEKER", async () => {
     const caller = createCaller(makeCtx("SEEKER", mockDb));
-    await expect(caller.delete({ id: "company-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.delete({ id: "business-1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 });

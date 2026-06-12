@@ -50,7 +50,7 @@ describe("anonymized profile fields", () => {
 
   it("genericises the employer profile and marks it DELETED", () => {
     expect(anonymizedEmployerProfileFields.status).toBe("DELETED");
-    expect(anonymizedEmployerProfileFields.roleAtCompany).toBeNull();
+    expect(anonymizedEmployerProfileFields.roleAtBusiness).toBeNull();
   });
 });
 

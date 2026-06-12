@@ -15,7 +15,7 @@ const participantWith = {
   with: {
     seekerProfile: { columns: { id: true, firstName: true, lastName: true, status: true } },
     employerProfile: { columns: { status: true } },
-    companies: {
+    businesses: {
       limit: 1,
       columns: { id: true, name: true },
     },
@@ -238,7 +238,7 @@ export const conversationRouter = createTRPCRouter({
             whatWereLookingFor: true,
           },
           with: {
-            company: {
+            business: {
               columns: { id: true, name: true },
               with: {
                 owner: {
@@ -265,10 +265,10 @@ export const conversationRouter = createTRPCRouter({
       ...convRest,
       job: job
         ? (() => {
-            const { company: co, ...jobRest } = job;
+            const { business: co, ...jobRest } = job;
             return {
               ...jobRest,
-              company: {
+              business: {
                 id: co.id,
                 name: co.name,
                 employer: {

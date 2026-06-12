@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1779282819845,
-      "tag": "0000_needy_joystick",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780920905782,
-      "tag": "0001_careful_deathstrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780930315610,
-      "tag": "0002_perfect_liz_osborn",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1781123294467,
-      "tag": "0003_eager_siren",
+      "when": 1781255227438,
+      "tag": "0000_complex_network",
       "breakpoints": true
     }
   ]

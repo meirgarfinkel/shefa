@@ -35,8 +35,8 @@
 
 - **Auth:** Google OAuth (Auth.js v5, JWT, DrizzleAdapter), role select, age-gated profiles.
 - **Seeker:** create/edit profile, browse + apply, own applications, public profile.
-- **Employer:** contact profile, company CRUD (multi-company), job CRUD/duplicate/pause/
-  close, applications + status, dashboard, public company/employer pages.
+- **Employer:** contact profile, business CRUD (multi-business), job CRUD/duplicate/pause/
+  close, applications + status, dashboard, public business/employer pages.
 - **Jobs:** public listing with filters, haversine geo radius search, sort; public detail.
 - **Messaging:** inbox, thread, send, read receipts, block/unblock, report; hybrid initiation.
   Application status (`REJECTED`/`CLOSED`) no longer gates messaging — threads stay open for
@@ -55,7 +55,7 @@
   triage (REVIEWED/ACTIONED/DISMISSED) and suspend/unsuspend. `admin` tRPC router.
 - **Suspension enforcement (new):** soft block — SUSPENDED users can log in and view own
   data, but cannot apply, post jobs, or start conversations, and are hidden from public
-  seeker/company/job views.
+  seeker/business/job views.
 - **Account deletion = soft delete (new):** `user.deleteAccount` → `softDeleteAccount`
   (`src/server/account.ts`). One atomic `db.batch`: scrubs User PII (`email` → unique
   non-routable placeholder, `name`/`phone`/`image` → null, sets `deletedAt`), closes the

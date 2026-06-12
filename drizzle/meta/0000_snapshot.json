@@ -1,5 +1,5 @@
 {
-  "id": "98e6ce1c-f733-45b3-b858-4415306817a9",
+  "id": "24759615-1f5b-4ffa-8da2-0acfb3c0c29e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -392,6 +392,12 @@
           "notNull": true,
           "default": false
         },
+        "deletedAt": {
+          "name": "deletedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "createdAt": {
           "name": "createdAt",
           "type": "timestamp with time zone",
@@ -634,8 +640,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.Company": {
-      "name": "Company",
+    "public.Business": {
+      "name": "Business",
       "schema": "",
       "columns": {
         "id": {
@@ -681,15 +687,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "companySize": {
-          "name": "companySize",
-          "type": "CompanySize",
+        "businessSize": {
+          "name": "businessSize",
+          "type": "BusinessSize",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
-        "aboutCompany": {
-          "name": "aboutCompany",
+        "aboutBusiness": {
+          "name": "aboutBusiness",
           "type": "varchar(2000)",
           "primaryKey": false,
           "notNull": false
@@ -702,8 +708,8 @@
         }
       },
       "indexes": {
-        "Company_ownerId_idx": {
-          "name": "Company_ownerId_idx",
+        "Business_ownerId_idx": {
+          "name": "Business_ownerId_idx",
           "columns": [
             {
               "expression": "ownerId",
@@ -719,9 +725,9 @@
         }
       },
       "foreignKeys": {
-        "Company_ownerId_User_id_fk": {
-          "name": "Company_ownerId_User_id_fk",
-          "tableFrom": "Company",
+        "Business_ownerId_User_id_fk": {
+          "name": "Business_ownerId_User_id_fk",
+          "tableFrom": "Business",
           "tableTo": "User",
           "columnsFrom": ["ownerId"],
           "columnsTo": ["id"],
@@ -731,8 +737,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "Company_ownerId_name_key": {
-          "name": "Company_ownerId_name_key",
+        "Business_ownerId_name_key": {
+          "name": "Business_ownerId_name_key",
           "nullsNotDistinct": false,
           "columns": ["ownerId", "name"]
         }
@@ -769,8 +775,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "roleAtCompany": {
-          "name": "roleAtCompany",
+        "roleAtBusiness": {
+          "name": "roleAtBusiness",
           "type": "varchar(200)",
           "primaryKey": false,
           "notNull": false
@@ -916,8 +922,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "companyId": {
-          "name": "companyId",
+        "businessId": {
+          "name": "businessId",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -1003,12 +1009,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "whatWeTeach": {
-          "name": "whatWeTeach",
-          "type": "varchar(1000)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "whatWereLookingFor": {
           "name": "whatWereLookingFor",
           "type": "varchar(1000)",
@@ -1033,6 +1033,12 @@
         "closedAt": {
           "name": "closedAt",
           "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hiredApplicationId": {
+          "name": "hiredApplicationId",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1179,11 +1185,11 @@
           "method": "btree",
           "with": {}
         },
-        "JobPosting_companyId_idx": {
-          "name": "JobPosting_companyId_idx",
+        "JobPosting_businessId_idx": {
+          "name": "JobPosting_businessId_idx",
           "columns": [
             {
-              "expression": "companyId",
+              "expression": "businessId",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1241,11 +1247,11 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "JobPosting_companyId_Company_id_fk": {
-          "name": "JobPosting_companyId_Company_id_fk",
+        "JobPosting_businessId_Business_id_fk": {
+          "name": "JobPosting_businessId_Business_id_fk",
           "tableFrom": "JobPosting",
-          "tableTo": "Company",
-          "columnsFrom": ["companyId"],
+          "tableTo": "Business",
+          "columnsFrom": ["businessId"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -1365,6 +1371,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "Application_seekerId_createdAt_idx": {
+          "name": "Application_seekerId_createdAt_idx",
+          "columns": [
+            {
+              "expression": "seekerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -1469,6 +1496,28 @@
         }
       },
       "indexes": {
+        "Conversation_seekerId_employerId_coldDm_key": {
+          "name": "Conversation_seekerId_employerId_coldDm_key",
+          "columns": [
+            {
+              "expression": "seekerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "employerId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"jobId\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "Conversation_seekerId_idx": {
           "name": "Conversation_seekerId_idx",
           "columns": [
@@ -1980,6 +2029,12 @@
           "notNull": true,
           "default": "'PER_MESSAGE'"
         },
+        "lastDigestSentAt": {
+          "name": "lastDigestSentAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "updatedAt": {
           "name": "updatedAt",
           "type": "timestamp with time zone",
@@ -2117,6 +2172,106 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.Feedback": {
+      "name": "Feedback",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "category": {
+          "name": "category",
+          "type": "FeedbackCategory",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "FeedbackStatus",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'OPEN'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "Feedback_status_idx": {
+          "name": "Feedback_status_idx",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "Feedback_userId_createdAt_idx": {
+          "name": "Feedback_userId_createdAt_idx",
+          "columns": [
+            {
+              "expression": "userId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "createdAt",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "Feedback_userId_User_id_fk": {
+          "name": "Feedback_userId_User_id_fk",
+          "tableFrom": "Feedback",
+          "tableTo": "User",
+          "columnsFrom": ["userId"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {
@@ -2125,8 +2280,8 @@
       "schema": "public",
       "values": ["SUBMITTED", "VIEWED", "REJECTED", "CLOSED"]
     },
-    "public.CompanySize": {
-      "name": "CompanySize",
+    "public.BusinessSize": {
+      "name": "BusinessSize",
       "schema": "public",
       "values": ["SIZE_1_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_PLUS"]
     },
@@ -2147,6 +2302,16 @@
         "BACHELOR",
         "GRADUATE"
       ]
+    },
+    "public.FeedbackCategory": {
+      "name": "FeedbackCategory",
+      "schema": "public",
+      "values": ["BUG", "IMPROVEMENT", "THANKS", "OTHER"]
+    },
+    "public.FeedbackStatus": {
+      "name": "FeedbackStatus",
+      "schema": "public",
+      "values": ["OPEN", "REVIEWED", "RESOLVED"]
     },
     "public.Industry": {
       "name": "Industry",
@@ -2204,7 +2369,7 @@
     "public.ProfileStatus": {
       "name": "ProfileStatus",
       "schema": "public",
-      "values": ["ACTIVE", "PAUSED", "SUSPENDED"]
+      "values": ["ACTIVE", "PAUSED", "SUSPENDED", "DELETED"]
     },
     "public.ReportStatus": {
       "name": "ReportStatus",

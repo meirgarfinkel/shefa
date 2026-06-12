@@ -1,10 +1,11 @@
 "use client";
 
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc/provider";
-import { CreateCompanySchema, type CreateCompanyInput } from "@/lib/schemas/employer";
+import { UpdateBusinessSchema, type UpdateBusinessInput } from "@/lib/schemas/employer";
 import {
   Form,
   FormControl,
@@ -25,10 +26,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { LocationPicker } from "@/components/ui/location-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui/page-header";
+import { LocationPicker } from "@/components/ui/location-picker";
 
-const COMPANY_SIZES = [
+const BUSINESS_SIZES = [
   { value: "SIZE_1_10", label: "1–10 employees" },
   { value: "SIZE_11_50", label: "11–50 employees" },
   { value: "SIZE_51_200", label: "51–200 employees" },
@@ -55,36 +64,60 @@ const INDUSTRIES = [
   { value: "OTHER", label: "Other" },
 ] as const;
 
-export default function CompanyNewPage() {
+type BusinessRecord = {
+  id: string;
+  name: string;
+  city: string;
+  state: string;
+  website: string | null;
+  industry: string | null;
+  businessSize: string | null;
+  aboutBusiness: string | null;
+  missionText: string | null;
+};
+
+function BusinessEditForm({ business }: { business: BusinessRecord }) {
   const router = useRouter();
+  const utils = trpc.useUtils();
+  const [saved, setSaved] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const { data: existingCompanies } = trpc.company.listMine.useQuery();
-  const isFirstCompany = (existingCompanies?.length ?? 0) === 0;
-
-  const form = useForm<CreateCompanyInput>({
-    resolver: zodResolver(CreateCompanySchema),
-    defaultValues: { name: "", city: "", state: "" },
+  const form = useForm<UpdateBusinessInput>({
+    resolver: zodResolver(UpdateBusinessSchema),
+    defaultValues: {
+      id: business.id,
+      name: business.name,
+      city: business.city,
+      state: business.state,
+      website: business.website ?? undefined,
+      industry: (business.industry ?? undefined) as UpdateBusinessInput["industry"],
+      businessSize: (business.businessSize ?? undefined) as UpdateBusinessInput["businessSize"],
+      aboutBusiness: business.aboutBusiness ?? undefined,
+      missionText: business.missionText ?? undefined,
+    },
   });
 
-  const createCompany = trpc.company.create.useMutation({
-    onSuccess: () => router.push("/employer/dashboard"),
+  const updateBusiness = trpc.business.update.useMutation({
+    onSuccess: () => {
+      void utils.business.getById.invalidate({ id: business.id });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    },
   });
 
-  function onSubmit(data: CreateCompanyInput) {
-    createCompany.mutate(data);
+  const deleteBusiness = trpc.business.delete.useMutation({
+    onSuccess: () => router.replace("/employer/dashboard"),
+  });
+
+  function onSubmit(data: UpdateBusinessInput) {
+    setSaved(false);
+    updateBusiness.mutate(data);
   }
 
   return (
     <div className="p-5">
       <Panel className="mx-auto max-w-2xl">
-        <PageHeader
-          title={isFirstCompany ? "Add your company" : "Add a company"}
-          description={
-            isFirstCompany
-              ? "Tell candidates about the company you're hiring for."
-              : "Add another company to post jobs under."
-          }
-        />
+        <PageHeader title={`Edit ${business.name}`} />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
@@ -95,7 +128,7 @@ export default function CompanyNewPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Company name <span className="text-danger">*</span>
+                      Business name <span className="text-danger">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input {...field} />
@@ -131,18 +164,18 @@ export default function CompanyNewPage() {
             <div className="mt-8 grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="companySize"
+                name="businessSize"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company size</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Business size</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="min-w-0">
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {COMPANY_SIZES.map((opt) => (
+                        {BUSINESS_SIZES.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
                           </SelectItem>
@@ -160,13 +193,13 @@ export default function CompanyNewPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Industry</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ""}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent align="start">
+                      <SelectContent>
                         {INDUSTRIES.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
@@ -187,17 +220,17 @@ export default function CompanyNewPage() {
             <div className="mt-8">
               <FormField
                 control={form.control}
-                name="aboutCompany"
+                name="aboutBusiness"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>About the company</FormLabel>
+                    <FormLabel>About the business</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         value={field.value ?? ""}
                         rows={4}
                         maxLength={2000}
-                        placeholder="e.g. We provide custom software solutions for any need."
+                        placeholder="We provide custom software solutions for any need."
                       />
                     </FormControl>
                     <FormMessage />
@@ -213,14 +246,14 @@ export default function CompanyNewPage() {
                 name="missionText"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Company values</FormLabel>
+                    <FormLabel>Business values</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         value={field.value ?? ""}
                         rows={3}
                         maxLength={1000}
-                        placeholder="e.g. We believe everyone deserves a shot."
+                        placeholder="We believe everyone deserves a shot."
                       />
                     </FormControl>
                     <FormMessage />
@@ -230,26 +263,80 @@ export default function CompanyNewPage() {
               />
             </div>
 
-            {createCompany.isError && (
+            {updateBusiness.isError && (
               <p className="text-danger text-sm">
-                {createCompany.error.message ?? "Something went wrong. Please try again."}
+                {updateBusiness.error.message ?? "Something went wrong. Please try again."}
               </p>
             )}
 
-            <Button
-              type="submit"
-              className="mt-5 px-10 text-nowrap"
-              disabled={createCompany.isPending}
-            >
-              {createCompany.isPending
-                ? "Creating…"
-                : isFirstCompany
-                  ? "Add company"
-                  : "Add another company"}
-            </Button>
+            <div className="mt-5 flex justify-between">
+              <span className="flex items-center gap-3">
+                <Button type="submit" disabled={updateBusiness.isPending}>
+                  {updateBusiness.isPending ? "Saving…" : "Save changes"}
+                </Button>
+                {saved && <p className="text-success text-sm">Saved.</p>}
+              </span>
+              <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
+                Delete business
+              </Button>
+            </div>
           </form>
         </Form>
+
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete business?</DialogTitle>
+              <DialogDescription>
+                This will permanently delete <span className="font-medium">{business.name}</span>{" "}
+                and all its job postings. (This cannot be undone!)
+              </DialogDescription>
+            </DialogHeader>
+            {deleteBusiness.isError && (
+              <p className="text-danger text-sm">
+                {deleteBusiness.error.message ?? "Something went wrong."}
+              </p>
+            )}
+            <DialogFooter>
+              <Button
+                variant="ghost"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleteBusiness.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteBusiness.mutate({ id: business.id })}
+                disabled={deleteBusiness.isPending}
+              >
+                {deleteBusiness.isPending ? "Deleting…" : "Yes, delete business"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Panel>
     </div>
   );
+}
+
+export default function BusinessEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const { data: business, isLoading } = trpc.business.getById.useQuery({ id });
+
+  if (isLoading) {
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Keep growing.</div>
+    );
+  }
+
+  if (!business) {
+    return (
+      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
+        Business not found.
+      </div>
+    );
+  }
+
+  return <BusinessEditForm business={business} />;
 }

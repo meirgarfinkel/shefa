@@ -37,9 +37,9 @@ function timeAgo(date: Date | string): string {
   return `${days}d ago`;
 }
 
-type Company = {
+type Business = {
   id: string;
-  companyName: string;
+  businessName: string;
   city: string;
   state: string;
   activeJobsCount: number;
@@ -53,10 +53,10 @@ type Profile = {
 
 export function EmployerDashboardClient({
   profile,
-  companies,
+  businesses,
 }: {
   profile: Profile;
-  companies: Company[];
+  businesses: Business[];
 }) {
   const listInput = {
     myJobs: true,
@@ -83,25 +83,25 @@ export function EmployerDashboardClient({
     onSettled: () => void utils.jobPosting.list.invalidate(),
   });
 
-  // All companies selected by default; unchecking narrows the active jobs list.
+  // All businesses selected by default; unchecking narrows the active jobs list.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(
-    () => new Set(companies.map((c) => c.id)),
+    () => new Set(businesses.map((c) => c.id)),
   );
   const [closingJob, setClosingJob] = useState<{ id: string; title: string } | null>(null);
 
   const activeJobs = jobs ?? [];
   const appFeed = recentApps ?? [];
-  const multiCompany = companies.length > 1;
-  const allSelected = selectedIds.size === companies.length;
+  const multiBusiness = businesses.length > 1;
+  const allSelected = selectedIds.size === businesses.length;
   const router = useRouter();
 
   const filteredJobs = allSelected
     ? activeJobs
-    : activeJobs.filter((job) => selectedIds.has(job.company.id));
+    : activeJobs.filter((job) => selectedIds.has(job.business.id));
 
-  function toggleCompany(id: string) {
+  function toggleBusiness(id: string) {
     setSelectedIds((prev) => {
-      // Prevent deselecting the last company.
+      // Prevent deselecting the last business.
       if (prev.has(id) && prev.size === 1) return prev;
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -150,33 +150,33 @@ export function EmployerDashboardClient({
           </Link>
         </Button>
         <Button asChild variant="light">
-          <Link href="/employer/company/new">
+          <Link href="/employer/business/new">
             <PlusIcon className="mr-1 size-4" />
-            Add company
+            Add business
           </Link>
         </Button>
 
-        {/* My companies modal */}
+        {/* My businesses modal */}
         <Dialog>
           <DialogTrigger asChild>
             <Button variant="light">
               <BuildingIcon className="mr-1 size-4" />
-              My companies
+              My businesses
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="mt-5 text-xl">My companies</DialogTitle>
+              <DialogTitle className="mt-5 text-xl">My businesses</DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-2">
-              {companies.map((c) => (
+              {businesses.map((c) => (
                 <div
                   key={c.id}
                   className="flex cursor-pointer items-center justify-between gap-3 rounded-md bg-white/70 px-4 py-3 hover:bg-white/90"
-                  onClick={() => router.push(`/employer/company/${c.id}/edit`)}
+                  onClick={() => router.push(`/employer/business/${c.id}/edit`)}
                 >
                   <div className="text-popover min-w-0 flex-1">
-                    <p className="truncate text-lg font-medium">{c.companyName}</p>
+                    <p className="truncate text-lg font-medium">{c.businessName}</p>
 
                     <div className="flex justify-between">
                       <div>
@@ -204,26 +204,26 @@ export function EmployerDashboardClient({
                 </span>
               </h2>
 
-              {multiCompany && (
+              {multiBusiness && (
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     asChild
                     className="from-primary/40 bg-linear-to-t via-transparent to-transparent"
                   >
                     <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
-                      Companies
+                      Businesses
                     </FilterTrigger>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuLabel>Filter by company</DropdownMenuLabel>
-                    {companies.map((c) => (
+                    <DropdownMenuLabel>Filter by business</DropdownMenuLabel>
+                    {businesses.map((c) => (
                       <DropdownMenuCheckboxItem
                         key={c.id}
                         checked={selectedIds.has(c.id)}
-                        onCheckedChange={() => toggleCompany(c.id)}
+                        onCheckedChange={() => toggleBusiness(c.id)}
                         onSelect={(e) => e.preventDefault()}
                       >
-                        {c.companyName}
+                        {c.businessName}
                       </DropdownMenuCheckboxItem>
                     ))}
                   </DropdownMenuContent>
@@ -270,7 +270,7 @@ export function EmployerDashboardClient({
                         </Button>
                       </div>
                       <p className="text-muted-foreground mt-0.5 text-xs">
-                        {multiCompany && <> {job.company.name}</>}
+                        {multiBusiness && <> {job.business.name}</>}
                         {" · "} {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
                       </p>
                     </div>
@@ -336,7 +336,7 @@ export function EmployerDashboardClient({
                 {appFeed.map((app) => {
                   const name =
                     `${app.seeker.seekerProfile?.firstName ?? ""} ${app.seeker.seekerProfile?.lastName ?? ""}`.trim();
-                  const subtitle = [app.job.title, multiCompany ? app.job.company.name : null]
+                  const subtitle = [app.job.title, multiBusiness ? app.job.business.name : null]
                     .filter(Boolean)
                     .join(" · ");
 

@@ -102,7 +102,7 @@ safe to `/clear`. After major architecture changes, follow the Graphify + Handof
   must stay Edge-safe — import only `auth.config.ts` and Next built-ins, **never** `@/auth`
   or `@/db`.
 - **Role checks and onboarding redirects live in server component layouts / page
-  wrappers** (e.g. `employer`/`seeker` layouts, the `(needs-company)` group), using
+  wrappers** (e.g. `employer`/`seeker` layouts, the `(needs-business)` group), using
   `auth()` from `@/auth`. `auth()` is server-only — never in client components or middleware.
 - Protecting a new route = add its prefix to the middleware `matcher` **and** add a role
   check in its server layout. Never add client-side guards.

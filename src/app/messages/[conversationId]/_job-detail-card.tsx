@@ -23,7 +23,7 @@ export type ConvJob = {
   scheduleNotes: string | null;
   description: string;
   whatWereLookingFor: string | null;
-  company: {
+  business: {
     id: string;
     name: string;
     employer: { isResponsive: boolean; isNew: boolean };
@@ -39,18 +39,18 @@ export function JobDetailCard({ job }: { job: ConvJob }) {
       <div className="flex flex-wrap items-start justify-between gap-2">
         <CardTitle>{job.title}</CardTitle>
         <ResponsiveBadge
-          isResponsive={job.company.employer.isResponsive}
-          isNew={job.company.employer.isNew}
+          isResponsive={job.business.employer.isResponsive}
+          isNew={job.business.employer.isNew}
         />
       </div>
       <CardDescription>
         <div className="my-5">
           <Link
-            href={`/company/${job.company.id}`}
+            href={`/business/${job.business.id}`}
             className="hover:text-orange flex items-center gap-1 font-medium"
           >
             <Building className="text-message-green size-4" strokeWidth={2.5} />
-            {job.company.name}
+            {job.business.name}
           </Link>
         </div>
       </CardDescription>

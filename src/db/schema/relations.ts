@@ -1,7 +1,7 @@
 import { relations } from "drizzle-orm";
 import { users, accounts, sessions } from "./auth";
 import { seekerProfile, seekerLanguage } from "./seeker";
-import { employerProfile, company } from "./employer";
+import { employerProfile, business } from "./employer";
 import { jobPosting, jobLanguage } from "./job";
 import { application } from "./application";
 import { conversation, message } from "./conversation";
@@ -23,7 +23,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     fields: [users.id],
     references: [employerProfile.userId],
   }),
-  companies: many(company),
+  businesses: many(business),
   notificationPrefs: one(notificationPreferences, {
     fields: [users.id],
     references: [notificationPreferences.userId],
@@ -67,14 +67,14 @@ export const employerProfileRelations = relations(employerProfile, ({ one }) => 
   user: one(users, { fields: [employerProfile.userId], references: [users.id] }),
 }));
 
-export const companyRelations = relations(company, ({ one, many }) => ({
-  owner: one(users, { fields: [company.ownerId], references: [users.id] }),
+export const businessRelations = relations(business, ({ one, many }) => ({
+  owner: one(users, { fields: [business.ownerId], references: [users.id] }),
   jobs: many(jobPosting),
 }));
 
 export const jobPostingRelations = relations(jobPosting, ({ one, many }) => ({
   employer: one(users, { fields: [jobPosting.employerId], references: [users.id] }),
-  company: one(company, { fields: [jobPosting.companyId], references: [company.id] }),
+  business: one(business, { fields: [jobPosting.businessId], references: [business.id] }),
   requiredLanguages: many(jobLanguage),
   applications: many(application),
   conversations: many(conversation),

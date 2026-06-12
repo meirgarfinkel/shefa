@@ -23,7 +23,7 @@ import type { DbClient } from "@/db";
 import {
   jobPosting,
   jobLanguage,
-  company,
+  business,
   state,
   city,
   application,
@@ -55,15 +55,15 @@ export const jobPostingRouter = createTRPCRouter({
 
     await assertActorActive(ctx.db, ctx.user.id, ctx.user.role);
 
-    const co = await ctx.db.query.company.findFirst({
-      where: eq(company.id, input.companyId),
+    const co = await ctx.db.query.business.findFirst({
+      where: eq(business.id, input.businessId),
       columns: { id: true, ownerId: true },
     });
     if (!co || co.ownerId !== ctx.user.id) {
-      throw new TRPCError({ code: "NOT_FOUND", message: "Company not found" });
+      throw new TRPCError({ code: "NOT_FOUND", message: "Business not found" });
     }
 
-    const { companyId, requiredLanguageIds, ...fields } = input;
+    const { businessId, requiredLanguageIds, ...fields } = input;
     const coords = await lookupCityCoords(ctx.db, fields.city, fields.state);
     if (!coords) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid city/state" });
@@ -75,7 +75,7 @@ export const jobPostingRouter = createTRPCRouter({
         ...fields,
         minHourlyRate: String(fields.minHourlyRate),
         employerId: ctx.user.id,
-        companyId,
+        businessId,
         lat: coords.lat,
         lon: coords.lon,
       })
@@ -95,9 +95,9 @@ export const jobPostingRouter = createTRPCRouter({
     if (ctx.session?.user?.role === "EMPLOYER") {
       if (input.myJobs) {
         isOwnerQuery = true;
-      } else if (input.companyId) {
-        const co = await ctx.db.query.company.findFirst({
-          where: and(eq(company.id, input.companyId), eq(company.ownerId, ctx.session.user.id!)),
+      } else if (input.businessId) {
+        const co = await ctx.db.query.business.findFirst({
+          where: and(eq(business.id, input.businessId), eq(business.ownerId, ctx.session.user.id!)),
           columns: { id: true },
         });
         isOwnerQuery = !!co;
@@ -150,7 +150,7 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     const conditions = [
-      input.companyId ? eq(jobPosting.companyId, input.companyId) : undefined,
+      input.businessId ? eq(jobPosting.businessId, input.businessId) : undefined,
       input.myJobs && ctx.session?.user?.id
         ? eq(jobPosting.employerId, ctx.session.user.id)
         : undefined,
@@ -195,7 +195,7 @@ export const jobPostingRouter = createTRPCRouter({
       where: whereClause,
       with: {
         requiredLanguages: { with: { language: true } },
-        company: { columns: { id: true, name: true, city: true, state: true } },
+        business: { columns: { id: true, name: true, city: true, state: true } },
       },
       orderBy: desc(jobPosting.createdAt),
       limit: LIST_LIMIT,
@@ -232,7 +232,7 @@ export const jobPostingRouter = createTRPCRouter({
       where: eq(jobPosting.id, input.id),
       with: {
         requiredLanguages: { with: { language: true } },
-        company: {
+        business: {
           columns: { id: true, name: true, city: true, state: true, industry: true },
           with: {
             owner: {
@@ -255,14 +255,14 @@ export const jobPostingRouter = createTRPCRouter({
       throw new TRPCError({ code: "NOT_FOUND" });
     }
     // Hide jobs of suspended employers from everyone but the owner.
-    if (posting.company.owner.employerProfile?.status === "SUSPENDED" && !isOwner) {
+    if (posting.business.owner.employerProfile?.status === "SUSPENDED" && !isOwner) {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
 
-    const { company: co, ...rest } = posting;
+    const { business: co, ...rest } = posting;
     return {
       ...rest,
-      company: {
+      business: {
         id: co.id,
         name: co.name,
         city: co.city,
@@ -362,7 +362,7 @@ export const jobPostingRouter = createTRPCRouter({
         where: inArray(jobPosting.id, ids),
         with: {
           requiredLanguages: { with: { language: true } },
-          company: { columns: { id: true, name: true, city: true, state: true } },
+          business: { columns: { id: true, name: true, city: true, state: true } },
         },
       });
 

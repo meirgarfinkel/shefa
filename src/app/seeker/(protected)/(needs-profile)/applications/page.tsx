@@ -67,7 +67,7 @@ export default function SeekerApplicationsPage() {
                     <AppStatusBadge status={app.status} />
                   </div>
                   <CardDescription>
-                    {app.job.company.name} · {app.job.city}, {app.job.state}
+                    {app.job.business.name} · {app.job.city}, {app.job.state}
                   </CardDescription>
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">

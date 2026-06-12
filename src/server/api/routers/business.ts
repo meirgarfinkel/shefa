@@ -2,13 +2,13 @@ import { z } from "zod";
 import { eq, and, ne, count, asc, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure, publicProcedure } from "@/server/api/trpc";
-import { CreateCompanySchema, UpdateCompanySchema } from "@/lib/schemas/employer";
-import { company, jobPosting } from "@/db/schema";
+import { CreateBusinessSchema, UpdateBusinessSchema } from "@/lib/schemas/employer";
+import { business, jobPosting } from "@/db/schema";
 
-export const companyRouter = createTRPCRouter({
+export const businessRouter = createTRPCRouter({
   getPublic: publicProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
-    const co = await ctx.db.query.company.findFirst({
-      where: eq(company.id, input.id),
+    const co = await ctx.db.query.business.findFirst({
+      where: eq(business.id, input.id),
       columns: {
         id: true,
         name: true,
@@ -16,7 +16,7 @@ export const companyRouter = createTRPCRouter({
         state: true,
         industry: true,
         website: true,
-        aboutCompany: true,
+        aboutBusiness: true,
         missionText: true,
       },
       with: {
@@ -31,7 +31,7 @@ export const companyRouter = createTRPCRouter({
       },
     });
     if (!co) throw new TRPCError({ code: "NOT_FOUND" });
-    // Hide companies owned by suspended employers from public view (moderation).
+    // Hide businesses owned by suspended employers from public view (moderation).
     if (co.owner.employerProfile?.status === "SUSPENDED") {
       throw new TRPCError({ code: "NOT_FOUND" });
     }
@@ -39,16 +39,16 @@ export const companyRouter = createTRPCRouter({
     const [activeJobsRow] = await ctx.db
       .select({ count: count() })
       .from(jobPosting)
-      .where(and(eq(jobPosting.companyId, input.id), eq(jobPosting.status, "ACTIVE")));
+      .where(and(eq(jobPosting.businessId, input.id), eq(jobPosting.status, "ACTIVE")));
 
     return {
       id: co.id,
-      companyName: co.name,
+      businessName: co.name,
       city: co.city,
       state: co.state,
       industry: co.industry,
       website: co.website,
-      aboutCompany: co.aboutCompany,
+      aboutBusiness: co.aboutBusiness,
       missionText: co.missionText,
       employer: {
         isResponsive: co.owner.employerProfile?.isResponsive ?? false,
@@ -62,26 +62,26 @@ export const companyRouter = createTRPCRouter({
   listMine: protectedProcedure.query(async ({ ctx }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
 
-    const companies = await ctx.db.query.company.findMany({
-      where: eq(company.ownerId, ctx.user.id),
-      orderBy: asc(company.name),
+    const businesses = await ctx.db.query.business.findMany({
+      where: eq(business.ownerId, ctx.user.id),
+      orderBy: asc(business.name),
       columns: { id: true, name: true, city: true, state: true },
     });
 
-    if (companies.length === 0) return [];
+    if (businesses.length === 0) return [];
 
-    const companyIds = companies.map((c) => c.id);
+    const businessIds = businesses.map((c) => c.id);
     const countRows = await ctx.db
-      .select({ companyId: jobPosting.companyId, count: count() })
+      .select({ businessId: jobPosting.businessId, count: count() })
       .from(jobPosting)
-      .where(and(eq(jobPosting.status, "ACTIVE"), inArray(jobPosting.companyId, companyIds)))
-      .groupBy(jobPosting.companyId);
+      .where(and(eq(jobPosting.status, "ACTIVE"), inArray(jobPosting.businessId, businessIds)))
+      .groupBy(jobPosting.businessId);
 
-    const countMap = new Map(countRows.map((r) => [r.companyId, r.count]));
+    const countMap = new Map(countRows.map((r) => [r.businessId, r.count]));
 
-    return companies.map((c) => ({
+    return businesses.map((c) => ({
       id: c.id,
-      companyName: c.name,
+      businessName: c.name,
       city: c.city,
       state: c.state,
       activeJobsCount: countMap.get(c.id) ?? 0,
@@ -90,31 +90,35 @@ export const companyRouter = createTRPCRouter({
 
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-    const co = await ctx.db.query.company.findFirst({ where: eq(company.id, input.id) });
+    const co = await ctx.db.query.business.findFirst({ where: eq(business.id, input.id) });
     if (!co) throw new TRPCError({ code: "NOT_FOUND" });
     if (co.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
     return co;
   }),
 
-  create: protectedProcedure.input(CreateCompanySchema).mutation(async ({ ctx, input }) => {
+  create: protectedProcedure.input(CreateBusinessSchema).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
     const [created] = await ctx.db
-      .insert(company)
+      .insert(business)
       .values({ ...input, ownerId: ctx.user.id })
       .returning();
     return created!;
   }),
 
-  update: protectedProcedure.input(UpdateCompanySchema).mutation(async ({ ctx, input }) => {
+  update: protectedProcedure.input(UpdateBusinessSchema).mutation(async ({ ctx, input }) => {
     if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
     const { id, ...data } = input;
-    const co = await ctx.db.query.company.findFirst({
-      where: eq(company.id, id),
+    const co = await ctx.db.query.business.findFirst({
+      where: eq(business.id, id),
       columns: { ownerId: true },
     });
     if (!co) throw new TRPCError({ code: "NOT_FOUND" });
     if (co.ownerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
-    const [updated] = await ctx.db.update(company).set(data).where(eq(company.id, id)).returning();
+    const [updated] = await ctx.db
+      .update(business)
+      .set(data)
+      .where(eq(business.id, id))
+      .returning();
     return updated!;
   }),
 
@@ -122,8 +126,8 @@ export const companyRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "EMPLOYER") throw new TRPCError({ code: "FORBIDDEN" });
-      const co = await ctx.db.query.company.findFirst({
-        where: eq(company.id, input.id),
+      const co = await ctx.db.query.business.findFirst({
+        where: eq(business.id, input.id),
         columns: { ownerId: true },
       });
       if (!co) throw new TRPCError({ code: "NOT_FOUND" });
@@ -132,16 +136,16 @@ export const companyRouter = createTRPCRouter({
       const [nonClosedRow] = await ctx.db
         .select({ count: count() })
         .from(jobPosting)
-        .where(and(eq(jobPosting.companyId, input.id), ne(jobPosting.status, "CLOSED")));
+        .where(and(eq(jobPosting.businessId, input.id), ne(jobPosting.status, "CLOSED")));
 
       if ((nonClosedRow?.count ?? 0) > 0) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Close all active job postings before deleting this company",
+          message: "Close all active job postings before deleting this business",
         });
       }
 
-      const [deleted] = await ctx.db.delete(company).where(eq(company.id, input.id)).returning();
+      const [deleted] = await ctx.db.delete(business).where(eq(business.id, input.id)).returning();
       return deleted!;
     }),
 });

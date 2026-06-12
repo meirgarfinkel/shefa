@@ -8,7 +8,7 @@ type SurfaceProps = React.ComponentProps<"div"> & {
 
 /**
  * Read-only content panel — the glassmorphism surface used to display values
- * (job descriptions, profile bios, company info, etc.).
+ * (job descriptions, profile bios, business info, etc.).
  */
 export function Surface({ className, variant = "default", prose, ...props }: SurfaceProps) {
   return (

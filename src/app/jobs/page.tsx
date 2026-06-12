@@ -61,10 +61,10 @@ function JobsContent() {
   const { data: seekerProfile } = trpc.seeker.getMyProfile.useQuery(undefined, {
     enabled: session?.user?.role === "SEEKER",
   });
-  const { data: myCompanies } = trpc.company.listMine.useQuery(undefined, {
+  const { data: myBusinesses } = trpc.business.listMine.useQuery(undefined, {
     enabled: session?.user?.role === "EMPLOYER",
   });
-  const employerProfile = myCompanies?.[0];
+  const employerProfile = myBusinesses?.[0];
 
   const searchParamsRef = useRef(searchParams);
   searchParamsRef.current = searchParams;
@@ -367,7 +367,7 @@ function JobsContent() {
                   workArrangement={job.workArrangement}
                   minHourlyRate={Number(job.minHourlyRate)}
                   status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
-                  companyName={job.company.name}
+                  businessName={job.business.name}
                   href={`/jobs/${job.id}`}
                   applicationCount={job._count.applications}
                 />

@@ -38,7 +38,7 @@ const AUDIENCES = [
     label: "Looking for a dedicated worker?",
     title: "Hire for potential, post for free",
     description:
-      "Post jobs under your company and reach motivated candidates eager to learn. Find people for who they can become, not just what's on paper.",
+      "Post jobs under your business and reach motivated candidates eager to learn. Find people for who they can become, not just what's on paper.",
   },
 ] as const;
 
