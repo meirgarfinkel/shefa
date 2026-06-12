@@ -17,99 +17,14 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { z } from "zod";
-import { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
 import { CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { pluralize } from "@/lib/utils";
-
-type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
-
-const CLOSURE_OPTIONS: { value: JobClosureReason; label: string }[] = [
-  { value: "FILLED_ON_SHEFA", label: "Position filled from Shefa" },
-  { value: "FILLED_ELSEWHERE", label: "Position filled from somewhere else" },
-  { value: "HIRING_FROZEN", label: "Hiring paused/frozen" },
-  { value: "CANCELLED", label: "Role cancelled" },
-  { value: "OTHER", label: "Other" },
-];
-
-function CloseJobModal({
-  jobId,
-  jobTitle,
-  open,
-  onClose,
-}: {
-  jobId: string;
-  jobTitle: string;
-  open: boolean;
-  onClose: () => void;
-}) {
-  const [reason, setReason] = useState<JobClosureReason | null>(null);
-  const utils = trpc.useUtils();
-
-  const closeJob = trpc.jobPosting.close.useMutation({
-    onSuccess: () => {
-      void utils.jobPosting.list.invalidate();
-      setReason(null);
-      onClose();
-    },
-  });
-
-  function handleClose() {
-    setReason(null);
-    onClose();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Close &ldquo;{jobTitle}&rdquo;?</DialogTitle>
-        </DialogHeader>
-
-        <p className="text-muted-foreground text-sm">Why are you closing this listing?</p>
-
-        <div className="space-y-2">
-          {CLOSURE_OPTIONS.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors duration-100 ${
-                reason === opt.value ? "bg-blue-dark-2" : "hover:bg-blue-dark-3"
-              }`}
-            >
-              <input
-                type="radio"
-                name={`closureReason-${jobId}`}
-                value={opt.value}
-                checked={reason === opt.value}
-                onChange={() => setReason(opt.value)}
-              />
-              <span className="text-sm">{opt.label}</span>
-            </label>
-          ))}
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={handleClose} disabled={closeJob.isPending}>
-            Cancel
-          </Button>
-          <Button
-            className="bg-danger/15 text-danger hover:bg-danger/25 transition-colors duration-100"
-            disabled={!reason || closeJob.isPending}
-            onClick={() => reason && closeJob.mutate({ id: jobId, reason })}
-          >
-            {closeJob.isPending ? "Closing…" : "Close listing"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+import { pluralize, getInitials } from "@/lib/utils";
+import { CloseJobModal } from "@/components/close-job-modal";
 
 function timeAgo(date: Date | string): string {
   const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
@@ -214,7 +129,7 @@ export function EmployerDashboardClient({
             </TooltipTrigger>
 
             <TooltipContent>
-              <p>Responsiveness Rating</p>
+              <p>Responsiveness rating</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -225,7 +140,7 @@ export function EmployerDashboardClient({
         <Button asChild>
           <Link href="/employer/jobs/new">
             <BriefcaseIcon className="mr-1 size-4" />
-            Post A Job
+            Post a job
           </Link>
         </Button>
         <Button asChild>
@@ -237,7 +152,7 @@ export function EmployerDashboardClient({
         <Button asChild variant="light">
           <Link href="/employer/company/new">
             <PlusIcon className="mr-1 size-4" />
-            Add Company
+            Add company
           </Link>
         </Button>
 
@@ -246,7 +161,7 @@ export function EmployerDashboardClient({
           <DialogTrigger asChild>
             <Button variant="light">
               <BuildingIcon className="mr-1 size-4" />
-              My Companies
+              My companies
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
@@ -283,7 +198,7 @@ export function EmployerDashboardClient({
           <div className="mb-3 flex shrink-0 items-center justify-between">
             <div className="flex items-center gap-2">
               <h2 className="font-medium">
-                Active Jobs{" "}
+                Active jobs{" "}
                 <span className="bg-primary/30 text-popover rounded-full px-2 py-1.5 text-center">
                   {filteredJobs.length}
                 </span>
@@ -300,7 +215,7 @@ export function EmployerDashboardClient({
                     </FilterTrigger>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuLabel>Filter by Company</DropdownMenuLabel>
+                    <DropdownMenuLabel>Filter by company</DropdownMenuLabel>
                     {companies.map((c) => (
                       <DropdownMenuCheckboxItem
                         key={c.id}
@@ -320,7 +235,7 @@ export function EmployerDashboardClient({
               href="/employer/jobs"
               className="hover:text-orange text-sm transition-colors duration-100"
             >
-              View All →
+              View all →
             </Link>
           </div>
 
@@ -389,8 +304,7 @@ export function EmployerDashboardClient({
                       </div>
                       <Button
                         size="sm"
-                        variant="light"
-                        className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
+                        variant="destructive"
                         disabled={updateJob.isPending}
                         onClick={(e) => {
                           e.preventDefault();
@@ -409,8 +323,8 @@ export function EmployerDashboardClient({
         </div>
 
         {/* New applicants */}
-        <div className="flex flex-col lg:min-h-0">
-          <h2 className="mb-3 shrink-0 font-medium">New Applicants</h2>
+        <div className="mt-1 flex flex-col lg:min-h-0">
+          <h2 className="mb-4 shrink-0 font-medium">New applicants</h2>
 
           <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {appFeed.length === 0 ? (
@@ -418,28 +332,36 @@ export function EmployerDashboardClient({
                 <p className="text-muted-foreground text-sm">No applicants yet.</p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-lg pb-4">
-                {appFeed.map((app) => (
-                  <div
-                    key={app.id}
-                    className="hover:bg-primary/30 flex items-center justify-between gap-3 px-4 py-3 transition-colors duration-100"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">
-                        {app.seeker.seekerProfile?.firstName} {app.seeker.seekerProfile?.lastName}
-                      </p>
-                      <p className="text-muted-foreground text-xs">
-                        {app.job.title}
-                        {multiCompany && <> · {app.job.company.name}</>}
-                        {" · "}
-                        {timeAgo(app.createdAt)}
-                      </p>
-                    </div>
-                    <Button asChild size="sm" variant="light" className="h-7 shrink-0 text-xs">
-                      <Link href={`/employer/jobs/${app.jobId}/applications`}>View</Link>
-                    </Button>
-                  </div>
-                ))}
+              <div className="overflow-hidden rounded-md pb-4">
+                {appFeed.map((app) => {
+                  const name =
+                    `${app.seeker.seekerProfile?.firstName ?? ""} ${app.seeker.seekerProfile?.lastName ?? ""}`.trim();
+                  const subtitle = [app.job.title, multiCompany ? app.job.company.name : null]
+                    .filter(Boolean)
+                    .join(" · ");
+
+                  return (
+                    <Link key={app.id} href={`/employer/jobs/${app.jobId}/applications`}>
+                      <div className="bg-card/50 hover:bg-card/10 mb-3 flex cursor-pointer items-center gap-3 rounded-md p-3 transition-colors duration-100 hover:shadow-sm">
+                        {/* Avatar */}
+                        <div className="bg-blue-dark-3 flex size-9 shrink-0 items-center justify-center rounded-full border border-white pl-0.5">
+                          <span className="text-md font-medium text-white">
+                            {getInitials(name)}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-lg font-medium">{name}</p>
+                          <p className="truncate text-sm">{subtitle}</p>
+                        </div>
+
+                        {/* Time */}
+                        <span className="shrink-0 text-sm">{timeAgo(app.createdAt)}</span>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </div>

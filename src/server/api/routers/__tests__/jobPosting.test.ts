@@ -14,6 +14,7 @@ function makeMockDb() {
       company: { findFirst: vi.fn(), findMany: vi.fn() },
       jobPosting: { findFirst: vi.fn(), findMany: vi.fn() },
       employerProfile: { findFirst: vi.fn(), findMany: vi.fn() },
+      application: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
@@ -686,6 +687,65 @@ describe("jobPosting.close", () => {
     expect(setSpy).toHaveBeenCalledWith(expect.objectContaining({ status: "CLOSED" }));
   });
 
+  // ── Hire recording (FILLED_ON_SHEFA) ──
+
+  it("records hiredApplicationId when FILLED_ON_SHEFA names a valid applicant", async () => {
+    const setSpy = vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: JOB_ID, status: "CLOSED" }]),
+      }),
+    });
+    db.update.mockReturnValue({ set: setSpy });
+    db.query.application.findFirst.mockResolvedValue({
+      id: "app-1",
+      jobId: JOB_ID,
+      status: "VIEWED",
+    });
+
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await caller.close({ id: JOB_ID, reason: "FILLED_ON_SHEFA", hiredApplicationId: "app-1" });
+
+    expect(setSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ status: "CLOSED", hiredApplicationId: "app-1" }),
+    );
+  });
+
+  it("ignores hiredApplicationId when reason is not FILLED_ON_SHEFA", async () => {
+    const setSpy = vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: JOB_ID, status: "CLOSED" }]),
+      }),
+    });
+    db.update.mockReturnValue({ set: setSpy });
+
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await caller.close({ id: JOB_ID, reason: "FILLED_ELSEWHERE", hiredApplicationId: "app-1" });
+
+    expect(setSpy).toHaveBeenCalledWith(expect.objectContaining({ hiredApplicationId: null }));
+    // No application lookup needed when the reason isn't a Shefa hire.
+    expect(db.query.application.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("BAD_REQUEST when the named application does not belong to the job", async () => {
+    db.query.application.findFirst.mockResolvedValue(undefined);
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await expect(
+      caller.close({ id: JOB_ID, reason: "FILLED_ON_SHEFA", hiredApplicationId: "foreign" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
+  it("BAD_REQUEST when the named application is REJECTED", async () => {
+    db.query.application.findFirst.mockResolvedValue({
+      id: "app-1",
+      jobId: JOB_ID,
+      status: "REJECTED",
+    });
+    const caller = createCaller(makeCtx("EMPLOYER", db, EMPLOYER_USER_ID));
+    await expect(
+      caller.close({ id: JOB_ID, reason: "FILLED_ON_SHEFA", hiredApplicationId: "app-1" }),
+    ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+
   // ── Adversarial ──
 
   it("throws UNAUTHORIZED when no session", async () => {
@@ -753,7 +813,12 @@ describe("jobPosting.reopen", () => {
 
     expect(result).toMatchObject({ status: "PAUSED" });
     expect(setSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ status: "PAUSED", closureReason: null, closedAt: null }),
+      expect.objectContaining({
+        status: "PAUSED",
+        closureReason: null,
+        closedAt: null,
+        hiredApplicationId: null,
+      }),
     );
   });
 

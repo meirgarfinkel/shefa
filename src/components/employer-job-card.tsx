@@ -126,7 +126,7 @@ export function EmployerJobCard({
         </div>
       </div>
 
-      <p className="text-muted-foreground relative z-10 mt-0.5 text-xs">
+      <p className="relative z-10 mt-0.5 text-xs">
         {multiCompany && (
           <>
             {job.company.name}
@@ -222,9 +222,8 @@ export function EmployerJobCard({
         <div>
           {!isClosed && (
             <Button
-              variant="light"
+              variant="destructive"
               size="sm"
-              className="text-danger hover:bg-danger/15 h-7 text-xs transition-colors duration-100"
               disabled={isPending}
               onClick={(e) => {
                 halt(e);

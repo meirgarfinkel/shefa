@@ -453,6 +453,30 @@ export const jobPostingRouter = createTRPCRouter({
     if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
     if (posting.employerId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
 
+    // The hire record is only meaningful when the role was filled from Shefa. For any
+    // other reason we ignore the field (and never set it). When named, the application
+    // must belong to this job and must not be REJECTED (a rejected applicant wasn't hired).
+    let hiredApplicationId: string | null = null;
+    if (input.reason === "FILLED_ON_SHEFA" && input.hiredApplicationId) {
+      const hired = await ctx.db.query.application.findFirst({
+        where: and(eq(application.id, input.hiredApplicationId), eq(application.jobId, input.id)),
+        columns: { id: true, status: true },
+      });
+      if (!hired) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "That applicant isn't on this listing",
+        });
+      }
+      if (hired.status === "REJECTED") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "A rejected applicant can't be marked as hired",
+        });
+      }
+      hiredApplicationId = hired.id;
+    }
+
     try {
       const now = new Date();
       const [result] = await ctx.db
@@ -461,6 +485,7 @@ export const jobPostingRouter = createTRPCRouter({
           status: "CLOSED",
           closureReason: input.reason,
           closedAt: now,
+          hiredApplicationId,
         })
         .where(eq(jobPosting.id, input.id))
         .returning({ id: jobPosting.id, status: jobPosting.status });
@@ -507,7 +532,7 @@ export const jobPostingRouter = createTRPCRouter({
       // Reopen to PAUSED so the employer re-verifies before going live again.
       const [result] = await ctx.db
         .update(jobPosting)
-        .set({ status: "PAUSED", closureReason: null, closedAt: null })
+        .set({ status: "PAUSED", closureReason: null, closedAt: null, hiredApplicationId: null })
         .where(eq(jobPosting.id, input.id))
         .returning({ id: jobPosting.id, status: jobPosting.status });
 

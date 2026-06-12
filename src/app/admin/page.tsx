@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
-import type { ReportStatus } from "@/db/schema";
+import type { ReportStatus, FeedbackStatus } from "@/db/schema";
 import { BLOCK_FLAG_THRESHOLD } from "@/lib/constants/moderation";
+import { FEEDBACK_CATEGORY_LABELS } from "@/lib/constants/labels";
 import { pluralize } from "@/lib/utils";
 
 const STATUS_FILTERS: { value: ReportStatus | "ALL"; label: string }[] = [
@@ -21,7 +22,7 @@ const TARGET_LABEL: Record<string, string> = {
   MESSAGE: "Message",
 };
 
-type View = "reports" | "blocked";
+type View = "reports" | "blocked" | "feedback";
 
 export default function AdminPage() {
   const [view, setView] = useState<View>("reports");
@@ -53,10 +54,93 @@ export default function AdminPage() {
         >
           Most blocked
         </Button>
+        <Button
+          variant={view === "feedback" ? "default" : "ghost"}
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => setView("feedback")}
+        >
+          Feedback
+        </Button>
       </div>
 
-      {view === "reports" ? <ReportsView /> : <MostBlockedView />}
+      {view === "reports" && <ReportsView />}
+      {view === "blocked" && <MostBlockedView />}
+      {view === "feedback" && <FeedbackView />}
     </div>
+  );
+}
+
+function FeedbackView() {
+  const utils = trpc.useUtils();
+  const { data: rows, isLoading } = trpc.feedback.listAll.useQuery();
+  const updateStatus = trpc.feedback.updateStatus.useMutation({
+    onSuccess: () => void utils.feedback.listAll.invalidate(),
+  });
+
+  const NEXT_STATUS: Record<FeedbackStatus, { label: string; status: FeedbackStatus } | null> = {
+    OPEN: { label: "Mark reviewed", status: "REVIEWED" },
+    REVIEWED: { label: "Mark resolved", status: "RESOLVED" },
+    RESOLVED: null,
+  };
+
+  return (
+    <>
+      <p className="text-muted-foreground mb-4 text-xs">
+        User-submitted bug reports, suggestions, and thanks. Newest first.
+      </p>
+
+      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+
+      {!isLoading && rows?.length === 0 && (
+        <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
+          <p className="text-muted-foreground text-sm">No feedback yet.</p>
+        </div>
+      )}
+
+      {!isLoading && rows && rows.length > 0 && (
+        <ul className="space-y-4">
+          {rows.map((f) => {
+            const next = NEXT_STATUS[f.status];
+            return (
+              <li
+                key={f.id}
+                className="bg-primary/30 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <p className="text-xs font-semibold tracking-wide uppercase">
+                    {FEEDBACK_CATEGORY_LABELS[f.category] ?? f.category}
+                  </p>
+                  <span className="bg-blue-dark-3 text-muted-foreground inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                    {f.status}
+                  </span>
+                </div>
+
+                <p className="mt-3 border-t pt-3 text-sm whitespace-pre-wrap">{f.message}</p>
+
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
+                  <p className="text-muted-foreground text-xs">
+                    {f.user?.name ?? f.user?.email ?? "—"} ·{" "}
+                    {new Date(f.createdAt).toLocaleDateString()}
+                  </p>
+                  {next && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={updateStatus.isPending}
+                      onClick={() => updateStatus.mutate({ id: f.id, status: next.status })}
+                    >
+                      {next.label}
+                    </Button>
+                  )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </>
   );
 }
 

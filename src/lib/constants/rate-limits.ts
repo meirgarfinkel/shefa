@@ -9,6 +9,9 @@ export const APPLICATIONS_PER_DAY = 25;
 /** Max cold DMs (employer-initiated, no job context) per rolling 24h window. */
 export const COLD_DMS_PER_DAY = 50;
 
+/** Max feedback submissions a user may send per rolling 24h window. */
+export const FEEDBACK_PER_DAY = 5;
+
 /** Timestamp marking the start of the current rolling window. */
 export function rateLimitWindowStart(now: Date = new Date()): Date {
   return new Date(now.getTime() - RATE_LIMIT_WINDOW_MS);

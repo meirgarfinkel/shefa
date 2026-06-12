@@ -554,7 +554,7 @@ function JobEditForm({
 
               <DialogFooter className="gap-2">
                 <Button
-                  variant="ghost"
+                  variant="light"
                   onClick={() => {
                     setCloseDialogOpen(false);
                     setCloseReason(null);
@@ -564,7 +564,7 @@ function JobEditForm({
                   Cancel
                 </Button>
                 <Button
-                  className="bg-danger/15 text-danger hover:bg-danger/25 transition-colors duration-100"
+                  variant="destructive"
                   disabled={!closeReason || closePosting.isPending}
                   onClick={() =>
                     closeReason && closePosting.mutate({ id: job.id, reason: closeReason })

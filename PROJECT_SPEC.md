@@ -65,8 +65,9 @@ A job listing. Carries title, description, `jobType`, `workArrangement`,
 location (`city`/`state` plus geocoded `lat`/`lon`), `minHourlyRate`, optional pay and
 schedule notes, `workDays`, `workAuthRequired`, a free-text "what we're looking for",
 and required languages (via the `JobLanguage` join). Status is
-`ACTIVE` / `PAUSED` / `CLOSED` with an optional `closureReason` and `closedAt`.
-**No skills field, no required skills, no education field** — by design.
+`ACTIVE` / `PAUSED` / `CLOSED` with an optional `closureReason` and `closedAt`. A nullable
+`hiredApplicationId` records which applicant got the role when closed as `FILLED_ON_SHEFA`
+(cleared on reopen). **No skills field, no required skills, no education field** — by design.
 
 ### Application (seeker → job)
 
@@ -92,6 +93,13 @@ login-free token embedding the target and the action to apply when clicked.
 
 Abuse evidence — `reporterId`, `targetType` (`USER` / `JOB` / `MESSAGE`), `targetId`,
 `reason`, `status`. **Reports are input, not enforcement** (see Business Rules).
+
+### Feedback
+
+A user-submitted message to admins — `userId`, `category`
+(`BUG` / `IMPROVEMENT` / `THANKS` / `OTHER`), free-text `message`, and a `status`
+(`OPEN` / `REVIEWED` / `RESOLVED`). Unlike a `Report`, feedback has **no target** — it is
+general platform feedback, not evidence about another entity. Surfaced in `/admin`.
 
 ### NotificationPreferences (1:1 with User)
 
@@ -128,8 +136,13 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
   verdict, not a side effect of filling the role). Neither pausing nor closing ever
   closes a conversation.
 - **Reopening** a closed job (`reopen`) returns it to `PAUSED`, clears
-  `closureReason`/`closedAt`, and reverses the close cascade: applications that were
-  `CLOSED` return to `SUBMITTED`; `REJECTED` applications stay `REJECTED`.
+  `closureReason`/`closedAt`/`hiredApplicationId`, and reverses the close cascade:
+  applications that were `CLOSED` return to `SUBMITTED`; `REJECTED` applications stay `REJECTED`.
+- When closed as `FILLED_ON_SHEFA`, the employer may optionally name the hired applicant.
+  `jobPosting.close` validates that the named application belongs to the job and is **not**
+  `REJECTED`, then stores it in `hiredApplicationId`. The hire is still `CLOSED` by the
+  cascade like every other open application — this only records who was hired. The field is
+  ignored for any other closure reason.
 
 ### Applications
 
@@ -158,6 +171,13 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
 - Reports are evidence only; they do **not** auto-suspend users or block messaging.
 - Moderation (`SUSPENDED` status, etc.) is a separate, explicit enforcement decision.
 - Self-reporting is rejected at the API layer.
+
+### Feedback
+
+- Any authenticated, non-suspended user may submit feedback (`feedback.submit`),
+  throttled to a rolling 24h cap (abuse control, same pattern as apply/cold-DM limits).
+- Submitting fires a fire-and-forget admin email (no-op if `ADMIN_EMAIL` is unset; the
+  row is still stored). Admins triage status in `/admin`.
 
 ### Freshness / verification
 
@@ -252,7 +272,7 @@ Identity always comes from `ctx.session.user.id` — **never** from input.
 
 **Routers** (`src/server/api/root.ts`): `user`, `seeker`, `employer`, `company`,
 `taxonomy`, `jobPosting`, `application`, `conversation`, `message`, `notification`,
-`report`, `location`.
+`report`, `feedback`, `location`, `admin`.
 
 **Database:** `src/db/schema/` is the canonical contract; `enums.ts` is the canonical
 enum source (exported as TS union types via `typeof X.enumValues[number]`). Relational

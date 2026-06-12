@@ -26,3 +26,16 @@ export const ARRANGEMENT_LABELS: Record<string, string> = {
   REMOTE: "Remote",
   HYBRID: "Hybrid",
 };
+
+export const FEEDBACK_CATEGORY_LABELS: Record<string, string> = {
+  BUG: "Bug report",
+  IMPROVEMENT: "Suggestion",
+  THANKS: "Thanks",
+  OTHER: "Other",
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<string, string> = {
+  OPEN: "Open",
+  REVIEWED: "Reviewed",
+  RESOLVED: "Resolved",
+};

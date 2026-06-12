@@ -50,6 +50,10 @@ export const jobPosting = pgTable(
     status: jobStatusEnum("status").notNull().default("ACTIVE"),
     closureReason: jobClosureReasonEnum("closureReason"),
     closedAt: timestamp("closedAt", { withTimezone: true, mode: "date" }),
+    // Set only when closed as FILLED_ON_SHEFA and the employer names the hire.
+    // Nullable, cleared on reopen. The pointed-to application is still CLOSED by
+    // the close cascade — this just records which applicant got the role.
+    hiredApplicationId: text("hiredApplicationId"),
     lastVerifiedAt: timestamp("lastVerifiedAt", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),

@@ -71,6 +71,9 @@ export const ListJobPostingsSchema = z.object({
 export const CloseJobSchema = z.object({
   id: z.string(),
   reason: JobClosureReasonEnum,
+  // Only honored when reason is FILLED_ON_SHEFA: the application of the hired
+  // applicant. Validated server-side (must belong to the job, not be REJECTED).
+  hiredApplicationId: z.string().min(1).optional(),
 });
 
 export type CreateJobPostingInput = z.infer<typeof CreateJobPostingSchema>;

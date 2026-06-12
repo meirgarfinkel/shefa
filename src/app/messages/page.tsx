@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { PageHeader } from "@/components/ui/page-header";
 import { InboxRow } from "@/components/ui/inbox-row";
+import { getInitials } from "@/lib/utils";
 
 function displayName(
   participant: {
@@ -17,16 +18,6 @@ function displayName(
   if (participant.seekerProfile)
     return `${participant.seekerProfile.firstName} ${participant.seekerProfile.lastName}`;
   return "Unknown";
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .map((w) => w[0])
-    .filter(Boolean)
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 function formatTime(date: Date | string | null): string {

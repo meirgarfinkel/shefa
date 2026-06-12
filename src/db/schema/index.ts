@@ -10,4 +10,5 @@ export * from "./conversation";
 export * from "./freshness";
 export * from "./notification";
 export * from "./report";
+export * from "./feedback";
 export * from "./relations";

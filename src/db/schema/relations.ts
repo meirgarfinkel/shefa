@@ -8,6 +8,7 @@ import { conversation, message } from "./conversation";
 import { verificationPing, freshnessToken } from "./freshness";
 import { notificationPreferences } from "./notification";
 import { report } from "./report";
+import { feedback } from "./feedback";
 import { state, city } from "./geo";
 import { language } from "./taxonomy";
 
@@ -34,6 +35,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   sentMessages: many(message),
   verificationPings: many(verificationPing),
   reports: many(report),
+  feedback: many(feedback),
 }));
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
@@ -153,4 +155,8 @@ export const notificationPreferencesRelations = relations(notificationPreference
 
 export const reportRelations = relations(report, ({ one }) => ({
   reporter: one(users, { fields: [report.reporterId], references: [users.id] }),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  user: one(users, { fields: [feedback.userId], references: [users.id] }),
 }));

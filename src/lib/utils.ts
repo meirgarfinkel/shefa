@@ -10,6 +10,16 @@ export function pluralize(count: number, singular: string, plural = `${singular}
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+export function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((w) => w[0])
+    .filter(Boolean)
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export const requiredTrimmedString = (max: number) => z.string().trim().min(1).max(max);
 
 export const optionalTrimmedString = (max: number) =>

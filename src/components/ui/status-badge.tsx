@@ -12,9 +12,9 @@ const STATUS_LABELS: Record<JobStatus, string> = {
 };
 
 const STATUS_STYLES: Record<JobStatus, string> = {
-  ACTIVE: "bg-success/15 text-success",
-  PAUSED: "bg-warning/15 text-warning",
-  CLOSED: "bg-danger/15 text-danger",
+  ACTIVE: "bg-white text-success shadow-lg",
+  PAUSED: "bg-white text-warning shadow-lg",
+  CLOSED: "bg-white text-danger shadow-lg",
 };
 
 // Filled variants show as primary/blue; other closure reasons inherit the CLOSED danger style
@@ -27,11 +27,11 @@ const CLOSURE_LABELS: Record<JobClosureReason, string> = {
 };
 
 const CLOSURE_STYLES: Record<JobClosureReason, string> = {
-  FILLED_ON_SHEFA: "bg-primary/15 text-primary",
-  FILLED_ELSEWHERE: "bg-primary/15 text-primary",
-  HIRING_FROZEN: "bg-danger/15 text-danger",
-  CANCELLED: "bg-danger/15 text-danger",
-  OTHER: "bg-danger/15 text-danger",
+  FILLED_ON_SHEFA: "bg-white text-primary",
+  FILLED_ELSEWHERE: "bg-white text-primary",
+  HIRING_FROZEN: "bg-white text-danger",
+  CANCELLED: "bg-white text-danger",
+  OTHER: "bg-white text-danger",
 };
 
 interface StatusBadgeProps {

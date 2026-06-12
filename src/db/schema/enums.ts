@@ -36,6 +36,13 @@ export const reportStatusEnum = pgEnum("ReportStatus", [
   "ACTIONED",
   "DISMISSED",
 ]);
+export const feedbackCategoryEnum = pgEnum("FeedbackCategory", [
+  "BUG",
+  "IMPROVEMENT",
+  "THANKS",
+  "OTHER",
+]);
+export const feedbackStatusEnum = pgEnum("FeedbackStatus", ["OPEN", "REVIEWED", "RESOLVED"]);
 export const notificationFrequencyEnum = pgEnum("NotificationFrequency", [
   "PER_MESSAGE",
   "DAILY_DIGEST",
@@ -88,6 +95,8 @@ export type PingType = (typeof pingTypeEnum.enumValues)[number];
 export type PingResponse = (typeof pingResponseEnum.enumValues)[number];
 export type ReportTargetType = (typeof reportTargetTypeEnum.enumValues)[number];
 export type ReportStatus = (typeof reportStatusEnum.enumValues)[number];
+export type FeedbackCategory = (typeof feedbackCategoryEnum.enumValues)[number];
+export type FeedbackStatus = (typeof feedbackStatusEnum.enumValues)[number];
 export type NotificationFrequency = (typeof notificationFrequencyEnum.enumValues)[number];
 export type JobType = (typeof jobTypeEnum.enumValues)[number];
 export type WorkArrangement = (typeof workArrangementEnum.enumValues)[number];

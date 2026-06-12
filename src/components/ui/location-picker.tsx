@@ -39,7 +39,7 @@ export function LocationPicker({ required = true }: LocationPickerProps) {
             >
               <FormControl>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select state…" />
+                  <SelectValue placeholder="Select state" />
                 </SelectTrigger>
               </FormControl>
               <SelectContent align="start">

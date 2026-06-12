@@ -7,6 +7,30 @@
 - **Seed an admin**: there is no UI to grant `ADMIN`. Set a user's `role` to `ADMIN`
   directly in the DB to access `/admin`.
 
+## This session (latest)
+
+- **`getInitials` deduped** — moved the duplicated helper into `src/lib/utils.ts`;
+  `messages/page.tsx` and the employer dashboard now import it.
+- **Feedback feature (new):** users send bug/improvement/thanks messages to admins.
+  New `Feedback` table (`FeedbackCategory` BUG/IMPROVEMENT/THANKS/OTHER, `FeedbackStatus`
+  OPEN/REVIEWED/RESOLVED) + `feedback` tRPC router (`submit` protected, rate-limited via
+  new `FEEDBACK_PER_DAY=5` rolling window + `assertActorActive`; `listAll`/`updateStatus`
+  admin-only). Submitting fires a fire-and-forget email to `ADMIN_EMAIL` (new optional env
+  var — added to `.env.example`; no-op if unset, row still stored). UI: `FeedbackDialog`
+  opened from the user menu; new "Feedback" tab in `/admin`. Email composer in
+  `src/server/emails/feedback-notify.ts`. 15 router tests.
+- **Hire capture on close (new):** new nullable `JobPosting.hiredApplicationId`. When an
+  employer closes a job as `FILLED_ON_SHEFA`, `CloseJobModal` lists non-rejected applicants
+  (`SUBMITTED`/`VIEWED`, via `application.listForJob`) with a "Prefer not to say" option and
+  passes the chosen id to `jobPosting.close`. The procedure validates the application belongs
+  to the job and isn't `REJECTED`; the field is ignored for other reasons and cleared on
+  reopen. The hire is still `CLOSED` by the cascade — this only records who was hired.
+- **Deduped the inline `CloseJobModal`** in the employer dashboard `_client.tsx` — it now
+  reuses the shared `@/components/close-job-modal` (so the dashboard gets the hire flow too).
+- **Migration required before deploy** (Feedback table + 2 enums + `hiredApplicationId`):
+  `npm run db:dev-generate && npm run db:dev-migrate` (then `db:prod-*`).
+- **Tests:** 470 passing (was 450). `npm run check` green.
+
 ## Built & working
 
 - **Auth:** Google OAuth (Auth.js v5, JWT, DrizzleAdapter), role select, age-gated profiles.
@@ -43,7 +67,7 @@
   `createTRPCContext` drops the session when `deletedAt` is set, so a JWT lingering on
   another device is rejected on its next request. `seeker.getPublicProfile` 404s `DELETED`.
 - **Crons (`vercel.json`):** freshness `0 9 * * *`, responsiveness `0 3 */2 * *`, digest `0 18 * * *`.
-- **Tests:** 450 passing across 22 suites. `npm run check` green.
+- **Tests:** All passed. `npm run check` green.
 
 ## Still needed (Phase 8)
 
