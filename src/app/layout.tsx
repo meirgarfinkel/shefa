@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { Analytics } from "@vercel/analytics/next";
 import { TRPCProvider } from "@/lib/trpc/provider";
 import { Nav } from "@/components/nav";
 import "./globals.css";
@@ -38,6 +39,7 @@ export default function RootLayout({
             {children}
           </TRPCProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   );
