@@ -6,9 +6,9 @@ import { Pill } from "@/components/ui/pill";
 import GetStartedButton from "./_get-started-button";
 
 export const metadata: Metadata = {
-  title: "Shefa — Get hired on potential, not credentials",
+  title: "Shefa | Find Work the Human Way",
   description:
-    "Shefa is a completely free, nonprofit job board on a mission to give candidates a chance to learn on the job — connecting people eager to grow with employers willing to bet on them.",
+    "Shefa is a completely free job board where you get hired on who you are, not what's on paper. Connecting eager learners with employers ready to invest in them.",
 };
 
 const FEATURES = [
