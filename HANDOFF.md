@@ -6,8 +6,56 @@
 
 - **Seed an admin**: there is no UI to grant `ADMIN`. Set a user's `role` to `ADMIN`
   directly in the DB to access `/admin`.
+- **(Optional) Google Indexing API**: to enable instant job (re)indexing, do the GCP +
+  Search Console setup and set `GOOGLE_INDEXING_CLIENT_EMAIL` / `GOOGLE_INDEXING_PRIVATE_KEY`
+  in Vercel (see `env.production.example`). Unset = silent no-op; the sitemap still works.
+- **`AUTH_URL` now also drives SEO** (sitemap, robots, canonical URLs, JobPosting JSON-LD).
+  It was already required in prod; just confirm it's the canonical URL with no trailing slash.
 
-## This session (latest)
+## This session (latest) — Google indexing / SEO
+
+- **Public job pages are now server-rendered with `JobPosting` JSON-LD.**
+  `app/jobs/[id]/page.tsx` became a server component: `generateMetadata` (per-job title,
+  description, canonical, OpenGraph) + a `<script type="application/ld+json">` built by
+  `src/lib/seo/job-posting.ts`, then renders the interactive UI as `_client.tsx` seeded with
+  `initialData`. Fetches via a new server caller `src/server/api/server.ts` (reuses
+  `jobPosting.getById`, so visibility rules are identical). `validThrough` = `lastVerifiedAt`
+  + 28 days, matching the freshness auto-pause horizon. (No auth change — `/jobs` and
+  `/jobs/[id]` were already public; the gap was SSR + structured data.)
+- **Dynamic sitemap** (`app/sitemap.ts`, ISR `revalidate=3600`): all ACTIVE jobs (suspended
+  employers filtered out, mirroring `getById`) + their business pages + static pages.
+- **`robots.ts`** now disallows the auth-gated trees (`/admin`, `/employer`, `/messages`,
+  `/seeker`, `/role-select`, `/sign-in`, `/api/`). `/seeker` is fully disallowed — **seeker
+  profiles are intentionally kept private/non-indexed** (privacy of vulnerable job-seekers).
+  Added `robots: { index:false }` metadata to the admin/employer/messages layouts too.
+- **Google Indexing API** (`src/server/indexing.ts`, zero-dependency — JWT signed with Node
+  `crypto`): `notifyGoogleIndex(url, "URL_UPDATED" | "URL_DELETED")`, fire-and-forget, no-op
+  when env unset. Wired into `jobPosting.create` (UPDATED), `update` (UPDATED if ACTIVE else
+  DELETED), `close` (DELETED). New env vars in `env.production.example`. 480 tests (+10).
+
+## Previous session — company→business rename + migration flatten
+
+- **Renamed the `Company` domain entity → `Business` across UI + DB (full physical rename).**
+  Table `Company`→`Business`; columns `JobPosting.companyId`→`businessId`,
+  `Company.companySize`→`businessSize`, `aboutCompany`→`aboutBusiness`,
+  `EmployerProfile.roleAtCompany`→`roleAtBusiness`; Postgres enum type `CompanySize`→
+  `BusinessSize`; all constraint/index names. Routes `app/company`→`app/business`,
+  `employer/company`→`employer/business`, route group `(needs-company)`→`(needs-business)`.
+  tRPC router file `routers/company.ts`→`routers/business.ts`, root key `company`→`business`.
+  Docs (`PROJECT_SPEC.md`, `AUDIT.md`, `CLAUDE.md`) updated to match. 470 tests still green.
+- **Flattened all migrations into one baseline.** Deleted `0000`–`0003`; regenerated a single
+  `drizzle/0000_complex_network.sql` from the current schema. The cold-DM partial unique index
+  is reproduced by the schema; only the `pg_trgm` GIN search indexes are not.
+- **Extracted the manual search indexes.** drizzle can't express `gin_trgm_ops`, so
+  `pg_trgm` + `JobPosting_title_trgm_idx`/`JobPosting_description_trgm_idx` now live in
+  `src/db/manual/trgm_search_indexes.sql` (idempotent), applied after migrate. Wired into
+  `db:dev-reset`/`db:prod-reset`; standalone `db:dev-index`/`db:prod-index` added. New
+  `db:prod-seed`/`db:prod-seed:jobs` for seeding against `.env.production`.
+- **DB reset required (run by user — destructive):** drop schema → `db:dev-migrate` →
+  `db:dev-index` → `db:seed` (states/cities/languages). See Commands below. The geo seed is
+  idempotent and safe for prod; `db:*-seed:jobs` is demo data — not for real production.
+
+## Earlier session
 
 - **`getInitials` deduped** — moved the duplicated helper into `src/lib/utils.ts`;
   `messages/page.tsx` and the employer dashboard now import it.
@@ -145,8 +193,15 @@ city/state not validated against geo tables).
 
 ```bash
 npm run check                                          # typecheck + lint + format
-npm run db:dev-generate && npm run db:dev-migrate      # pending migration: app index + User.deletedAt + ProfileStatus.DELETED (dev)
-npm run db:prod-generate && npm run db:prod-migrate    # same, against production
+
+# Apply the flattened baseline to a fresh DB (DESTRUCTIVE — wipes data, then re-seeds).
+# Step 1 uses npx so the project's dotenv-cli is used (not the Ruby `dotenv` gem on PATH).
+npx dotenv -e .env -- sh -c 'psql "$DATABASE_URL" -c "DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;"'
+npm run db:dev-migrate        # apply single baseline 0000
+npm run db:dev-index          # pg_trgm GIN search indexes (manual; not in the migration)
+npm run db:seed               # states + cities + languages
+# Prod equivalents: db:prod-migrate / db:prod-index / db:prod-seed (against .env.production).
+# Or one-shot: npm run db:dev-reset (regenerates the migration fresh, then indexes + seed).
 ```
 
 ## Decision records
@@ -198,6 +253,44 @@ npm run db:prod-generate && npm run db:prod-migrate    # same, against productio
   a direct `db.batch` (not `jobPosting.close`), so it replicates the app cascade inline
   (closes the deleted employer's `SUBMITTED`/`VIEWED` applications, leaves `REJECTED`) to
   keep the invariant — no `CLOSED` job left with live applications.
+
+- **`Company` entity renamed to `Business` (full physical rename, not an app-layer alias).**
+  _Alternatives:_ (a) rename only UI text + TS identifiers, keep Postgres names as `Company` —
+  rejected: leaves a permanent mismatch between the schema contract and the domain language,
+  violating "one source of truth per concept"; (b) keep `/company` URLs — rejected: chose full
+  consistency since the app is pre-launch and no external links exist. _Reason chosen:_ the
+  rename was bundled with a migration flatten (fresh baseline), so renaming columns/types
+  physically costs nothing extra (no `ALTER ... RENAME` churn) and keeps schema, code, routes,
+  and docs speaking one vocabulary.
+- **Migrations flattened to a single baseline; trgm indexes kept as a manual SQL step.**
+  _Alternatives:_ (a) keep the incremental `0000`–`0003` history — rejected: pre-launch, no
+  applied production history worth preserving, and a clean baseline is easier to reason about;
+  (b) hand-append the GIN indexes into the generated `0000` so `migrate` includes them —
+  rejected: `db:*-reset` regenerates `0000` via `drizzle-kit generate` and would silently drop
+  the hand-edit. _Reason chosen:_ `gin_trgm_ops` is inexpressible in drizzle's schema DSL, so
+  the indexes live in `src/db/manual/trgm_search_indexes.sql` (outside `drizzle/`, survives
+  `rm -rf drizzle`) and are applied by an explicit `db:*-index` step that's also chained into
+  the reset scripts — drizzle owns everything it can express, the one thing it can't is
+  isolated and documented.
+
+- **Public job pages server-rendered with JobPosting JSON-LD; job-level data via a server
+  caller, not a parallel DB query.** _Alternatives:_ (a) keep the page client-only and rely
+  on Googlebot JS rendering — rejected: unreliable for indexing, no per-job metadata, and the
+  Indexing API only accepts pages with `JobPosting` markup; (b) duplicate the `getById`
+  visibility logic in a direct `db` query for SSR — rejected: two sources of truth for "is
+  this job publicly visible," easy to drift. _Reason chosen:_ a cached server-side tRPC caller
+  (`createServerCaller`) reuses `getById` verbatim, so SSR and the client query enforce
+  identical ACTIVE-only / suspended-hiding / owner-preview rules; the client is seeded with
+  `initialData` so there's no loading flash and the HTML carries the structured data.
+- **Indexing API auth is a hand-rolled service-account JWT (no SDK).** _Alternatives:_
+  `google-auth-library` / `googleapis` — rejected: a heavy transitive dependency for one
+  signed JWT + two fetches, against the lean Vercel/Neon/Resend stack. _Reason chosen:_ Node's
+  `crypto` signs the RS256 assertion in ~15 lines; the helper is fire-and-forget and a no-op
+  when unconfigured, matching the existing inline email-notification pattern.
+- **Seeker profiles stay private / non-indexed.** _Alternatives:_ ungate `/seeker/[profileId]`
+  for SEO. _Reason chosen:_ the mission centers on vulnerable job-seekers; having their
+  profiles crawled and permanently cached by Google is an unacceptable privacy exposure.
+  Only jobs and businesses are indexed; `robots.ts` disallows all of `/seeker`.
 
 ## Blockers
 

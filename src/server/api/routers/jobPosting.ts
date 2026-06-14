@@ -30,6 +30,7 @@ import {
   employerProfile,
 } from "@/db/schema";
 import { assertActorActive } from "@/server/api/guards";
+import { notifyGoogleIndex, jobIndexUrl } from "@/server/indexing";
 
 // Hard cap on rows returned by the public list. The client only ever displays the top 50
 // (see sortJobs), so a generous cap bounds the query without changing what users see.
@@ -86,6 +87,10 @@ export const jobPostingRouter = createTRPCRouter({
         .insert(jobLanguage)
         .values(requiredLanguageIds.map((languageId) => ({ jobId: created!.id, languageId })));
     }
+
+    // New listings are ACTIVE → immediately tell Google to (re)crawl. Fire-and-forget,
+    // no-op when unconfigured (see src/server/indexing.ts).
+    void notifyGoogleIndex(jobIndexUrl(created!.id), "URL_UPDATED");
 
     return created!;
   }),
@@ -328,6 +333,14 @@ export const jobPostingRouter = createTRPCRouter({
     if (!updated) {
       throw new TRPCError({ code: "CONFLICT", message: "This listing was closed; reload to edit" });
     }
+
+    // Reflect the new public visibility: ACTIVE (edited or reactivated) → recrawl;
+    // PAUSED → drop from the index (the public page now 404s).
+    void notifyGoogleIndex(
+      jobIndexUrl(updated.id),
+      updated.status === "ACTIVE" ? "URL_UPDATED" : "URL_DELETED",
+    );
+
     return updated;
   }),
 
@@ -502,6 +515,9 @@ export const jobPostingRouter = createTRPCRouter({
             inArray(application.status, ["SUBMITTED", "VIEWED"]),
           ),
         );
+
+      // The public page now 404s → tell Google to drop it from the index.
+      void notifyGoogleIndex(jobIndexUrl(result!.id), "URL_DELETED");
 
       return result!;
     } catch (e) {

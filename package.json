@@ -14,6 +14,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check": "npm run typecheck && npm run lint && npm run format:check",
+    "verify:indexing": "npx dotenv -e .env.production -- tsx src/server/scripts/verify-indexing.ts",
     "db:dev-reset": "npx dotenv -e .env -- sh -c 'psql \"$DATABASE_URL\" -c \"DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;\" && rm -rf drizzle && npx drizzle-kit generate && npx drizzle-kit migrate && psql \"$DATABASE_URL\" -f src/db/manual/trgm_search_indexes.sql && tsx src/db/scripts/seed.ts'",
     "db:prod-reset": "npx dotenv -e .env.production -- sh -c 'psql \"$DATABASE_URL\" -c \"DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;\" && rm -rf drizzle && npx drizzle-kit generate && npx drizzle-kit migrate && psql \"$DATABASE_URL\" -f src/db/manual/trgm_search_indexes.sql && tsx src/db/scripts/seed.ts'",
     "db:dev-index": "npx dotenv -e .env -- sh -c 'psql \"$DATABASE_URL\" -f src/db/manual/trgm_search_indexes.sql'",

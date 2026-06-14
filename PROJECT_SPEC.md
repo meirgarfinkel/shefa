@@ -291,6 +291,17 @@ haversine distance query in `jobPosting` geo search.
 Each requires `Authorization: Bearer <CRON_SECRET>` (Vercel-injected). Cron routes
 delegate to job modules in `src/server/jobs/`; emails are composed in `src/server/emails/`.
 
+**Public discoverability (SEO):** only **jobs** and **businesses** are indexable; seeker
+profiles are deliberately kept private (`robots.ts` disallows `/seeker` and all auth-gated
+trees). The public job page (`/jobs/[id]`) is a **server component** that renders per-job
+metadata + `JobPosting` JSON-LD (`src/lib/seo/job-posting.ts`) into the initial HTML, with
+interactivity in a client child seeded via `initialData`; it fetches through a server-side
+tRPC caller (`src/server/api/server.ts`) so SSR reuses `jobPosting.getById`'s visibility
+rules. `sitemap.ts` (hourly ISR) lists visible ACTIVE jobs + their businesses. The **Google
+Indexing API** (`src/server/indexing.ts`, zero-dependency JWT, fire-and-forget, no-op when
+unconfigured) notifies Google on `jobPosting.create`/`update`/`close`. `validThrough` on the
+JSON-LD tracks the freshness auto-pause horizon (`lastVerifiedAt` + 28 days).
+
 ---
 
 ## 6. Folder Conventions
