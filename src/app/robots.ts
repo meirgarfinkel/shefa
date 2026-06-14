@@ -7,17 +7,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // Auth-gated trees (they 302 to /sign-in for crawlers — nothing to index) and the
-      // API. `/seeker` is fully disallowed: seeker profiles are intentionally kept private.
-      disallow: [
-        "/admin",
-        "/employer",
-        "/messages",
-        "/seeker",
-        "/role-select",
-        "/sign-in",
-        "/api/",
-      ],
+      // Auth-gated trees (they 302 to the public `/` landing page for crawlers — nothing to
+      // index there) and the API. `/seeker` is fully disallowed: seeker profiles are
+      // intentionally kept private.
+      disallow: ["/admin", "/employer", "/messages", "/seeker", "/role-select", "/api/"],
     },
     sitemap: `${base}/sitemap.xml`,
   };

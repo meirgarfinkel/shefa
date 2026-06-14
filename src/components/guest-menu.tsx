@@ -28,7 +28,7 @@ export function GuestMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild className="cursor-pointer">
-          <Link href="/sign-in">Sign in</Link>
+          <Link href="/">Sign in</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -63,7 +63,7 @@ export default function EmployerProfileEditPage() {
   const deleteAccount = trpc.user.deleteAccount.useMutation({
     onSuccess: async () => {
       await signOut({ redirect: false });
-      router.replace("/sign-in");
+      router.replace("/");
     },
   });
 

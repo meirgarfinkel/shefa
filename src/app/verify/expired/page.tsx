@@ -11,7 +11,7 @@ export default function VerifyExpiredPage() {
           directly.
         </p>
         <Link
-          href="/sign-in"
+          href="/"
           className="bg-primary text-popover-foreground inline-block rounded-md px-6 py-2 text-sm font-medium"
         >
           Sign in

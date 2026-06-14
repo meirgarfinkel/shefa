@@ -38,7 +38,7 @@ export function UserMenu({ email }: { email: string }) {
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer"
-            onClick={() => signOut({ callbackUrl: "/sign-in" })}
+            onClick={() => signOut({ callbackUrl: "/" })}
           >
             Sign out
           </DropdownMenuItem>

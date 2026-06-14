@@ -12,7 +12,37 @@
 - **`AUTH_URL` now also drives SEO** (sitemap, robots, canonical URLs, JobPosting JSON-LD).
   It was already required in prod; just confirm it's the canonical URL with no trailing slash.
 
-## This session (latest) — Google indexing / SEO
+## This session (latest) — Homepage at `/`, retired `/sign-in` (SEO indexing fix)
+
+**Problem:** Googlebot couldn't index `/` — middleware 302'd unauthenticated `/` →
+`/sign-in`, and `robots.ts` disallowed `/sign-in`, so the priority-1 sitemap URL bounced to
+a crawl-blocked path. The catch: `/sign-in` was never a login form — it was already the full
+server-rendered marketing landing page.
+
+**Fix — promoted that page to `/` and fully retired `/sign-in`:**
+- Moved `app/sign-in/page.tsx` → `app/page.tsx` (+ `_sign-in-form.tsx` →
+  `app/_get-started-button.tsx`); deleted `app/sign-in/`. Added homepage `metadata`
+  (title/description) — previously inherited the generic `"Shefa"` from the root layout.
+- `auth.config.ts`: `pages.signIn: "/sign-in"` → `"/"`. (Auth.js machinery lives at
+  `/api/auth/*` and is independent of the page path; nothing needs the literal `/sign-in`.)
+- `middleware.ts` rewritten around a new pure, Edge-safe helper `src/lib/route-guard.ts`
+  (`routeDecision`): `/` is public for guests/crawlers (`next()`); authenticated `/` →
+  role dashboard; all other gated routes redirect unauth → `/` (was `/sign-in`). Helper is
+  unit-tested in `src/lib/__tests__/route-guard.test.ts` (NextAuth-wrapped middleware itself
+  is impractical to unit-test).
+- Retargeted ~11 `/sign-in` references → `/` (protected-layout `redirect`s, post-`signOut`
+  redirects, nav `signOut` callbacks, guest-menu "Sign in" link, `verify/expired` link).
+- `robots.ts`: removed `/sign-in` from `disallow` (and updated the comment). `/` now
+  resolves 200; `sitemap.ts` unchanged (`/` was already priority 1).
+- Tests: `route-guard` (9 cases) + `robots` (asserts `/sign-in` gone, gated trees still
+  blocked). Full suite 489 passing; `npm run check` green.
+
+**Still to verify after deploy** (needs live OAuth env — not runnable here): logged-out `/`
+renders the landing (no bounce) and `curl -I /` → 200; "Get started with Google" → OAuth →
+`/role-select`; logged-in `/` → role dashboard; logged-out `/employer/...` → `/`. Then
+re-request indexing for `/` in Google Search Console.
+
+## Earlier this phase — Google indexing / SEO
 
 - **Public job pages are now server-rendered with `JobPosting` JSON-LD.**
   `app/jobs/[id]/page.tsx` became a server component: `generateMetadata` (per-job title,

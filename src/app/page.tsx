@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
-import GetStartedButton from "./_sign-in-form";
+import GetStartedButton from "./_get-started-button";
+
+export const metadata: Metadata = {
+  title: "Shefa — Get hired on potential, not credentials",
+  description:
+    "Shefa is a completely free, nonprofit job board on a mission to give candidates a chance to learn on the job — connecting people eager to grow with employers willing to bet on them.",
+};
 
 const FEATURES = [
   {
@@ -42,7 +49,7 @@ const AUDIENCES = [
   },
 ] as const;
 
-export default async function SignInPage() {
+export default async function HomePage() {
   const session = await auth();
   if (session?.user?.role === "ADMIN") redirect("/admin");
   if (session?.user?.role === "EMPLOYER") redirect("/employer/dashboard");

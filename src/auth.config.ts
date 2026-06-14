@@ -3,7 +3,7 @@ import type { Role } from "@/types/role";
 
 export const authConfig = {
   pages: {
-    signIn: "/sign-in",
+    signIn: "/",
   },
   callbacks: {
     jwt({ token, user, trigger, session: updatedSession }) {

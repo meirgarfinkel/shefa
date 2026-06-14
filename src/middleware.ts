@@ -1,21 +1,14 @@
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import { NextResponse } from "next/server";
+import { routeDecision } from "@/lib/route-guard";
 
 const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
-  const { pathname } = req.nextUrl;
-  if (!req.auth) {
-    const signIn = new URL("/sign-in", req.url);
-    return NextResponse.redirect(signIn);
-  }
-  if (pathname === "/") {
-    const role = req.auth.user.role;
-    if (role === "ADMIN") return NextResponse.redirect(new URL("/admin", req.url));
-    if (role === "EMPLOYER") return NextResponse.redirect(new URL("/employer/dashboard", req.url));
-    if (role === "SEEKER") return NextResponse.redirect(new URL("/jobs", req.url));
-    return NextResponse.redirect(new URL("/role-select", req.url));
+  const decision = routeDecision(req.nextUrl.pathname, req.auth?.user.role, Boolean(req.auth));
+  if (decision.type === "redirect") {
+    return NextResponse.redirect(new URL(decision.to, req.url));
   }
   return NextResponse.next();
 });

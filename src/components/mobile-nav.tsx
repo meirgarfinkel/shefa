@@ -110,7 +110,7 @@ export function MobileNav({ links, email }: MobileNavProps) {
                     className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground w-full rounded-md px-3 py-2 text-left text-sm transition-colors"
                     onClick={() => {
                       setOpen(false);
-                      void signOut({ callbackUrl: "/sign-in" });
+                      void signOut({ callbackUrl: "/" });
                     }}
                   >
                     Sign out
@@ -133,7 +133,7 @@ export function MobileNav({ links, email }: MobileNavProps) {
                     Terms of Service
                   </Link>
                   <Link
-                    href="/sign-in"
+                    href="/"
                     onClick={() => setOpen(false)}
                     className="text-muted-foreground hover:bg-text-muted hover:text-popover-foreground block rounded-md px-3 py-2 text-sm transition-colors"
                   >
