@@ -129,7 +129,7 @@ export default function EmployerProfileNewPage() {
               </p>
             )}
 
-            <Button type="submit" className="px-10 text-nowrap" disabled={createProfile.isPending}>
+            <Button type="submit" className="mr-1" disabled={createProfile.isPending}>
               {createProfile.isPending ? "Saving…" : "Continue"}
             </Button>
           </form>

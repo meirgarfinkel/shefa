@@ -18,7 +18,7 @@ export function Pill({ className, variant = "default", ...props }: PillProps) {
         variant === "warning" && "bg-warning/70",
         variant === "danger" && "bg-danger/50",
         variant === "light" &&
-          "text-popover from-primary/40 bg-white/80 bg-linear-to-t via-transparent to-transparent",
+          "text-popover bg-card/10 border border-white shadow-[-3px_3px_6px_#00000033,inset_1px_-1px_5px_#ffffff66,inset_-6px_4px_6px_#ffffff]",
 
         className,
       )}

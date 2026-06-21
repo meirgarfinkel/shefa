@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import type { JobStatus } from "@/db/schema";
 import type { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
 import { cn } from "@/lib/utils";
+import { Panel } from "./ui/panel";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
 
@@ -73,8 +74,8 @@ export function EmployerJobCard({
   };
 
   return (
-    <div
-      className="bg-primary/30 relative cursor-pointer rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+    <Panel
+      className="bg-primary/10 glass-hover relative cursor-pointer"
       onClick={() => router.push(`/jobs/${job.id}`)}
     >
       <div className="space-y-2 md:flex md:items-start md:justify-between md:space-y-0">
@@ -92,7 +93,6 @@ export function EmployerJobCard({
           <div className="flex items-center gap-2 md:mx-auto md:gap-3">
             <Button
               size="sm"
-              variant="light"
               className="text-success w-fit"
               disabled={isPending}
               onClick={(e) => {
@@ -111,7 +111,7 @@ export function EmployerJobCard({
                     ? "text-danger"
                     : daysUntilAutoPause <= 14
                       ? "text-orange"
-                      : "text-muted-foreground",
+                      : "text-white",
                 )}
               >
                 auto-pauses in {daysUntilAutoPause}d
@@ -139,34 +139,20 @@ export function EmployerJobCard({
       <div className="relative z-10 mt-3 flex flex-wrap justify-between">
         <div className="flex gap-1.5">
           {showApplicants && !isClosed && (
-            <Button
-              asChild
-              variant="light"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Button asChild size="sm" onClick={(e) => e.stopPropagation()}>
               <Link href={`/employer/jobs/${job.id}/applications`}>
                 Applicants ({applicationsCount})
               </Link>
             </Button>
           )}
           {!isClosed && (
-            <Button
-              asChild
-              variant="light"
-              size="sm"
-              className="h-7 text-xs"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Button asChild size="sm" onClick={(e) => e.stopPropagation()}>
               <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
             </Button>
           )}
           {isActive && (
             <Button
-              variant="light"
               size="sm"
-              className="h-7 text-xs"
               disabled={isPending}
               onClick={(e) => {
                 halt(e);
@@ -178,9 +164,7 @@ export function EmployerJobCard({
           )}
           {job.status === "PAUSED" && (
             <Button
-              variant="light"
               size="sm"
-              className="h-7 text-xs"
               disabled={isPending}
               onClick={(e) => {
                 halt(e);
@@ -192,9 +176,7 @@ export function EmployerJobCard({
           )}
           {isClosed && (
             <Button
-              variant="light"
               size="sm"
-              className="h-7 text-xs"
               disabled={isPending}
               onClick={(e) => {
                 halt(e);
@@ -206,9 +188,7 @@ export function EmployerJobCard({
           )}
           {showDuplicate && (
             <Button
-              variant="light"
               size="sm"
-              className="h-7 text-xs"
               disabled={isPending}
               onClick={(e) => {
                 halt(e);
@@ -235,6 +215,6 @@ export function EmployerJobCard({
           )}
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

@@ -6,9 +6,7 @@ export default function VerifyConfirmedPage() {
       <div className="w-full max-w-md space-y-4 text-center">
         <div className="text-5xl">✓</div>
         <h1 className="text-2xl font-bold">Got it — you&rsquo;re all set</h1>
-        <p className="text-muted-foreground">
-          Your response has been recorded. We&rsquo;ll check in again in a few weeks.
-        </p>
+        <p>Your response has been recorded. We&rsquo;ll check in again in a few weeks.</p>
         <Link href="/" className="text-sm underline underline-offset-4">
           Back to Shefa
         </Link>

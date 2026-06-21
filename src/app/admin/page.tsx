@@ -31,7 +31,7 @@ export default function AdminPage() {
     <div className="mx-auto max-w-3xl px-4 py-8 md:px-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Moderation</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+        <p className="mt-1 text-sm">
           Reports and blocks are evidence, not automatic enforcement. Suspension is always a manual
           decision.
         </p>
@@ -86,15 +86,15 @@ function FeedbackView() {
 
   return (
     <>
-      <p className="text-muted-foreground mb-4 text-xs">
+      <p className="mb-4 text-xs">
         User-submitted bug reports, suggestions, and thanks. Newest first.
       </p>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-sm">Loading…</p>}
 
       {!isLoading && rows?.length === 0 && (
         <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
-          <p className="text-muted-foreground text-sm">No feedback yet.</p>
+          <p className="text-sm">No feedback yet.</p>
         </div>
       )}
 
@@ -111,7 +111,7 @@ function FeedbackView() {
                   <p className="text-xs font-semibold tracking-wide uppercase">
                     {FEEDBACK_CATEGORY_LABELS[f.category] ?? f.category}
                   </p>
-                  <span className="bg-blue-dark-3 text-muted-foreground inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                  <span className="bg-blue-dark-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
                     {f.status}
                   </span>
                 </div>
@@ -119,7 +119,7 @@ function FeedbackView() {
                 <p className="mt-3 border-t pt-3 text-sm whitespace-pre-wrap">{f.message}</p>
 
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-xs">
                     {f.user?.name ?? f.user?.email ?? "—"} ·{" "}
                     {new Date(f.createdAt).toLocaleDateString()}
                   </p>
@@ -188,11 +188,11 @@ function ReportsView() {
         ))}
       </div>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-sm">Loading…</p>}
 
       {!isLoading && reports?.length === 0 && (
         <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
-          <p className="text-muted-foreground text-sm">No reports in this view.</p>
+          <p className="text-sm">No reports in this view.</p>
         </div>
       )}
 
@@ -211,7 +211,7 @@ function ReportsView() {
                       <span className="text-danger ml-2 normal-case">· suspended</span>
                     )}
                   </p>
-                  <div className="text-muted-foreground mt-1 text-sm">
+                  <div className="mt-1 text-sm">
                     {r.target.type === "USER" && r.target.user && (
                       <span>
                         {r.target.user.name ?? "—"} ({r.target.user.email})
@@ -232,7 +232,7 @@ function ReportsView() {
                     )}
                   </div>
                 </div>
-                <span className="bg-blue-dark-3 text-muted-foreground inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                <span className="bg-blue-dark-3 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold">
                   {r.status}
                 </span>
               </div>
@@ -240,9 +240,7 @@ function ReportsView() {
               <p className="mt-3 border-t pt-3 text-sm">{r.reason}</p>
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-                <p className="text-muted-foreground text-xs">
-                  Reported {new Date(r.createdAt).toLocaleDateString()}
-                </p>
+                <p className="text-xs">Reported {new Date(r.createdAt).toLocaleDateString()}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {r.status !== "REVIEWED" && (
                     <Button
@@ -259,7 +257,7 @@ function ReportsView() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-muted-foreground hover:bg-blue-dark-3 h-7 text-xs"
+                      className="hover:bg-blue-dark-3 h-7 text-xs"
                       disabled={busy}
                       onClick={() => updateStatus.mutate({ reportId: r.id, status: "DISMISSED" })}
                     >
@@ -268,9 +266,8 @@ function ReportsView() {
                   )}
                   {r.target.type === "USER" && r.target.user && (
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
-                      className="text-danger hover:bg-danger/15 h-7 text-xs"
                       disabled={busy}
                       onClick={() => {
                         setSuspension.mutate({
@@ -304,17 +301,17 @@ function MostBlockedView() {
 
   return (
     <>
-      <p className="text-muted-foreground mb-4 text-xs">
+      <p className="mb-4 text-xs">
         Ranked by how many distinct people currently block each user. A{" "}
         <span className="text-danger font-semibold">flag</span> marks {BLOCK_FLAG_THRESHOLD}+ blocks
         — review before acting; blocks are noisy and not proof of abuse.
       </p>
 
-      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
+      {isLoading && <p className="text-sm">Loading…</p>}
 
       {!isLoading && rows?.length === 0 && (
         <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
-          <p className="text-muted-foreground text-sm">No blocks recorded.</p>
+          <p className="text-sm">No blocks recorded.</p>
         </div>
       )}
 
@@ -335,11 +332,9 @@ function MostBlockedView() {
                         flagged
                       </span>
                     )}
-                    {row.suspended && (
-                      <span className="text-muted-foreground ml-2 text-xs">· suspended</span>
-                    )}
+                    {row.suspended && <span className="ml-2 text-xs">· suspended</span>}
                   </p>
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-xs">
                     {row.user?.email ?? row.userId} · {row.user?.role ?? "—"}
                   </p>
                 </div>
@@ -350,9 +345,8 @@ function MostBlockedView() {
                     {pluralize(row.blockCount, "block")}
                   </span>
                   <Button
-                    variant="ghost"
+                    variant="destructive"
                     size="sm"
-                    className="text-danger hover:bg-danger/15 h-7 text-xs"
                     disabled={setSuspension.isPending}
                     onClick={() =>
                       setSuspension.mutate({ userId: row.userId, suspended: !row.suspended })

@@ -1,4 +1,4 @@
-# Shefa — Charity Job Board
+# Shefa: Nonprofit Job Board
 
 A nonprofit job board where employers give unqualified candidates a real chance to learn on the job. Free for everyone. No ghost jobs. No ghost candidates.
 

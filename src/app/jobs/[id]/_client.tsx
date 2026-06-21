@@ -33,9 +33,9 @@ const APPLICATION_STATUS_LABELS: Record<string, string> = {
 
 const APPLICATION_STATUS_STYLES: Record<string, string> = {
   SUBMITTED: "bg-white text-success",
-  VIEWED: "bg-warning/15 text-warning",
+  VIEWED: "bg-warning/15 text-orange",
   REJECTED: "bg-danger/15 text-danger",
-  CLOSED: "bg-blue-dark-3 text-muted-foreground",
+  CLOSED: "bg-blue-dark-3 text-white",
 };
 
 function ApplyDialog({
@@ -82,7 +82,7 @@ function ApplyDialog({
             rows={4}
             className="resize-none"
           />
-          <p className="text-muted-foreground text-right text-xs">{message.length}/500</p>
+          <p className="text-right text-xs">{message.length}/500</p>
         </div>
 
         {submit.error && (
@@ -129,7 +129,7 @@ export function JobDetailClient({ id, initialJob }: { id: string; initialJob: Jo
   if (error || !job) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">This job posting was not found.</p>
+        <p>This job posting was not found.</p>
         <Button asChild className="text-foreground">
           <Link href="/jobs">Back to listings</Link>
         </Button>

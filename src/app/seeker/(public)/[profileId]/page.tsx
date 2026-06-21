@@ -42,17 +42,13 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
   });
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground mx-auto max-w-3xl px-4 py-16 text-center">
-        You&apos;ve got this.
-      </div>
-    );
+    return <div className="mx-auto max-w-3xl px-4 py-16 text-center">You&apos;ve got this.</div>;
   }
 
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">This profile was not found.</p>
+        <p>This profile was not found.</p>
         <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
@@ -68,7 +64,7 @@ export default function SeekerProfilePage({ params }: { params: Promise<{ profil
             {profile.firstName} {profile.lastName}
           </CardTitle>
           {profile.status === "PAUSED" && (
-            <span className="border-warning/25 bg-warning/15 text-warning rounded-full px-3 py-1 text-xs">
+            <span className="border-warning/25 bg-warning/15 text-orange rounded-full px-3 py-1 text-xs">
               Not currently active
             </span>
           )}

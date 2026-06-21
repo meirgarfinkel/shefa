@@ -4,26 +4,19 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center cursor-pointer shadow-lg hover:shadow-none rounded-md text-sm font-medium transition-colors duration-100 outline-none select-none disabled:pointer-events-none disabled:opacity-50",
+  "glass glass-hover hover:scale-98 active:scale-96 inline-flex shrink-0 items-center text-nowrap justify-center cursor-pointer transition-transform ease-out duration-150 rounded-lg font-medium outline-none select-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default:
-          "bg-primary hover:bg-popover/90 hover:text-white from-popover/20 bg-linear-to-t via-transparent to-transparent",
-        secondary:
-          "bg-secondary/40 text-popover hover:bg-secondary/80 hover:text-popover from-popover/20 bg-linear-to-t via-transparent to-transparent",
-        ghost:
-          "bg-white/20 hover:bg-white/60 from-popover/20 bg-linear-to-t via-transparent to-transparent",
-        destructive:
-          "bg-white/80 text-danger hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",
-        success:
-          "bg-white/80 text-message-green hover:bg-white/90 hover:from-orange/10 from-primary/40 bg-linear-to-t via-transparent to-transparent",
+        default: "bg-primary/30",
+        secondary: "bg-secondary/30",
+        ghost: "bg-transparent",
+        destructive: "bg-danger/10 text-danger",
+        success: "bg-message-green/10 text-message-green",
         link: "underline-offset-4 hover:underline",
-        light:
-          "from-primary/40 bg-white/70 bg-linear-to-t via-transparent to-transparent hover:bg-white hover:from-orange/10",
       },
       size: {
-        default: "h-8 px-3",
+        default: "h-8 px-5",
         sm: "h-7 px-2 text-xs",
         lg: "h-9 px-4",
         icon: "size-8",

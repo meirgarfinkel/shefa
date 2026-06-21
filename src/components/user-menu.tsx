@@ -20,7 +20,7 @@ export function UserMenu({ email }: { email: string }) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="sm" className="max-w-48 truncate bg-transparent text-sm shadow-none">
+          <Button size="sm" variant="glass" className="max-w-48 text-sm">
             {email}
           </Button>
         </DropdownMenuTrigger>

@@ -69,7 +69,7 @@ export default function RoleSelectClient() {
       <div className="w-full max-w-lg space-y-6">
         <div className="text-center">
           <h1 className="text-3xl font-medium">Welcome to Shefa!</h1>
-          <p className="text-muted-foreground mt-1">Are you looking for work or looking to hire?</p>
+          <p className="mt-1">Are you looking for work or looking to hire?</p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

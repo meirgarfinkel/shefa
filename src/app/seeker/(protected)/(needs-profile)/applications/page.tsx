@@ -18,9 +18,9 @@ const STATUS_LABELS: Record<ApplicationStatus, string> = {
 
 const STATUS_STYLES: Record<ApplicationStatus, string> = {
   SUBMITTED: "text-success",
-  VIEWED: "text-warning",
+  VIEWED: "text-orange",
   REJECTED: "text-danger",
-  CLOSED: "text-muted-foreground",
+  CLOSED: "text-white",
 };
 
 function AppStatusBadge({ status }: { status: ApplicationStatus }) {
@@ -43,13 +43,11 @@ export default function SeekerApplicationsPage() {
     <div className="mx-auto max-w-2xl px-4 py-8 md:px-8">
       <PageHeader title="My applications" description="Jobs you've applied to." />
 
-      {isLoading && <p className="text-muted-foreground text-sm">Believe in yourself.</p>}
+      {isLoading && <p className="text-sm">Believe in yourself.</p>}
 
       {!isLoading && applications?.length === 0 && (
         <div className="py-12 text-center">
-          <p className="text-muted-foreground mb-4 text-sm">
-            You haven&apos;t applied to any jobs yet.
-          </p>
+          <p className="mb-4 text-sm">You haven&apos;t applied to any jobs yet.</p>
           <Button asChild variant="ghost">
             <Link href="/jobs">Browse listings</Link>
           </Button>
@@ -71,7 +69,7 @@ export default function SeekerApplicationsPage() {
                   </CardDescription>
                   <CardContent>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-xs">
                         Applied: {new Date(app.createdAt).toLocaleDateString()}
                       </p>
                       {!["REJECTED", "CLOSED"].includes(app.status) && (
@@ -92,7 +90,7 @@ export default function SeekerApplicationsPage() {
                       )}
                     </div>
                     {app.message && (
-                      <p className="text-muted-foreground mt-2 border-t pt-2 text-xs italic">
+                      <p className="mt-2 border-t pt-2 text-xs italic">
                         Message: &ldquo;{app.message}&rdquo;
                       </p>
                     )}

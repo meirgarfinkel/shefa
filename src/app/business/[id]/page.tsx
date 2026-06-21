@@ -72,7 +72,7 @@ export default function BusinessPublicPage({ params }: { params: Promise<{ id: s
           <Pill>{pluralize(business._count.jobs, "active job", "jobs")}</Pill>
 
           {business.website && (
-            <Button asChild variant="light">
+            <Button asChild>
               <Link href={business.website} target="_blank" rel="noopener noreferrer">
                 Website ↗
               </Link>

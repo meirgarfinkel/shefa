@@ -48,7 +48,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
 
         {submit.isSuccess ? (
           <div className="space-y-4">
-            <p className="text-muted-foreground text-sm">
+            <p className="text-sm">
               Thanks for reaching out — we&rsquo;ve passed this along to the team.
             </p>
             <DialogFooter>
@@ -57,9 +57,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         ) : (
           <>
-            <p className="text-muted-foreground text-sm">
-              Report a bug, suggest an improvement, or just say thanks.
-            </p>
+            <p className="text-sm">Report a bug, suggest an improvement, or just say thanks.</p>
 
             <div className="space-y-2">
               {CATEGORY_OPTIONS.map((value) => (

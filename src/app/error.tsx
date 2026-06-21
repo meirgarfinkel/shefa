@@ -28,7 +28,7 @@ export default function Error({
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Button onClick={() => reset()}>Try again</Button>
-        <Button asChild variant="light">
+        <Button asChild>
           <Link href="/jobs">Browse jobs</Link>
         </Button>
       </div>

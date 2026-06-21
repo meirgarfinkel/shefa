@@ -42,11 +42,11 @@ export default function MessagesPage() {
       <div className="mx-auto max-w-2xl">
         <PageHeader title="Messages" description="Your conversations." />
 
-        {isLoading && <p className="text-muted-foreground text-sm">One step closer.</p>}
+        {isLoading && <p className="text-sm">One step closer.</p>}
 
         {!isLoading && conversations?.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-muted-foreground text-sm">No messages yet.</p>
+            <p className="text-sm">No messages yet.</p>
           </div>
         )}
 

@@ -6,7 +6,7 @@ export default function VerifyExpiredPage() {
       <div className="w-full max-w-md space-y-4 text-center">
         <div className="text-5xl">⏱</div>
         <h1 className="text-2xl font-bold">This link has expired</h1>
-        <p className="text-muted-foreground">
+        <p>
           Verification links are valid for 30 days. Sign in to reactivate your listing or profile
           directly.
         </p>

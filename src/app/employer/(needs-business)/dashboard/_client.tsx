@@ -149,7 +149,7 @@ export function EmployerDashboardClient({
             Messages
           </Link>
         </Button>
-        <Button asChild variant="light">
+        <Button asChild>
           <Link href="/employer/business/new">
             <PlusIcon className="mr-1 size-4" />
             Add business
@@ -159,7 +159,7 @@ export function EmployerDashboardClient({
         {/* My businesses modal */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="light">
+            <Button>
               <BuildingIcon className="mr-1 size-4" />
               My businesses
             </Button>
@@ -199,7 +199,7 @@ export function EmployerDashboardClient({
             <div className="flex items-center gap-2">
               <h2 className="font-medium">
                 Active jobs{" "}
-                <span className="bg-primary/30 text-popover rounded-full px-2 py-1.5 text-center">
+                <span className="glass bg-message-green/20 text-popover rounded-full px-2 py-1 text-center">
                   {filteredJobs.length}
                 </span>
               </h2>
@@ -208,7 +208,7 @@ export function EmployerDashboardClient({
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     asChild
-                    className="from-primary/40 bg-linear-to-t via-transparent to-transparent"
+                    className="from-primary-light bg-linear-to-t via-transparent to-transparent"
                   >
                     <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
                       Businesses
@@ -242,8 +242,8 @@ export function EmployerDashboardClient({
           <div className="pr-1 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {filteredJobs.length === 0 ? (
               <div className="rounded-lg p-6 text-center">
-                <p className="text-muted-foreground text-sm">No active jobs.</p>
-                <Button asChild className="mt-3" size="sm">
+                <p className="text-sm">No active jobs.</p>
+                <Button asChild variant={"success"} className="mt-3" size="sm">
                   <Link href="/employer/jobs/new">Post your first job</Link>
                 </Button>
               </div>
@@ -258,18 +258,13 @@ export function EmployerDashboardClient({
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <CardTitle className="text-lg">{job.title}</CardTitle>
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="light"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <Button asChild size="sm" onClick={(e) => e.stopPropagation()}>
                           <Link href={`/employer/jobs/${job.id}/applications`}>
                             Applicants ({job._count.applications})
                           </Link>
                         </Button>
                       </div>
-                      <p className="text-muted-foreground mt-0.5 text-xs">
+                      <p className="mt-0.5 text-xs">
                         {multiBusiness && <> {job.business.name}</>}
                         {" · "} {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
                       </p>
@@ -279,7 +274,6 @@ export function EmployerDashboardClient({
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          variant="light"
                           disabled={updateJob.isPending}
                           onClick={(e) => {
                             e.preventDefault();
@@ -293,12 +287,7 @@ export function EmployerDashboardClient({
                         >
                           Pause
                         </Button>
-                        <Button
-                          asChild
-                          size="sm"
-                          variant="light"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                        <Button asChild size="sm" onClick={(e) => e.stopPropagation()}>
                           <Link href={`/employer/jobs/${job.id}/edit`}>Edit</Link>
                         </Button>
                       </div>
@@ -328,8 +317,8 @@ export function EmployerDashboardClient({
 
           <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
             {appFeed.length === 0 ? (
-              <div className="bg-primary rounded-lg border bg-linear-to-b from-white/60 via-transparent to-transparent p-4">
-                <p className="text-muted-foreground text-sm">No applicants yet.</p>
+              <div className="glass bg-secondary/40 m-2 rounded-md p-4">
+                <p className="text-sm">No applicants yet.</p>
               </div>
             ) : (
               <div className="overflow-hidden rounded-md pb-4">

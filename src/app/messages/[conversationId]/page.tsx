@@ -98,18 +98,14 @@ export default function ConversationPage({
   }, [conv?.messages?.length]);
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground mx-auto max-w-2xl px-4 py-16 text-center">
-        Keep it up.
-      </div>
-    );
+    return <div className="mx-auto max-w-2xl px-4 py-16 text-center">Keep it up.</div>;
   }
 
   if (error || !conv) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-muted-foreground">Conversation not found.</p>
-        <Button variant="light" className="mt-4" asChild>
+        <p>Conversation not found.</p>
+        <Button className="mt-4" asChild>
           <Link href="/messages">Back to messages</Link>
         </Button>
       </div>
@@ -216,7 +212,7 @@ export default function ConversationPage({
                   <span className="font-medium">{otherName}</span>
                 )}
                 {conv.job && (
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-xs">
                     Re:{" "}
                     <Link href={`/jobs/${conv.job.id}`} className="capitalize hover:underline">
                       {conv.job.title}
@@ -232,7 +228,7 @@ export default function ConversationPage({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-muted-foreground lg:hidden"
+                  className="lg:hidden"
                   onClick={() => setJobModalOpen(true)}
                 >
                   View job
@@ -282,9 +278,7 @@ export default function ConversationPage({
           {/* Messages */}
           <div className="mb-4 min-h-[300px] space-y-3">
             {conv.messages.length === 0 && (
-              <p className="text-muted-foreground py-8 text-center text-sm">
-                No messages yet. Say hello!
-              </p>
+              <p className="py-8 text-center text-sm">No messages yet. Say hello!</p>
             )}
             {conv.messages.map((msg) => {
               const isMine = msg.senderId === callerId;

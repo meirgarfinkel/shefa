@@ -12,7 +12,7 @@ export function ResponsiveBadge({ isResponsive, isNew, className }: ResponsiveBa
       <span
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium",
-          "text-success from-primary/40 bg-white bg-linear-to-t via-transparent to-transparent shadow-lg",
+          "text-success bg-white shadow-[-2px_2px_8px_#00000033,inset_5px_-5px_8px_#DCDCDC99]",
           className,
         )}
       >
@@ -26,7 +26,7 @@ export function ResponsiveBadge({ isResponsive, isNew, className }: ResponsiveBa
       <span
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-sm font-medium",
-          "text-success from-primary/40 bg-white bg-linear-to-t via-transparent to-transparent shadow-lg",
+          "text-success from-primary-light bg-white bg-linear-to-t via-transparent to-transparent shadow-lg",
           className,
         )}
       >

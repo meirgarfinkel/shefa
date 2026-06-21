@@ -13,7 +13,7 @@ const STATUS_LABELS: Record<JobStatus, string> = {
 
 const STATUS_STYLES: Record<JobStatus, string> = {
   ACTIVE: "bg-white text-success shadow-lg",
-  PAUSED: "bg-white text-warning shadow-lg",
+  PAUSED: "bg-white text-orange shadow-lg",
   CLOSED: "bg-white text-danger shadow-lg",
 };
 

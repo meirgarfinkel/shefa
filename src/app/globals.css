@@ -2,28 +2,46 @@
 
 /* ─────────────────────────────────────────────
    RAW COLOR PALETTE
-   Store ONLY raw RGB triplets here.
-   Never add opacity at this layer.
    ───────────────────────────────────────────── */
+
+/* hex opacity values:
+E6=90
+CC=80
+B3=70
+99=60
+80=50
+66=40
+4D=30
+33=20
+1A=10 */
+
 :root {
   /* Neutrals */
-  --blue-dark-1: rgb(10, 51, 78);
-  --blue-dark-2: rgb(43, 64, 91);
-  --blue-dark-3: rgb(68, 94, 124);
-  --blue-light-1: rgb(139, 165, 193);
-  --blue-light-2: rgb(174, 206, 253);
-  --gray-dark-1: rgb(41, 48, 56);
-  --gray-light-1: rgb(208, 210, 211);
+  --blue-dark-1: #0a334e;
+  --blue-dark-0: #1c435e;
+  --blue-dark-2: #2b405b;
+  --blue-dark-3: #445e7c;
+  --blue-light-1: #8ba5c1;
+  --blue-light-2: #aecefd;
+  --gray-dark-1: #293038;
+  --gray-light-1: #d0d2d3;
+
+  --primary-dark: #8aadd1;
+  --primary-light: #c6dcff;
+  --secondary-light: #bad0e7;
+  --secondary-dark: #8ba5c1;
+  --ghost: #e1e7ee;
+  --orange-light: #fff4f0;
 
   /* Blues */
 
   /* Status */
-  --red: rgb(156, 20, 45);
-  --orange: rgb(217, 119, 87);
-  --yellow: rgb(255, 214, 79);
-  --green: rgb(85, 180, 45);
-  --message-green: rgb(43, 121, 95);
-  --message-gray: rgb(59, 70, 85);
+  --red: #9c142d;
+  --orange: #d97757;
+  --yellow: #ffd64f;
+  --green: #55b42d;
+  --message-green: #2b795f;
+  --message-gray: #3b4655;
 
   /* Radius */
   --radius: 0.75rem;
@@ -87,6 +105,13 @@
 
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-secondary-light: var(--secondary-light);
+  --color-secondary-dark: var(--secondary-dark);
+  --color-ghost: var(--ghost);
+  --color-orange-light: var(--orange-light);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -156,6 +181,28 @@
   }
 }
 
+@utility glass {
+  position: relative;
+  z-index: 10;
+  border: 1px solid white;
+  box-shadow:
+    -2px 2px 6px rgba(0, 0, 0, 0.12),
+    inset 2px -2px 8px rgba(255, 255, 255, 0.4),
+    inset -5px 2px 8px white;
+  transition:
+    background-color 200ms,
+    border-color 200ms,
+    box-shadow 200ms;
+}
+
+@utility glass-hover {
+  &:hover {
+    box-shadow:
+      inset 1px -1px 4px white,
+      inset -1px 1px 4px white;
+  }
+}
+
 /* ─────────────────────────────────────────────
    GLOBAL BASE STYLES
    ───────────────────────────────────────────── */
@@ -179,7 +226,7 @@ body::before {
   background-image: url("/bg-image.jpg");
   background-size: cover;
   background-position: center;
-  filter: blur(10px);
+  filter: blur(4px);
 }
 
 /* Remove browser/radix focus rings */

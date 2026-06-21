@@ -138,7 +138,7 @@ export function JobDetailCard({ job }: { job: ConvJob }) {
         )}
 
         <div className="mt-4">
-          <Button asChild variant="ghost" size="sm" className="text-muted-foreground w-full">
+          <Button asChild variant="ghost" size="sm" className="w-full">
             <Link href={`/jobs/${job.id}`}>View full listing ↗</Link>
           </Button>
         </div>

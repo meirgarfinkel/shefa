@@ -353,10 +353,10 @@ function JobEditForm({
                         {DAYS.map((day) => (
                           <label
                             key={day.value}
-                            className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+                            className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                               field.value?.includes(day.value)
-                                ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
-                                : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
+                                ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
+                                : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
                             }`}
                           >
                             <input
@@ -498,7 +498,7 @@ function JobEditForm({
                       {updatePosting.isPending ? "Saving…" : "Save"}
                     </Button>
                     {saved && <p className="text-success text-sm">Saved.</p>}
-                    <Button asChild variant="ghost">
+                    <Button asChild variant="secondary">
                       <Link href="/employer/jobs">Cancel</Link>
                     </Button>
                   </span>
@@ -524,14 +524,16 @@ function JobEditForm({
                 <DialogTitle>Close &ldquo;{job.title}&rdquo;?</DialogTitle>
               </DialogHeader>
 
-              <p className="text-muted-foreground text-sm">Why are you closing this listing?</p>
+              <p className="text-sm">Why are you closing this listing?</p>
 
               <div className="space-y-2">
                 {CLOSURE_OPTIONS.map((opt) => (
                   <label
                     key={opt.value}
                     className={`flex cursor-pointer items-center gap-3 rounded-md px-3 py-2.5 transition-colors duration-100 ${
-                      closeReason === opt.value ? "bg-blue-dark-2" : "hover:bg-blue-dark-3"
+                      closeReason === opt.value
+                        ? "bg-blue-dark-2 text-white"
+                        : "hover:bg-blue-dark-3 hover:text-white"
                     }`}
                   >
                     <input
@@ -589,15 +591,11 @@ export default function JobEditPage() {
   const { data: languages } = trpc.taxonomy.languages.useQuery();
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Keep making waves.</div>
-    );
+    return <div className="px-4 py-16 text-center text-sm">Keep making waves.</div>;
   }
 
   if (!job) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Job not found.</div>
-    );
+    return <div className="px-4 py-16 text-center text-sm">Job not found.</div>;
   }
 
   return <JobEditForm job={job} languages={languages} />;

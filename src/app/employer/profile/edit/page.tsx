@@ -73,14 +73,12 @@ export default function EmployerProfileEditPage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Jobs change lives.</div>
-    );
+    return <div className="px-4 py-16 text-center text-sm">Jobs change lives.</div>;
   }
 
   if (!profile) {
     return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
+      <div className="px-4 py-16 text-center text-sm">
         <p>Profile not found.</p>
         <Button asChild className="mt-4">
           <Link href="/employer/profile/new">Create profile</Link>

@@ -311,69 +311,69 @@ function JobsContent() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 md:flex md:h-[calc(100vh-4rem)] md:flex-col">
-      <MobileFilterBar {...filterProps} />
+    <div className="p-5">
+      <div className="mx-auto max-w-4xl md:flex md:h-[calc(100vh-4rem)] md:flex-col">
+        <MobileFilterBar {...filterProps} />
 
-      {/* ── Desktop page header ── */}
-      <div className="hidden shrink-0 items-center justify-between gap-4 py-5 md:flex">
-        <h1 className="text-2xl font-semibold">Job Listings</h1>
-        {session?.user?.role === "EMPLOYER" && (
-          <Button asChild>
-            <Link href="/employer/jobs/new">Post a Job</Link>
-          </Button>
-        )}
-      </div>
-
-      {/* ── Layout: sidebar + list ── */}
-      <div className="flex flex-col gap-6 pt-5 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
-        <DesktopFilterSidebar {...filterProps} />
-
-        {/* ── Jobs list ── */}
-        <div className="min-w-0 flex-1 pb-8 md:overflow-y-auto">
-          {isLoading && (
-            <div className="text-muted-foreground py-16 text-center">Loading listings…</div>
+        {/* ── Desktop page header ── */}
+        <div className="hidden shrink-0 items-center justify-between gap-4 pb-5 md:flex">
+          <h1 className="text-2xl font-semibold">Job Listings</h1>
+          {session?.user?.role === "EMPLOYER" && (
+            <Button asChild>
+              <Link href="/employer/jobs/new">Post a Job</Link>
+            </Button>
           )}
+        </div>
 
-          {!isLoading && queryError && (
-            <div className="py-16 text-center">
-              <p className="text-destructive text-sm">
-                Something went wrong loading jobs. Please try again.
-              </p>
-            </div>
-          )}
+        {/* ── Layout: sidebar + list ── */}
+        <div className="flex flex-col gap-6 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
+          <DesktopFilterSidebar {...filterProps} />
 
-          {!isLoading && !queryError && displayJobs !== undefined && displayJobs.length === 0 && (
-            <div className="py-16 text-center">
-              <p className="text-muted-foreground text-sm">
-                {isSearchMode
-                  ? `No results for "${debouncedQuery}"`
-                  : hasFilters
-                    ? "No jobs match your filters."
-                    : "No open positions yet. Check back soon."}
-              </p>
-            </div>
-          )}
+          {/* ── Jobs list ── */}
+          <div className="min-w-0 flex-1 pb-8 md:overflow-y-auto">
+            {isLoading && <div className="py-16 text-center">Loading listings…</div>}
 
-          {!isLoading && !queryError && displayJobs && displayJobs.length > 0 && (
-            <div className="space-y-3">
-              {displayJobs.map((job) => (
-                <JobCard
-                  key={job.id}
-                  id={job.id}
-                  title={job.title}
-                  city={job.city}
-                  state={job.state}
-                  jobType={job.jobType}
-                  workArrangement={job.workArrangement}
-                  minHourlyRate={Number(job.minHourlyRate)}
-                  status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
-                  businessName={job.business.name}
-                  href={`/jobs/${job.id}`}
-                  applicationCount={job._count.applications}
-                />
-              ))}
-            </div>
-          )}
+            {!isLoading && queryError && (
+              <div className="py-16 text-center">
+                <p className="text-destructive text-sm">
+                  Something went wrong loading jobs. Please try again.
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !queryError && displayJobs !== undefined && displayJobs.length === 0 && (
+              <div className="py-16 text-center">
+                <p className="text-sm">
+                  {isSearchMode
+                    ? `No results for "${debouncedQuery}"`
+                    : hasFilters
+                      ? "No jobs match your filters."
+                      : "No open positions yet. Check back soon."}
+                </p>
+              </div>
+            )}
+
+            {!isLoading && !queryError && displayJobs && displayJobs.length > 0 && (
+              <div className="space-y-3">
+                {displayJobs.map((job) => (
+                  <JobCard
+                    key={job.id}
+                    id={job.id}
+                    title={job.title}
+                    city={job.city}
+                    state={job.state}
+                    jobType={job.jobType}
+                    workArrangement={job.workArrangement}
+                    minHourlyRate={Number(job.minHourlyRate)}
+                    status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
+                    businessName={job.business.name}
+                    href={`/jobs/${job.id}`}
+                    applicationCount={job._count.applications}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

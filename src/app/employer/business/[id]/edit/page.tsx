@@ -325,17 +325,11 @@ export default function BusinessEditPage({ params }: { params: Promise<{ id: str
   const { data: business, isLoading } = trpc.business.getById.useQuery({ id });
 
   if (isLoading) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">Keep growing.</div>
-    );
+    return <div className="px-4 py-16 text-center text-sm">Keep growing.</div>;
   }
 
   if (!business) {
-    return (
-      <div className="text-muted-foreground px-4 py-16 text-center text-sm">
-        Business not found.
-      </div>
-    );
+    return <div className="px-4 py-16 text-center text-sm">Business not found.</div>;
   }
 
   return <BusinessEditForm business={business} />;

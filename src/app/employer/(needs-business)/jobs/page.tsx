@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import type { JobStatus } from "@/db/schema";
 import { CloseJobModal } from "@/components/close-job-modal";
 import { EmployerJobCard } from "@/components/employer-job-card";
+import { Panel } from "@/components/ui/panel";
 
 const FILTER_TABS: { value: "all" | JobStatus; label: string }[] = [
   { value: "all", label: "All" },
@@ -90,10 +91,10 @@ export default function EmployerJobsPage() {
             <button
               key={tab.value}
               onClick={() => setStatusFilter(tab.value)}
-              className={`bg-muted/10 flex cursor-pointer rounded-full px-3 py-1.5 text-sm transition-colors duration-100 ${
+              className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                 statusFilter === tab.value
-                  ? "bg-popover bg-linear-to-b from-white/20 via-transparent to-transparent text-white"
-                  : "from-popover/20 hover:bg-popover/30 bg-linear-to-t via-transparent to-transparent"
+                  ? "bg-popover/90 text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
+                  : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
               }`}
             >
               {tab.label}
@@ -101,16 +102,14 @@ export default function EmployerJobsPage() {
           ))}
         </div>
 
-        {isLoading && (
-          <div className="text-muted-foreground py-16 text-center text-sm">Your work matters.</div>
-        )}
+        {isLoading && <div className="py-16 text-center text-sm">Your work matters.</div>}
 
         {!isLoading && jobs?.length === 0 && (
-          <div className="bg-secondary text-muted-foreground rounded-lg py-16 text-center">
+          <Panel className="bg-secondary/40 rounded-lg py-16 text-center">
             {statusFilter !== "all"
               ? `No ${statusFilter.toLowerCase()} job postings.`
               : "No job postings yet."}
-          </div>
+          </Panel>
         )}
 
         {!isLoading && jobs && jobs.length > 0 && (

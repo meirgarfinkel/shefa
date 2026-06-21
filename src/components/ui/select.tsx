@@ -37,8 +37,10 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "from-primary/40 hover:from-orange/10 flex h-8 min-w-0 items-center justify-between gap-1 rounded-md bg-white/70 bg-linear-to-t via-transparent to-transparent px-3 text-sm shadow-lg hover:bg-white hover:shadow-none",
+        "relative z-10 flex border border-white shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] transition-shadow duration-150 hover:shadow-[inset_1px_-1px_4px_#ffffff66,inset_-1px_1px_4px_#ffffffe6]",
+        "h-8 min-w-0 items-center justify-between gap-1 rounded-md px-3 text-sm",
         "max-w-35 text-nowrap md:max-w-100",
+        "inline-flex shrink-0 cursor-pointer font-medium outline-none select-none hover:scale-98 active:scale-96 disabled:pointer-events-none disabled:opacity-50",
         className,
       )}
       {...props}
@@ -63,7 +65,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "bg-popover relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md p-1 text-white shadow-md",
+          "relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md border bg-white/10 p-1 shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] backdrop-blur-2xl",
           // Animations
           "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
           "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
@@ -83,7 +85,7 @@ function SelectContent({
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
           className={cn(
-            "data-[position=popper]:h-(--radix-select-trigger-height)",
+            "px-1 data-[position=popper]:h-(--radix-select-trigger-height)",
             "data-[position=popper]:w-full data-[position=popper]:min-w-(--radix-select-trigger-width)",
           )}
         >
@@ -99,7 +101,7 @@ function SelectLabel({ className, ...props }: React.ComponentProps<typeof Select
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
-      className={cn("text-muted-foreground px-1.5 py-1 text-xs", className)}
+      className={cn("px-1.5 py-1 text-xs", className)}
       {...props}
     />
   );
@@ -114,9 +116,9 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
-        "hover:bg-popover-foreground hover:text-popover",
-        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
+        "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         className,
       )}
       {...props}
@@ -147,12 +149,12 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"
       className={cn(
-        "bg-popover z-10 flex cursor-default items-center justify-center py-1 [&_svg:not([class*='size-'])]:size-4",
+        "z-10 flex h-2 cursor-default items-center justify-center py-1 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
     >
-      <ChevronUpIcon />
+      <ChevronUpIcon className="text-orange" />
     </SelectPrimitive.ScrollUpButton>
   );
 }
@@ -165,12 +167,12 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownButton
       data-slot="select-scroll-down-button"
       className={cn(
-        "bg-popover z-10 flex cursor-default items-center justify-center py-1 [&_svg:not([class*='size-'])]:size-4",
+        "z-10 flex h-2 cursor-default items-center justify-center py-1 [&_svg:not([class*='size-'])]:size-4",
         className,
       )}
       {...props}
     >
-      <ChevronDownIcon />
+      <ChevronDownIcon className="text-orange" />
     </SelectPrimitive.ScrollDownButton>
   );
 }

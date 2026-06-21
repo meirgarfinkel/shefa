@@ -83,7 +83,7 @@ export function CloseJobModal({
           <DialogTitle>Close &ldquo;{jobTitle}&rdquo;?</DialogTitle>
         </DialogHeader>
 
-        <p className="text-muted-foreground text-sm">Why are you closing this listing?</p>
+        <p className="text-sm">Why are you closing this listing?</p>
 
         <div className="space-y-2">
           {CLOSURE_OPTIONS.map((opt) => (
@@ -109,11 +109,9 @@ export function CloseJobModal({
 
         {reason === "FILLED_ON_SHEFA" && (
           <div className="space-y-2">
-            <p className="text-muted-foreground text-sm">
-              Who did you hire? This helps us measure our impact.
-            </p>
+            <p className="text-sm">Who did you hire? This helps us measure our impact.</p>
             {applicants.isLoading ? (
-              <p className="text-muted-foreground text-sm">Loading applicants…</p>
+              <p className="text-sm">Loading applicants…</p>
             ) : (
               <div className="max-h-56 space-y-2 overflow-y-auto">
                 {hireable.map((a) => {

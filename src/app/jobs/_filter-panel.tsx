@@ -135,7 +135,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
 
         <div className="ml-auto flex items-center gap-2">
           {!isLoading && jobCount !== undefined && (
-            <span className="text-muted-foreground text-sm">{pluralize(jobCount, "job")}</span>
+            <span className="text-sm">{pluralize(jobCount, "job")}</span>
           )}
           {isEmployer && (
             <Button asChild size="sm" className="h-7 px-2 text-sm">
