@@ -109,7 +109,7 @@ export default function EmployerJobApplicationsPage({
         {isLoading && <p className="text-sm">Your impact is great.</p>}
 
         {!isLoading && applications?.length === 0 && (
-          <div className="bg-blue-dark-2 rounded-lg p-12 text-center">
+          <div className="bg-secondary/40 rounded-lg p-12 text-center">
             <p className="text-sm">No applications yet.</p>
           </div>
         )}
