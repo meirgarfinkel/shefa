@@ -97,7 +97,11 @@ function ApplyDialog({
           <Button onClick={handleSubmit} disabled={submit.isPending}>
             {submit.isPending ? "Submitting…" : "Submit application"}
           </Button>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={submit.isPending}>
+          <Button
+            variant="secondary"
+            onClick={() => onOpenChange(false)}
+            disabled={submit.isPending}
+          >
             Cancel
           </Button>
         </div>

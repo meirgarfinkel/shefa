@@ -515,7 +515,7 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
       </div>
 
       {hasFilters && (
-        <Button onClick={onClearFilters} className="w-full">
+        <Button variant="secondary" onClick={onClearFilters} className="w-full">
           Clear filters
         </Button>
       )}

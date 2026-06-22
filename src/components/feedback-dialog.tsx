@@ -95,7 +95,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
             )}
 
             <DialogFooter className="gap-2">
-              <Button onClick={handleClose} disabled={submit.isPending}>
+              <Button variant="secondary" onClick={handleClose} disabled={submit.isPending}>
                 Cancel
               </Button>
               <Button

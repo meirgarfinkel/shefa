@@ -160,7 +160,7 @@ export function CloseJobModal({
         )}
 
         <DialogFooter className="gap-2">
-          <Button onClick={handleClose} disabled={closeJob.isPending}>
+          <Button variant="secondary" onClick={handleClose} disabled={closeJob.isPending}>
             Cancel
           </Button>
           <Button

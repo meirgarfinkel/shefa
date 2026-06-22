@@ -357,6 +357,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
             )}
             <DialogFooter>
               <Button
+                variant="secondary"
                 onClick={() => setDeleteAccountOpen(false)}
                 disabled={deleteAccount.isPending}
               >

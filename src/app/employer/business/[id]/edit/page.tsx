@@ -299,7 +299,7 @@ function BusinessEditForm({ business }: { business: BusinessRecord }) {
             )}
             <DialogFooter>
               <Button
-                variant="ghost"
+                variant="secondary"
                 onClick={() => setDeleteOpen(false)}
                 disabled={deleteBusiness.isPending}
               >

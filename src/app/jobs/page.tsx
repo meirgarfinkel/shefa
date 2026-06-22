@@ -273,9 +273,7 @@ function JobsContent() {
           ? `No results for "${debouncedQuery}"`
           : `${pluralize(displayJobs.length, "result")} for "${debouncedQuery}"`
         : displayJobs.length === 0
-          ? hasFilters
-            ? "No jobs match your filters."
-            : "No open positions yet. Check back soon."
+          ? null
           : `${pluralize(displayJobs.length, "job")} found`
       : null;
 

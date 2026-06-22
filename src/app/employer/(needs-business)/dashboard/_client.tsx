@@ -238,7 +238,7 @@ export function EmployerDashboardClient({
             {filteredJobs.length === 0 ? (
               <div className="rounded-lg p-6 text-center">
                 <p className="text-sm">No active jobs.</p>
-                <Button asChild variant={"success"} className="mt-3" size="sm">
+                <Button asChild variant="success" className="mt-3" size="sm">
                   <Link href="/employer/jobs/new">Post your first job</Link>
                 </Button>
               </div>

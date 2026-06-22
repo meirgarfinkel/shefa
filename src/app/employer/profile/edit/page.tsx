@@ -182,6 +182,7 @@ export default function EmployerProfileEditPage() {
             )}
             <DialogFooter>
               <Button
+                variant="secondary"
                 onClick={() => setDeleteAccountOpen(false)}
                 disabled={deleteAccount.isPending}
               >

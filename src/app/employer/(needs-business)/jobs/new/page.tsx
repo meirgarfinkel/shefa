@@ -436,7 +436,7 @@ export default function PostJobPage() {
 
             <Button
               type="submit"
-              variant={"success"}
+              variant="success"
               className="mt-5 px-10 text-nowrap"
               disabled={createPosting.isPending || hasNoBusinesses}
             >
