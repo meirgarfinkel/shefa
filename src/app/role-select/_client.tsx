@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Panel } from "@/components/ui/panel";
 
 type Role = "SEEKER" | "EMPLOYER";
 
@@ -47,10 +48,9 @@ export default function RoleSelectClient() {
         disabled={!!loadingRole}
         className="w-full text-left"
       >
-        <Card
+        <Panel
           className={[
-            "cursor-pointer transition-colors duration-100",
-            "hover:bg-dark/70",
+            "bg-message-green/10 glass-hover cursor-pointer transition-colors duration-100",
             loadingRole && !isLoading ? "opacity-50" : "",
             isLoading ? "border-primary/60" : "",
           ].join(" ")}
@@ -59,7 +59,7 @@ export default function RoleSelectClient() {
             <CardTitle className="text-xl">{title}</CardTitle>
             <CardDescription className="text-popover">{description}</CardDescription>
           </CardHeader>
-        </Card>
+        </Panel>
       </button>
     );
   }

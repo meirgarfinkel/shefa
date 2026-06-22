@@ -178,184 +178,176 @@ export default function ConversationPage({
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6">
-      <div className="flex items-start gap-6">
-        {/* Job card — desktop only, sticky sidebar */}
-        {conv.job && (
-          <div className="hidden w-80 shrink-0 lg:block">
-            <div
-              className="sticky top-6 overflow-y-auto"
-              style={{ maxHeight: "calc(100vh - 3rem)" }}
-            >
-              <JobDetailCard job={conv.job} />
+    <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-5xl gap-6 px-4 py-6">
+      {/* Job card — desktop only, sticky sidebar */}
+      {conv.job && (
+        <div className="hidden h-full w-80 shrink-0 overflow-y-auto lg:block">
+          <JobDetailCard job={conv.job} />
+        </div>
+      )}
+
+      {/* Conversation panel */}
+      <div
+        className={`flex h-full min-h-0 flex-col ${conv.job ? "min-w-0 flex-1" : "mx-auto w-full max-w-3xl"}`}
+      >
+        {/* Header */}
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link href="/messages" className="hover:text-orange text-sm">
+              ← Messages
+            </Link>
+            <Separator orientation="vertical" className="h-4" />
+            <div>
+              {otherHref ? (
+                <Link href={otherHref} className="font-medium hover:underline">
+                  {otherName}
+                </Link>
+              ) : (
+                <span className="font-medium">{otherName}</span>
+              )}
+              {conv.job && (
+                <p className="text-xs">
+                  Re:{" "}
+                  <Link href={`/jobs/${conv.job.id}`} className="capitalize hover:underline">
+                    {conv.job.title}
+                  </Link>
+                </p>
+              )}
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Mobile: view job button */}
+            {conv.job && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden"
+                onClick={() => setJobModalOpen(true)}
+              >
+                View job
+              </Button>
+            )}
+
+            {/* Actions menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="sm">
+                  ⋯
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {callerBlocked ? (
+                  <DropdownMenuItem
+                    onClick={() => unblockConv.mutate({ conversationId })}
+                    disabled={unblockConv.isPending}
+                  >
+                    Unblock
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => blockConv.mutate({ conversationId })}
+                    disabled={blockConv.isPending}
+                  >
+                    Block
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() =>
+                    report.mutate({
+                      targetType: "USER",
+                      targetId: other?.id ?? "",
+                      reason: "Reported from conversation",
+                    })
+                  }
+                  disabled={report.isPending}
+                >
+                  Report user
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        {/* Messages — the only scrollable region */}
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+          {conv.messages.length === 0 && (
+            <p className="py-8 text-center text-sm">No messages yet. Say hello!</p>
+          )}
+          {conv.messages.map((msg) => {
+            const isMine = msg.senderId === callerId;
+            return (
+              <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`max-w-[75%] rounded-b-2xl px-4 py-2.5 text-white ${
+                    isMine ? "bg-message-green rounded-tl-2xl" : "bg-message-gray rounded-tr-2xl"
+                  }`}
+                >
+                  <p className="wrap-break-word whitespace-pre-wrap">{msg.body}</p>
+                  <p
+                    className={`mt-1 text-right text-xs ${
+                      isMine ? "text-popover-foreground/70" : "text-muted-foreground"
+                    }`}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {isMine && msg.readAt && " · Read"}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Blocked / gated state */}
+        {blockMessage && (
+          <div className="bg-blue-dark-3 mt-4 shrink-0 rounded-md px-4 py-3 text-center text-sm text-white">
+            {blockMessage}
+            {blockReason === "caller-blocked" && (
+              <button
+                className="text-primary ml-2 underline"
+                onClick={() => unblockConv.mutate({ conversationId })}
+                disabled={unblockConv.isPending}
+              >
+                Unblock
+              </button>
+            )}
           </div>
         )}
 
-        {/* Conversation panel */}
-        <div
-          className={`flex flex-col ${conv.job ? "min-w-0 flex-1" : "mx-auto w-full max-w-3xl"}`}
-        >
-          {/* Header */}
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <Link href="/messages" className="hover:text-orange text-sm">
-                ← Messages
-              </Link>
-              <Separator orientation="vertical" className="h-4" />
-              <div>
-                {otherHref ? (
-                  <Link href={otherHref} className="font-medium hover:underline">
-                    {otherName}
-                  </Link>
-                ) : (
-                  <span className="font-medium">{otherName}</span>
-                )}
-                {conv.job && (
-                  <p className="text-xs">
-                    Re:{" "}
-                    <Link href={`/jobs/${conv.job.id}`} className="capitalize hover:underline">
-                      {conv.job.title}
-                    </Link>
-                  </p>
-                )}
-              </div>
+        {/* Composer */}
+        {!blockMessage && (
+          <div className="mt-4 shrink-0 space-y-2">
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Write a message… (⌘↵ to send)"
+              maxLength={MAX_BODY}
+              rows={3}
+              className="resize-none"
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-muted text-xs">
+                {body.length}/{MAX_BODY}
+              </span>
+              <Button
+                onClick={handleSend}
+                disabled={!body.trim() || sendMessage.isPending}
+                size="sm"
+              >
+                {sendMessage.isPending ? "Sending…" : "Send"}
+              </Button>
             </div>
-
-            <div className="flex items-center gap-2">
-              {/* Mobile: view job button */}
-              {conv.job && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="lg:hidden"
-                  onClick={() => setJobModalOpen(true)}
-                >
-                  View job
-                </Button>
-              )}
-
-              {/* Actions menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="secondary" size="sm">
-                    ⋯
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {callerBlocked ? (
-                    <DropdownMenuItem
-                      onClick={() => unblockConv.mutate({ conversationId })}
-                      disabled={unblockConv.isPending}
-                    >
-                      Unblock
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => blockConv.mutate({ conversationId })}
-                      disabled={blockConv.isPending}
-                    >
-                      Block
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={() =>
-                      report.mutate({
-                        targetType: "USER",
-                        targetId: other?.id ?? "",
-                        reason: "Reported from conversation",
-                      })
-                    }
-                    disabled={report.isPending}
-                  >
-                    Report user
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="mb-4 min-h-[300px] space-y-3">
-            {conv.messages.length === 0 && (
-              <p className="py-8 text-center text-sm">No messages yet. Say hello!</p>
+            {sendMessage.error && (
+              <p className="text-danger text-xs">{sendMessage.error.message}</p>
             )}
-            {conv.messages.map((msg) => {
-              const isMine = msg.senderId === callerId;
-              return (
-                <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[75%] rounded-b-2xl px-4 py-2.5 text-white ${
-                      isMine ? "bg-message-green rounded-tl-2xl" : "bg-message-gray rounded-tr-2xl"
-                    }`}
-                  >
-                    <p className="wrap-break-word whitespace-pre-wrap">{msg.body}</p>
-                    <p
-                      className={`mt-1 text-right text-xs ${
-                        isMine ? "text-popover-foreground/70" : "text-muted-foreground"
-                      }`}
-                    >
-                      {new Date(msg.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                      {isMine && msg.readAt && " · Read"}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
           </div>
-
-          {/* Blocked / gated state */}
-          {blockMessage && (
-            <div className="bg-blue-dark-3 rounded-md px-4 py-3 text-center text-sm text-white">
-              {blockMessage}
-              {blockReason === "caller-blocked" && (
-                <button
-                  className="text-primary ml-2 underline"
-                  onClick={() => unblockConv.mutate({ conversationId })}
-                  disabled={unblockConv.isPending}
-                >
-                  Unblock
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Composer */}
-          {!blockMessage && (
-            <div className="mt-2 space-y-2">
-              <Textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Write a message… (⌘↵ to send)"
-                maxLength={MAX_BODY}
-                rows={3}
-                className="resize-none"
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-muted text-xs">
-                  {body.length}/{MAX_BODY}
-                </span>
-                <Button
-                  onClick={handleSend}
-                  disabled={!body.trim() || sendMessage.isPending}
-                  size="sm"
-                >
-                  {sendMessage.isPending ? "Sending…" : "Send"}
-                </Button>
-              </div>
-              {sendMessage.error && (
-                <p className="text-danger text-xs">{sendMessage.error.message}</p>
-              )}
-            </div>
-          )}
-        </div>
+        )}
       </div>
-
       {/* Mobile job modal */}
       {conv.job && (
         <Dialog open={jobModalOpen} onOpenChange={setJobModalOpen}>

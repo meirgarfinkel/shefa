@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,25 +9,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export function GuestMenu() {
+  const [open, setOpen] = useState(false);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="icon" aria-label="Menu">
-          <Menu className="h-5 w-5 text-white" />
-        </Button>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger
+        aria-label={open ? "Close menu" : "Open menu"}
+        className="cursor-pointer"
+      >
+        {open ? <X className="h-6 w-6 text-white" /> : <Menu className="h-6 w-6 text-white" />}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-blue-dark-3 w-40 text-white">
-        <DropdownMenuItem asChild className="cursor-pointer">
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem asChild>
           <Link href="/privacy">Privacy Policy</Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild className="cursor-pointer">
+        <DropdownMenuItem asChild>
           <Link href="/terms">Terms of Service</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="cursor-pointer">
+        <DropdownMenuItem asChild>
           <Link href="/">Sign in</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

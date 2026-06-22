@@ -2,40 +2,39 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Menu, X } from "lucide-react";
 import { signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 
-export function UserMenu({ email }: { email: string }) {
+export function UserMenu() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button size="sm" variant="glass" className="max-w-48 text-sm">
-            {email}
-          </Button>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          aria-label={open ? "Close menu" : "Open menu"}
+          className="cursor-pointer"
+        >
+          {open ? <X className="h-6 w-6 text-white" /> : <Menu className="h-6 w-6 text-white" />}
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-blue-dark-3 w-40 text-white">
+        <DropdownMenuContent align="end">
           <DropdownMenuItem className="cursor-pointer" onSelect={() => setFeedbackOpen(true)}>
             Send feedback
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link href="/privacy">Privacy Policy</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="cursor-pointer">
             <Link href="/terms">Terms of Service</Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem
             className="cursor-pointer"
             onClick={() => signOut({ callbackUrl: "/" })}

@@ -136,8 +136,8 @@ export function EmployerJobCard({
         {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
       </p>
 
-      <div className="relative z-10 mt-3 flex flex-wrap justify-between">
-        <div className="flex gap-1.5">
+      <div className="relative z-10 mt-3 flex flex-wrap justify-between gap-y-2">
+        <div className="flex flex-wrap gap-1.5">
           {showApplicants && !isClosed && (
             <Button asChild size="sm" onClick={(e) => e.stopPropagation()}>
               <Link href={`/employer/jobs/${job.id}/applications`}>

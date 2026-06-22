@@ -55,7 +55,7 @@ export async function Nav() {
             {/* Desktop nav — hidden on mobile */}
             <div className="hidden items-center gap-4 md:flex">
               {links.length > 0 && <NavLinks links={links} />}
-              {email ? <UserMenu email={email} /> : <GuestMenu />}
+              {email ? <UserMenu /> : <GuestMenu />}
             </div>
 
             {/* Mobile hamburger — hidden on desktop */}

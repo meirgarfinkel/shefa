@@ -241,6 +241,12 @@ dashboard, broader error-handling polish, and a pre-ship env/secret audit.
 
 ## 5. Technical Architecture
 
+**Guiding principle — YAGNI.** Always build the smallest thing that satisfies the
+current requirement. Prefer one-line solutions over multi-step scaffolding: lean on the
+framework/library's built-in behavior (e.g. a component's own controlled state) instead
+of re-implementing it, don't add state/props/abstractions for hypothetical future needs,
+and delete redundant glue. If a one-liner does the job, ship the one-liner.
+
 **Stack:** Next.js (App Router) + TypeScript (strict) · tRPC v11 · Drizzle ORM with the
 `@neondatabase/serverless` HTTP driver · PostgreSQL · Auth.js v5 (`next-auth@beta`) ·
 Resend · Zod v4 · Tailwind 4 + shadcn/ui (Radix) · React Hook Form.

@@ -93,7 +93,7 @@ export default function EmployerJobsPage() {
               onClick={() => setStatusFilter(tab.value)}
               className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                 statusFilter === tab.value
-                  ? "bg-popover/90 text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
+                  ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
                   : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
               }`}
             >

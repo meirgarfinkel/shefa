@@ -11,7 +11,6 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -199,23 +198,19 @@ export function EmployerDashboardClient({
             <div className="flex items-center gap-2">
               <h2 className="font-medium">
                 Active jobs{" "}
-                <span className="glass bg-message-green/20 text-popover rounded-full px-2 py-1 text-center">
+                <span className="glass bg-message-green/20 text-popover rounded-full px-2 py-0.5 text-center">
                   {filteredJobs.length}
                 </span>
               </h2>
 
               {multiBusiness && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger
-                    asChild
-                    className="from-primary-light bg-linear-to-t via-transparent to-transparent"
-                  >
+                  <DropdownMenuTrigger asChild>
                     <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
                       Businesses
                     </FilterTrigger>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
-                    <DropdownMenuLabel>Filter by business</DropdownMenuLabel>
                     {businesses.map((c) => (
                       <DropdownMenuCheckboxItem
                         key={c.id}

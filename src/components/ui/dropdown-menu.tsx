@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "bg-popover z-50 max-h-(--radix-dropdown-menu-content-available-height) space-y-1 overflow-auto rounded-md p-1 text-white shadow-md",
+          "relative z-50 max-h-(--radix-select-content-available-height) overflow-auto rounded-md border bg-white/10 px-2 py-1 shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] backdrop-blur-2xl",
           className,
         )}
         {...props}
@@ -62,7 +62,7 @@ function DropdownMenuItem({
       data-inset={inset}
       data-variant={variant}
       className={cn(
-        "hover:bg-card/30 relative flex cursor-pointer items-center gap-1.5 rounded-md p-1 text-sm outline-none select-none",
+        "relative flex cursor-pointer items-center gap-1.5 rounded-md p-1 text-sm outline-none select-none hover:scale-105 hover:bg-white/50",
         "data-disabled:pointer-events-none data-disabled:opacity-50",
         variant === "destructive" && "text-danger focus:bg-danger/10 focus:text-danger",
         inset && "pl-7",
@@ -87,9 +87,9 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center rounded-md px-2 py-1 text-sm",
-        "hover:bg-popover-foreground hover:text-popover",
-        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
+        "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         inset && "pl-7",
         className,
       )}
@@ -120,9 +120,9 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative flex cursor-default items-center space-y-1 rounded-md px-2 py-1 text-sm",
-        "hover:bg-popover-foreground hover:text-popover",
-        "data-[state=checked]:bg-accent/90 data-[state=checked]:text-primary-foreground",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
+        "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         inset && "pl-7",
         className,
       )}

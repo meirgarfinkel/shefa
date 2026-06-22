@@ -66,16 +66,6 @@ function SelectContent({
         data-slot="select-content"
         className={cn(
           "relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md border bg-white/10 p-1 shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] backdrop-blur-2xl",
-          // Animations
-          "data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95",
-          "data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          // Side-specific offsets (only for popper)
-          position === "popper" && [
-            "data-[side=bottom]:translate-y-1",
-            "data-[side=left]:-translate-x-1",
-            "data-[side=right]:translate-x-1",
-            "data-[side=top]:-translate-y-1",
-          ],
           className,
         )}
         position={position}

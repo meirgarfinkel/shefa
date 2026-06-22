@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
 import type { NavLink } from "./nav-links";
 
 interface MobileNavProps {
@@ -33,16 +32,14 @@ export function MobileNav({ links, email }: MobileNavProps) {
   return (
     <>
       {/* Trigger */}
-      <div className="md:hidden">
-        <Button
-          variant="secondary"
-          size="icon"
-          aria-label={open ? "Close menu" : "Open menu"}
-          onClick={() => setOpen((prev) => !prev)}
-        >
-          {open ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
-        </Button>
-      </div>
+      <button
+        type="button"
+        aria-label={open ? "Close menu" : "Open menu"}
+        onClick={() => setOpen((prev) => !prev)}
+        className="hover:text-orange p-1 transition-colors md:hidden"
+      >
+        {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+      </button>
 
       {/* Overlay */}
       {open && (
@@ -91,7 +88,6 @@ export function MobileNav({ links, email }: MobileNavProps) {
             <div className="border-primary mt-auto space-y-2 border-t p-3">
               {email ? (
                 <>
-                  <p className="truncate text-xs">{email}</p>
                   <Link
                     href="/privacy"
                     onClick={() => setOpen(false)}

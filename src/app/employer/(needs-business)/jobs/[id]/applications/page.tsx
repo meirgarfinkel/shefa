@@ -167,7 +167,6 @@ export default function EmployerJobApplicationsPage({
                       )}
                       {app.status === "SUBMITTED" && (
                         <Button
-                          variant="light"
                           disabled={updateStatus.isPending}
                           onClick={() =>
                             updateStatus.mutate({
@@ -197,7 +196,6 @@ export default function EmployerJobApplicationsPage({
                           closed → SUBMITTED (reconsider this applicant). */}
                       {(app.status === "REJECTED" || app.status === "CLOSED") && (
                         <Button
-                          variant="light"
                           disabled={updateStatus.isPending}
                           onClick={() =>
                             updateStatus.mutate({

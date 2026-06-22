@@ -556,7 +556,6 @@ function JobEditForm({
 
               <DialogFooter className="gap-2">
                 <Button
-                  variant="light"
                   onClick={() => {
                     setCloseDialogOpen(false);
                     setCloseReason(null);

@@ -16,6 +16,7 @@ export default function GetStartedButton() {
   return (
     <Button
       size="lg"
+      variant={"success"}
       className="w-full sm:w-auto"
       type="button"
       onClick={handleGoogleSignIn}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import GetStartedButton from "./_get-started-button";
+import { Panel } from "@/components/ui/panel";
 
 export const metadata: Metadata = {
   title: "Shefa | Find Work the Human Way",
@@ -80,14 +81,14 @@ export default async function HomePage() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((feature) => (
-            <Card key={feature.title} className="h-full bg-transparent">
+            <Panel key={feature.title} className="glass-hover h-full">
               <CardHeader>
                 <CardTitle className="text-base whitespace-normal normal-case">
                   {feature.title}
                 </CardTitle>
                 <CardDescription className="text-popover">{feature.description}</CardDescription>
               </CardHeader>
-            </Card>
+            </Panel>
           ))}
         </div>
         <div className="mt-10 text-center">
@@ -98,7 +99,10 @@ export default async function HomePage() {
       {/* Audiences */}
       <section className="mt-10 grid gap-4 sm:grid-cols-2">
         {AUDIENCES.map((audience) => (
-          <Card key={audience.label} className="bg-primary/30 hover:bg-primary/30 h-full">
+          <Panel
+            key={audience.label}
+            className="hover:bg-secondary/30 glass glass-hover h-full bg-white/60"
+          >
             <CardHeader>
               <p className="text-orange text-sm font-semibold tracking-wide uppercase">
                 {audience.label}
@@ -108,7 +112,7 @@ export default async function HomePage() {
               </CardTitle>
               <CardDescription className="text-popover">{audience.description}</CardDescription>
             </CardHeader>
-          </Card>
+          </Panel>
         ))}
       </section>
 
@@ -124,7 +128,9 @@ export default async function HomePage() {
               look.
             </CardDescription>
           </CardHeader>
-          <GetStartedButton />
+          <div>
+            <GetStartedButton />
+          </div>
         </Card>
       </section>
     </main>

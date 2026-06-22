@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/provider";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
+import { Panel } from "@/components/ui/panel";
 import type { ApplicationStatus } from "@/db/schema";
 import { Pill } from "@/components/ui/pill";
 
@@ -55,47 +56,49 @@ export default function SeekerApplicationsPage() {
       )}
 
       {!isLoading && applications && applications.length > 0 && (
-        <ul className="space-y-5">
+        <ul className="space-y-3">
           {applications.map((app) => (
             <li key={app.id}>
               <Link href={`/jobs/${app.job.id}`}>
-                <Card>
-                  <div className="flex justify-between">
-                    <CardTitle>{app.job.title}</CardTitle>
+                <Panel className="bg-primary/10 glass-hover cursor-pointer p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <CardTitle className="text-lg">{app.job.title}</CardTitle>
+                      <p className="text-text-muted mt-0.5 text-xs">
+                        {app.job.business.name} · {app.job.city}, {app.job.state}
+                      </p>
+                    </div>
                     <AppStatusBadge status={app.status} />
                   </div>
-                  <CardDescription>
-                    {app.job.business.name} · {app.job.city}, {app.job.state}
-                  </CardDescription>
-                  <CardContent>
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-xs">
-                        Applied: {new Date(app.createdAt).toLocaleDateString()}
-                      </p>
-                      {!["REJECTED", "CLOSED"].includes(app.status) && (
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            disabled={createConversation.isPending}
-                            onClick={() =>
-                              createConversation.mutate({
-                                targetId: app.job.employerId,
-                                jobId: app.job.id,
-                              })
-                            }
-                          >
-                            Message
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {app.message && (
-                      <p className="mt-2 border-t pt-2 text-xs italic">
-                        Message: &ldquo;{app.message}&rdquo;
-                      </p>
+
+                  <div className="relative z-10 mt-2 flex items-center justify-between gap-2">
+                    <p className="text-xs">
+                      Applied: {new Date(app.createdAt).toLocaleDateString()}
+                    </p>
+                    {!["REJECTED", "CLOSED"].includes(app.status) && (
+                      <Button
+                        size="sm"
+                        disabled={createConversation.isPending}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          createConversation.mutate({
+                            targetId: app.job.employerId,
+                            jobId: app.job.id,
+                          });
+                        }}
+                      >
+                        Message
+                      </Button>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {app.message && (
+                    <p className="mt-2 border-t pt-2 text-xs italic">
+                      Message: &ldquo;{app.message}&rdquo;
+                    </p>
+                  )}
+                </Panel>
               </Link>
             </li>
           ))}

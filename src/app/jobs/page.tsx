@@ -311,12 +311,12 @@ function JobsContent() {
   };
 
   return (
-    <div className="p-5">
-      <div className="mx-auto max-w-4xl md:flex md:h-[calc(100vh-4rem)] md:flex-col">
+    <div className="md:p-5">
+      <div className="mx-auto max-w-4xl px-5 md:flex md:h-[calc(100vh-7rem)] md:flex-col md:px-0 md:pl-1">
         <MobileFilterBar {...filterProps} />
 
         {/* ── Desktop page header ── */}
-        <div className="hidden shrink-0 items-center justify-between gap-4 pb-5 md:flex">
+        <div className="hidden shrink-0 items-center justify-between gap-4 pl-1.5 md:flex">
           <h1 className="text-2xl font-semibold">Job Listings</h1>
           {session?.user?.role === "EMPLOYER" && (
             <Button asChild>
@@ -326,11 +326,11 @@ function JobsContent() {
         </div>
 
         {/* ── Layout: sidebar + list ── */}
-        <div className="flex flex-col gap-6 md:flex-1 md:flex-row md:overflow-hidden md:pt-0">
+        <div className="flex flex-col gap-6 pt-5 md:min-h-0 md:flex-1 md:flex-row">
           <DesktopFilterSidebar {...filterProps} />
 
           {/* ── Jobs list ── */}
-          <div className="min-w-0 flex-1 pb-8 md:overflow-y-auto">
+          <div className="min-w-0 flex-1 pb-8 md:-ml-2 md:overflow-y-auto md:pl-2">
             {isLoading && <div className="py-16 text-center">Loading listings…</div>}
 
             {!isLoading && queryError && (

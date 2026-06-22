@@ -342,8 +342,8 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
   } = props;
 
   return (
-    <aside className="hidden w-52 shrink-0 space-y-5 md:block md:overflow-y-auto md:pb-8">
-      <div className="relative w-52">
+    <aside className="hidden w-52 shrink-0 space-y-5 md:block md:overflow-y-auto md:pl-1.5">
+      <div className="relative w-auto">
         <SearchIcon className="text-popover absolute top-1/2 left-2 size-4 -translate-y-1/2" />
 
         <Input

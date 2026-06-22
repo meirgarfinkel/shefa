@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Pill } from "@/components/ui/pill";
 import type { JobType, WorkArrangement } from "@/db/schema";
@@ -8,6 +7,8 @@ import { JobStatusEnum } from "@/lib/schemas/jobPosting";
 type JobStatus = z.infer<typeof JobStatusEnum>;
 import { Car, Clock, MapPin, DollarSign } from "lucide-react";
 import { JOB_TYPE_LABELS, ARRANGEMENT_LABELS } from "@/lib/constants/labels";
+import { Panel } from "./panel";
+import { useRouter } from "next/navigation";
 
 interface JobCardProps {
   id: string;
@@ -36,37 +37,42 @@ export function JobCard({
   applicationCount,
   className,
 }: JobCardProps) {
+  const router = useRouter();
   return (
-    <Link href={href} className={cn("block", className)}>
-      <div className="bg-primary/30 hover:bg-primary/5 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm">
-        <div className="mb-3 flex items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate text-lg font-medium capitalize">{title}</h3>
-            <p className="mt-0.5 text-xs">{businessName}</p>
-          </div>
-          {applicationCount > 0 && <Pill>{applicationCount} Applied</Pill>}
+    <Panel
+      className={cn(
+        "bg-primary/10 glass-hover relative cursor-pointer shadow-[-2px_3px_6px_#00000033,inset_10px_-10px_8px_#ffffff66,inset_-10px_10px_8px_#ffffff]",
+        className,
+      )}
+      onClick={() => router.push(`${href}`)}
+    >
+      <div className="mb-3 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-lg font-medium capitalize">{title}</h3>
+          <p className="mt-0.5 text-xs">{businessName}</p>
         </div>
-
-        {/* Meta row spread across full card width */}
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
-          <span className="flex items-center gap-1.5">
-            <MapPin className="text-orange size-3.5 shrink-0" />
-            {city}, {state}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Clock className="text-orange size-3.5 shrink-0" />
-            {JOB_TYPE_LABELS[jobType]}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Car className="text-orange size-4 shrink-0" />
-            {ARRANGEMENT_LABELS[workArrangement]}
-          </span>
-          <span className="flex items-center">
-            <DollarSign className="text-orange size-3.5 shrink-0" />
-            {minHourlyRate}+ (hourly)
-          </span>
-        </div>
+        {applicationCount > 0 && <Pill>{applicationCount} Applied</Pill>}
       </div>
-    </Link>
+
+      {/* Meta row spread across full card width */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5 text-sm">
+        <span className="flex items-center gap-1.5">
+          <MapPin className="text-orange size-3.5 shrink-0" />
+          {city}, {state}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Clock className="text-orange size-3.5 shrink-0" />
+          {JOB_TYPE_LABELS[jobType]}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Car className="text-orange size-4 shrink-0" />
+          {ARRANGEMENT_LABELS[workArrangement]}
+        </span>
+        <span className="flex items-center">
+          <DollarSign className="text-orange size-3.5 shrink-0" />
+          {minHourlyRate}+ (hourly)
+        </span>
+      </div>
+    </Panel>
   );
 }
