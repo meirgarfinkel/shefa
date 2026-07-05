@@ -15,8 +15,8 @@ hire on potential rather than credentials.
 
 - **Free for everyone.** No payments anywhere in the system, ever. Not a deferred
   monetization play — payments are out of scope permanently.
-- **Fresh listings.** No ghost jobs, no ghost candidates. Listings and profiles are
-  periodically re-verified and auto-paused (never deleted) when they go stale.
+- **Fresh listings.** No ghost jobs. Active job listings are periodically re-verified and
+  auto-paused (never deleted) when they go stale. (Seeker profiles are not re-verified.)
 - **No gatekeeping on protected or educational attributes.** Employers cannot filter
   candidates by education or any protected class. Education is collected on seeker
   profiles for context only and is never a filter input.
@@ -43,9 +43,10 @@ after age confirmation). A user has at most one role and one role-specific profi
 The seeker's public-facing identity. Required: name, city/state, work authorization,
 available days, and a free-text "what job you seek / want to learn" (`jobSeekText`).
 Optional: education level, about text, résumé URL, and curated languages (via the
-`SeekerLanguage` join). Has a `status` (`ACTIVE` / `PAUSED` / `SUSPENDED`) and a
-`lastVerifiedAt` that drives freshness. **Seekers have no responsiveness metric** —
-that lives only on employers.
+`SeekerLanguage` join). Has a `status` (`ACTIVE` / `PAUSED` / `SUSPENDED`). **Seeker
+profiles are not part of the freshness engine** (no `lastVerifiedAt`, no re-verification
+pings) and **have no responsiveness metric** — freshness applies to job listings only and
+responsiveness lives only on employers.
 
 ### EmployerProfile (1:1 with User)
 
@@ -85,9 +86,9 @@ a `readAt` receipt.
 
 ### VerificationPing + FreshnessToken
 
-The freshness engine. A `VerificationPing` records a "still looking?" / "still open?"
-prompt and its response. A `FreshnessToken` is a single-use, expiring,
-login-free token embedding the target and the action to apply when clicked.
+The freshness engine, scoped to **job listings only**. A `VerificationPing` records a
+"still open?" prompt to the employer and its response. A `FreshnessToken` is a single-use,
+expiring, login-free token embedding the target and the action to apply when clicked.
 
 ### Report
 
@@ -111,6 +112,18 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
 - **Language** — curated, admin-managed list (the only taxonomy; skills were removed).
 - **State / City** — seeded geography tables with `lat`/`lon`. No ZIP codes. All
   locations are dropdown-selected from these tables.
+- **Multi-country (US + Israel).** `State` carries a `country` code (ISO alpha-2);
+  `name`/`abbr` are unique **per country**. Seeker profiles, businesses, and job postings
+  each store a denormalized `country` alongside `city`/`state`. The US is region-based
+  (State → City); **Israel is flat** — it has no user-facing district level, so a single
+  catch-all `State` row (`abbr` `"IL"`) holds all Israeli cities and the picker hides the
+  region dropdown. All per-country facts (currency, distance unit, region model, work-auth
+  wording) live in one source of truth: `src/lib/constants/countries.ts`.
+- **Currency & units are per-country.** Pay renders as `$…/hr` (USD) for US jobs and
+  `₪…/hr` (ILS) for Israeli jobs via `formatHourlyRate`; job-posting JSON-LD emits the
+  job's country and currency. Distance search is in **miles** for US anchors and
+  **kilometres** for Israeli anchors (haversine constants chosen from the anchor city's
+  country).
 
 ---
 
@@ -181,11 +194,12 @@ Per-user delivery frequency for `messageNotifications` and `applicationNotificat
 
 ### Freshness / verification
 
-- Listings and profiles carry `lastVerifiedAt`. A cron sends "still looking / still
-  open?" pings as they age, escalates with a warning, and finally sets status to
-  `PAUSED`. **Nothing is ever auto-deleted.**
+- Active **job listings** carry `lastVerifiedAt`. A cron sends the employer a "still
+  open?" ping as a listing ages, escalates with a warning, and finally sets its status to
+  `PAUSED` — the emails state the exact date the listing will auto-pause if unconfirmed.
+  **Seeker profiles are not re-verified. Nothing is ever auto-deleted.**
 - Verification links use signed, expiring, single-use `FreshnessToken`s and require no login.
-- Paused entities can be reactivated by the owner at any time, indefinitely.
+- Paused listings can be reactivated by the owner at any time, indefinitely.
 
 ### Responsiveness (employers only)
 
@@ -221,9 +235,14 @@ edit, duplicate, pause, and close jobs; view applications per job and update the
 status; dashboard with recent applications; public business page (`/business/[id]`) and
 public employer page (`/employer/[profileId]`).
 
-**Jobs (public):** listing with filters (status, job type, work arrangement, work days),
-geo radius search (haversine on `lat`/`lon`), sort by newest / closest / pay; public
-job detail.
+**Jobs (public):** listing with filters (country, state/city, job type, work arrangement,
+work days), geo radius search (haversine on `lat`/`lon`), sort by newest / closest / pay;
+public job detail. The **country filter** defaults to the signed-in seeker's own country
+(anonymous users see all countries). A **distance radius constrains only ON_SITE/HYBRID
+jobs**; REMOTE jobs are distance-exempt and, when a radius is active, are listed below a
+"Continue scrolling for remote positions" divider. Because the max radius (100 mi/km) is
+far smaller than the US↔Israel distance, an on-site radius search is inherently
+single-country.
 
 **Messaging:** inbox, conversation thread, send messages, read receipts, block/unblock,
 report; hybrid initiation (employer cold-DM, seeker job-scoped).
@@ -405,6 +424,12 @@ inferred `PascalCaseInput` type alongside.
   the "hire on potential" mission and avoids credential-style gatekeeping.
 - **Geo search via haversine on `lat`/`lon`.** Jobs and geography tables are geocoded;
   radius filtering and "closest" sort use a justified raw-SQL distance query. No ZIPs.
+  Distance units follow the anchor city's country (miles for US, km for Israel), and the
+  radius constrains only ON_SITE/HYBRID jobs — REMOTE jobs are distance-exempt.
+- **Multi-country (US + Israel), predefined locations.** Rather than a geocoding API, we
+  extended the existing seeded State/City model with a `country` dimension (chosen: no new
+  external dependency, reuses the geo core). Israel is modeled as a single flat region.
+  Per-country facts live in `src/lib/constants/countries.ts`.
 - **Job status simplified to ACTIVE / PAUSED / CLOSED** with a structured
   `closureReason`, replacing the earlier EXPIRED/FILLED states.
 - **Responsiveness is employer-only.** Seekers carry no responsiveness metric.

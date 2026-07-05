@@ -4,6 +4,19 @@
 
 ## ⚠️ Action required before deploy
 
+- **Generate + run the multi-country migration**, then re-seed. Adds `country` to
+  `State`/`SeekerProfile`/`Business`/`JobPosting` (all default `"US"` — existing rows
+  backfill cleanly) and swaps `State`'s single-column `name`/`abbr` uniques for composite
+  `(country, abbr)` / `(country, name)`. Nothing destructive.
+  ```bash
+  npx drizzle-kit generate
+  npx drizzle-kit migrate
+  npm run db:seed   # loads Israel (1 flat region "IL" + ~32 cities); US upserts unchanged
+  ```
+- **Run the freshness-teardown migration** (`drizzle/0001_known_kabuki.sql`):
+  `npx drizzle-kit migrate`. Drops `SeekerProfile.lastVerifiedAt`,
+  `VerificationPing.userId`/`seekerProfileId`, and trims the `PingType` / `PingResponse`
+  enums. Safe because there are no rows referencing the removed values (pre-launch).
 - **Seed an admin**: there is no UI to grant `ADMIN`. Set a user's `role` to `ADMIN`
   directly in the DB to access `/admin`.
 - **(Optional) Google Indexing API**: to enable instant job (re)indexing, do the GCP +
@@ -12,7 +25,95 @@
 - **`AUTH_URL` now also drives SEO** (sitemap, robots, canonical URLs, JobPosting JSON-LD).
   It was already required in prod; just confirm it's the canonical URL with no trailing slash.
 
-## This session (latest) — Homepage at `/`, retired `/sign-in` (SEO indexing fix)
+## This session (latest) — Multi-country support (USA + Israel)
+
+**Change:** the app now serves both the USA and Israel. Location, currency, distance units,
+and the work-authorization copy are country-aware; the job search gained a country filter
+and a remote-jobs divider. This was an **extension of the existing seeded State/City model**,
+not a geocoding rewrite — the geo core (haversine, `lat`/`lon`, picker) was already
+country-agnostic.
+
+- **One source of truth:** `src/lib/constants/countries.ts` (`SUPPORTED_COUNTRIES`,
+  `COUNTRY_CONFIG`, `countryConfig()`, `isCountryCode()`) holds every per-country fact —
+  name, currency + symbol, distance unit, haversine constants, radius presets, region
+  label, and the flat-vs-region flag. `formatHourlyRate(rate, country)` added to
+  `src/lib/utils.ts` renders `$…/hr` / `₪…/hr`.
+- **Schema (needs migration — see Action required):** `country` (text, default `"US"`) on
+  `State`, `SeekerProfile`, `Business`, `JobPosting`; `State` uniques now composite by
+  country. `City` unchanged. **Israel is flat** — one catch-all `State` row (`abbr "IL"`)
+  holds all Israeli cities; records store `state = "IL"`.
+- **Seed:** `src/db/scripts/seed.ts` refactored to a `seedRegions(country, …)` helper; US
+  states tagged `"US"`, plus the `IL` region + ~32 major Israeli cities.
+- **Search semantics (`jobPosting.list`):** added a **country filter** (defaults to the
+  signed-in seeker's own country; anonymous → all). **Radius constrains only ON_SITE/HYBRID
+  jobs**, using per-country haversine constants (mi for US, km for IL); **REMOTE jobs are
+  distance-exempt** and, when a radius is active, render below a *"Continue scrolling for
+  remote positions"* divider in `app/jobs/page.tsx`. `radiusMiles` input renamed `radius`.
+- **UI:** `location-picker.tsx` gained a Country select and hides the region dropdown for
+  flat countries (auto-setting `state`); the jobs filter panel/state got a Country control
+  and per-country (mi/km) radius options; work-auth checkboxes and the pay-rate `$`/`₪`
+  labels are now dynamic; the 5 pay-render sites use `formatHourlyRate`; job-posting JSON-LD
+  emits the job's `country` + currency.
+- `npm run check` green; **511 tests** pass (+ new tests for countries config,
+  `formatHourlyRate`, the location router, country/km-vs-mi search semantics, filter-state
+  country round-trip + `radiusOptions`, and IL JSON-LD).
+
+**Graph/blast radius (`graphify . --update`):** structural pass refreshed (169 files);
+affected modules — **geography/location** (`db/schema/geo`, `routers/location`,
+`components/ui/location-picker`, seed), **jobs search** (`routers/jobPosting.list`,
+`app/jobs` page/filter-panel/filter-state), **currency/formatting** (`lib/constants/countries`,
+`lib/utils`, the job-card + detail render sites), and **SEO** (`lib/seo/job-posting`). (The
+semantic embedding step failed on a missing `openai` package in this env — structural graph
+is current; re-run once the backend dep is installed.)
+
+**Decision — extend the predefined State/City model with a `country` dimension; model
+Israel as a single flat region.** _Alternatives:_ (a) a geocoding API for free-text
+locations — rejected: adds an external dependency outside the Vercel/Neon/Resend stack and
+is a larger rewrite; (b) seed Israel's 6 official districts as the region level — rejected:
+Israelis don't pick a district to say where they live, and the flat model needs no `City`
+schema change (one catch-all `State` row keeps the join + `lookupCityCoords` intact).
+_Reason chosen:_ the geo core was already country-agnostic, so a `country` column + a
+single config module covers it with minimal churn and no new infra. Currency/units are
+localized per country (chosen over USD/miles-everywhere) since Israeli `$`/miles read wrong.
+
+**Decision — a distance radius is local-only; remote jobs are appended below a divider.**
+_Alternatives:_ (a) keep applying distance to every job (status quo) — rejected: it silently
+drops remote jobs whose employer HQ is far, which is meaningless for remote work; (b) always
+mix remote jobs into the radius results — rejected: floods a "near me" search. _Reason
+chosen:_ a radius means "near me," so it should bound only on-site/hybrid; remote jobs are
+location-agnostic and belong in their own clearly-labelled section. On-site radius search is
+inherently single-country (100 mi/km ≪ US↔IL distance), so no extra cross-border guard is
+needed.
+
+## Earlier this phase — Freshness scoped to job listings only (removed seeker freshness)
+
+**Change:** the freshness engine now applies **only to active job listings**. Seeker
+profiles are no longer pinged, emailed, or auto-paused for staleness. Employer
+profiles/businesses were never in the freshness engine, so nothing changed there.
+
+- **Removed (code):** `checkSeekerProfiles` in `freshness.job.ts` (`runFreshnessCheck` now
+  just calls `checkJobPostings`); the seeker email builders in
+  `server/emails/freshness-ping.ts`; `applySeekerAction` + the `SEEKER_PROFILE` branch in
+  `server/jobs/redeem.ts`; the seeker `redeem` tests.
+- **Removed (schema — needs migration):** `SeekerProfile.lastVerifiedAt`;
+  `VerificationPing.userId` + `seekerProfileId` (and the `userId` index/relations);
+  `PingType` value `SEEKER_STILL_LOOKING`; `PingResponse` value `NOT_LOOKING`. Migration
+  `drizzle/0001_known_kabuki.sql` generated but **not yet applied** (see Action required).
+- **Added:** the job freshness emails (both initial ping and warning) now render a
+  bottom-of-email warning — *"If we don't hear from you by \<date>, this listing will be
+  paused automatically."* — where `<date>` = `lastVerifiedAt + 28 days`, computed in
+  `checkJobPostings` and passed to the builders. New tests in
+  `server/emails/__tests__/freshness-ping.test.ts`.
+- **Spec:** `PROJECT_SPEC.md` freshness sections updated to say listings-only.
+- `npm run check` green; 487 tests pass.
+
+**Decision — deleted the seeker redeem path instead of keeping it for in-flight tokens.**
+_Alternatives:_ keep `applySeekerAction` so any seeker verification links emailed before
+this change still resolve. _Reason chosen:_ pre-launch with no active users, so there are
+no in-flight seeker tokens to honor; keeping dead code would violate "no speculative
+code." Full teardown (including schema/enums) is the clean choice here.
+
+## This session — Homepage at `/`, retired `/sign-in` (SEO indexing fix)
 
 **Problem:** Googlebot couldn't index `/` — middleware 302'd unauthenticated `/` →
 `/sign-in`, and `robots.ts` disallowed `/sign-in`, so the priority-1 sitemap URL bounced to
@@ -115,7 +216,9 @@ re-request indexing for `/` in Google Search Console.
 - **Seeker:** create/edit profile, browse + apply, own applications, public profile.
 - **Employer:** contact profile, business CRUD (multi-business), job CRUD/duplicate/pause/
   close, applications + status, dashboard, public business/employer pages.
-- **Jobs:** public listing with filters, haversine geo radius search, sort; public detail.
+- **Jobs:** public listing with filters (incl. country), haversine geo radius search
+  (local-only; remote jobs below a divider), sort; public detail. USA + Israel, per-country
+  currency (`$`/`₪`) and distance units (mi/km).
 - **Messaging:** inbox, thread, send, read receipts, block/unblock, report; hybrid initiation.
   Application status (`REJECTED`/`CLOSED`) no longer gates messaging — threads stay open for
   employer follow-up/reconsideration; gated only by block flags, suspension, and `ACTIVE` job.

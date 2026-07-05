@@ -2,17 +2,15 @@ import { eq } from "drizzle-orm";
 import { db as defaultDb } from "@/db";
 import type { DbClient } from "@/db";
 import { sendEmail } from "@/server/emails";
-import {
-  buildSeekerInitialPingEmail,
-  buildSeekerWarningEmail,
-  buildJobInitialPingEmail,
-  buildJobWarningEmail,
-} from "@/server/emails/freshness-ping";
-import { seekerProfile, jobPosting, verificationPing, freshnessToken } from "@/db/schema";
+import { buildJobInitialPingEmail, buildJobWarningEmail } from "@/server/emails/freshness-ping";
+import { jobPosting, verificationPing, freshnessToken } from "@/db/schema";
 import { createFreshnessTokensForPing } from "./token";
 import { getAppUrl } from "@/server/app-url";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// A listing is auto-paused once it has gone this many days without verification.
+const AUTO_PAUSE_DAYS = 28;
 
 export type FreshnessAction =
   | "send-initial-ping"
@@ -45,94 +43,7 @@ export async function runFreshnessCheck(
   db: DbClient = defaultDb,
   now: Date = new Date(),
 ): Promise<void> {
-  await Promise.all([checkSeekerProfiles(db, now), checkJobPostings(db, now)]);
-}
-
-async function checkSeekerProfiles(db: DbClient, now: Date): Promise<void> {
-  const lookbackCutoff = new Date(now.getTime() - 35 * DAY_MS);
-
-  const profiles = await db.query.seekerProfile.findMany({
-    where: eq(seekerProfile.status, "ACTIVE"),
-    with: {
-      verificationPings: {
-        where: (ping, { gte }) => gte(ping.sentAt, lookbackCutoff),
-        orderBy: (ping, { asc }) => [asc(ping.sentAt)],
-      },
-      user: { columns: { id: true, email: true } },
-    },
-  });
-
-  for (const profile of profiles) {
-    if (!profile.user) continue;
-
-    // Isolate each profile: a single failing send must not abort the whole batch.
-    try {
-      const pingsInCycle = profile.verificationPings.filter(
-        (p) => p.sentAt >= profile.lastVerifiedAt,
-      );
-      const action = computeFreshnessAction(profile.lastVerifiedAt, pingsInCycle, now);
-
-      if (action === "no-action") continue;
-
-      if (action === "auto-pause") {
-        await db
-          .update(seekerProfile)
-          .set({ status: "PAUSED" })
-          .where(eq(seekerProfile.id, profile.id));
-        if (pingsInCycle.length > 0) {
-          const latestPing = pingsInCycle[pingsInCycle.length - 1]!;
-          await db
-            .update(verificationPing)
-            .set({ respondedAt: now, response: "NO_RESPONSE" })
-            .where(eq(verificationPing.id, latestPing.id));
-        }
-        continue;
-      }
-
-      const [ping] = await db
-        .insert(verificationPing)
-        .values({ type: "SEEKER_STILL_LOOKING", userId: profile.user.id })
-        .returning();
-
-      // Tokens must exist before the email (the links embed them). If the send fails,
-      // roll the ping + tokens back so this undelivered ping isn't counted toward
-      // escalation — otherwise a transient Resend failure could march an active user to
-      // PAUSED without them ever receiving a warning.
-      try {
-        const tokens = await createFreshnessTokensForPing(
-          ping!.id,
-          "SEEKER_PROFILE",
-          profile.id,
-          ["CONFIRMED", "PAUSED", "NOT_LOOKING"],
-          db,
-        );
-
-        const appUrl = getAppUrl();
-        const tokenUrls = {
-          confirm: `${appUrl}/api/verify/${tokens.CONFIRMED}`,
-          pause: `${appUrl}/api/verify/${tokens.PAUSED}`,
-          notLooking: `${appUrl}/api/verify/${tokens.NOT_LOOKING}`,
-        };
-
-        const emailContent =
-          action === "send-initial-ping"
-            ? buildSeekerInitialPingEmail(profile.user.email, tokenUrls)
-            : buildSeekerWarningEmail(profile.user.email, tokenUrls);
-
-        await sendEmail({
-          to: profile.user.email,
-          subject: emailContent.subject,
-          html: emailContent.html,
-        });
-      } catch (sendErr) {
-        await db.delete(freshnessToken).where(eq(freshnessToken.pingId, ping!.id));
-        await db.delete(verificationPing).where(eq(verificationPing.id, ping!.id));
-        throw sendErr;
-      }
-    } catch (err) {
-      console.error(`[freshness] Failed to process seeker profile ${profile.id}:`, err);
-    }
-  }
+  await checkJobPostings(db, now);
 }
 
 async function checkJobPostings(db: DbClient, now: Date): Promise<void> {
@@ -192,10 +103,14 @@ async function checkJobPostings(db: DbClient, now: Date): Promise<void> {
           filled: `${appUrl}/api/verify/${tokens.FILLED}`,
         };
 
+        // The listing auto-pauses AUTO_PAUSE_DAYS after its last verification; surface
+        // that exact horizon in the email so the employer knows the deadline.
+        const pauseDate = new Date(job.lastVerifiedAt.getTime() + AUTO_PAUSE_DAYS * DAY_MS);
+
         const emailContent =
           action === "send-initial-ping"
-            ? buildJobInitialPingEmail(job.employer.email, job.title, tokenUrls)
-            : buildJobWarningEmail(job.employer.email, job.title, tokenUrls);
+            ? buildJobInitialPingEmail(job.employer.email, job.title, tokenUrls, pauseDate)
+            : buildJobWarningEmail(job.employer.email, job.title, tokenUrls, pauseDate);
 
         await sendEmail({
           to: job.employer.email,

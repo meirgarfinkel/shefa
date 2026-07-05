@@ -16,11 +16,13 @@ import {
   FILTER_KEY,
   parseSortParam,
   sortJobs,
+  radiusOptions,
   readFiltersFromParams,
   filtersToSearchParams,
   hasActiveFilters,
   activeFilterCount as computeActiveFilterCount,
 } from "@/app/jobs/_filter-state";
+import { COUNTRY_CONFIG, isCountryCode, type CountryCode } from "@/lib/constants/countries";
 import { pluralize } from "@/lib/utils";
 
 function JobsContent() {
@@ -29,6 +31,7 @@ function JobsContent() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  const [country, setCountryState] = useState(() => searchParams.get("country") ?? "");
   const [stateAbbr, setStateAbbrState] = useState(() => searchParams.get("state") ?? "");
   const [city, setCityState] = useState(() => searchParams.get("city") ?? "");
   const [radius, setRadiusState] = useState(() => searchParams.get("radius") ?? "any");
@@ -52,10 +55,15 @@ function JobsContent() {
   const locationInitialized = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const { data: states = [] } = trpc.location.states.useQuery();
+  const countryConfigOrNull = isCountryCode(country) ? COUNTRY_CONFIG[country] : null;
+
+  const { data: states = [] } = trpc.location.states.useQuery(
+    { country: country as CountryCode },
+    { enabled: isCountryCode(country) && !countryConfigOrNull?.flat },
+  );
   const { data: cities = [] } = trpc.location.citiesByState.useQuery(
-    { stateAbbr },
-    { enabled: !!stateAbbr },
+    { country: country as CountryCode, stateAbbr },
+    { enabled: isCountryCode(country) && !!stateAbbr },
   );
 
   const { data: seekerProfile } = trpc.seeker.getMyProfile.useQuery(undefined, {
@@ -86,6 +94,23 @@ function JobsContent() {
     },
     [pathname, router],
   );
+
+  function setCountry(val: string) {
+    // Flat countries (Israel) have no region dropdown; store their fixed region code so
+    // the city query still resolves. Region-based countries reset to an empty region.
+    const cfg = isCountryCode(val) ? COUNTRY_CONFIG[val] : null;
+    const nextState = cfg?.flat ? (cfg.flatRegionCode ?? "") : "";
+    setCountryState(val);
+    setStateAbbrState(nextState);
+    setCityState("");
+    setRadiusState("any");
+    updateParams({
+      country: val || null,
+      state: nextState || null,
+      city: null,
+      radius: null,
+    });
+  }
 
   function setStateAbbr(val: string) {
     setStateAbbrState(val);
@@ -140,19 +165,21 @@ function JobsContent() {
     updateParams({ sortBy: val !== "newest" ? val : null });
   }
 
+  const profileCountry = seekerProfile?.country ?? employerProfile?.country;
   const profileCity = seekerProfile?.city ?? employerProfile?.city;
   const profileState = seekerProfile?.state ?? employerProfile?.state;
 
   // On mount: if URL has no params, restore all filters from sessionStorage.
   // Runs before the profile-init effect so it can set locationInitialized first.
   useEffect(() => {
-    if (searchParamsRef.current.get("state")) {
+    if (searchParamsRef.current.get("country") || searchParamsRef.current.get("state")) {
       locationInitialized.current = true;
       return;
     }
     const savedQS = sessionStorage.getItem(FILTER_KEY);
     if (!savedQS) return;
     const saved = readFiltersFromParams(new URLSearchParams(savedQS));
+    setCountryState(saved.country);
     setStateAbbrState(saved.stateAbbr);
     setCityState(saved.city);
     setRadiusState(saved.radius);
@@ -180,24 +207,26 @@ function JobsContent() {
   // and no sessionStorage data exists.
   useEffect(() => {
     if (locationInitialized.current) return;
-    if (searchParamsRef.current.get("state")) {
+    if (searchParamsRef.current.get("country") || searchParamsRef.current.get("state")) {
       locationInitialized.current = true;
       return;
     }
-    if (!profileCity || !profileState) return;
+    if (!profileCountry || !profileCity || !profileState) return;
 
+    setCountryState(profileCountry);
     setStateAbbrState(profileState);
     setCityState(profileCity);
     setRadiusState("25");
 
     const params = new URLSearchParams(searchParamsRef.current.toString());
+    params.set("country", profileCountry);
     params.set("state", profileState);
     params.set("city", profileCity);
     params.set("radius", "25");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
 
     locationInitialized.current = true;
-  }, [profileCity, profileState, pathname, router]);
+  }, [profileCountry, profileCity, profileState, pathname, router]);
 
   const {
     data: searchResults,
@@ -213,9 +242,10 @@ function JobsContent() {
     isLoading: listIsLoading,
     error: listError,
   } = trpc.jobPosting.list.useQuery({
+    country: isCountryCode(country) ? country : undefined,
     city: city || undefined,
     state: stateAbbr || undefined,
-    radiusMiles: radius !== "any" ? Number(radius) : undefined,
+    radius: radius !== "any" ? Number(radius) : undefined,
     jobType: jobType !== "any" ? [jobType as "FULL_TIME" | "PART_TIME" | "EITHER"] : undefined,
     workArrangement: arrangements.length ? arrangements : undefined,
     workDays: workDays.length ? workDays : undefined,
@@ -234,16 +264,42 @@ function JobsContent() {
     return sortJobs(jobs, sortBy, refCity);
   }, [searchResults, listResults, isSearchMode, sortBy, refCity]);
 
-  const filterState = { q: searchQuery, stateAbbr, city, radius, jobType, arrangements, workDays };
+  // When a distance radius is active, split results into nearby (on-site/hybrid) jobs and
+  // the distance-exempt remote jobs, which render below a divider. Search mode and the
+  // no-radius browse stay a single list.
+  const radiusActive = radius !== "any" && !!city && !isSearchMode;
+  const { localJobs, remoteJobs } = useMemo((): {
+    localJobs: NonNullable<typeof displayJobs> | undefined;
+    remoteJobs: NonNullable<typeof displayJobs>;
+  } => {
+    if (!displayJobs) return { localJobs: undefined, remoteJobs: [] };
+    if (!radiusActive) return { localJobs: displayJobs, remoteJobs: [] };
+    return {
+      localJobs: displayJobs.filter((j) => j.workArrangement !== "REMOTE"),
+      remoteJobs: displayJobs.filter((j) => j.workArrangement === "REMOTE"),
+    };
+  }, [displayJobs, radiusActive]);
+
+  const filterState = {
+    q: searchQuery,
+    country,
+    stateAbbr,
+    city,
+    radius,
+    jobType,
+    arrangements,
+    workDays,
+  };
   const hasFilters = hasActiveFilters(filterState);
   const activeFilterCount = computeActiveFilterCount(filterState);
 
   function clearFilters() {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     sessionStorage.removeItem(FILTER_KEY);
-    const hasProfileLocation = !!(profileCity && profileState);
+    const hasProfileLocation = !!(profileCountry && profileCity && profileState);
     const cleared: Filters = {
       q: "",
+      country: hasProfileLocation ? (profileCountry ?? "") : "",
       stateAbbr: hasProfileLocation ? (profileState ?? "") : "",
       city: hasProfileLocation ? (profileCity ?? "") : "",
       radius: hasProfileLocation ? "25" : "any",
@@ -254,6 +310,7 @@ function JobsContent() {
     };
     setSearchQuery(cleared.q);
     setDebouncedQuery(cleared.q);
+    setCountryState(cleared.country);
     setStateAbbrState(cleared.stateAbbr);
     setCityState(cleared.city);
     setRadiusState(cleared.radius);
@@ -279,6 +336,7 @@ function JobsContent() {
 
   const filterProps = {
     searchQuery,
+    country,
     stateAbbr,
     city,
     radius,
@@ -289,6 +347,9 @@ function JobsContent() {
     filterOpen,
     states,
     cities,
+    radiusOptions: radiusOptions(country),
+    regionLabel: countryConfigOrNull?.regionLabel ?? "State",
+    showRegion: isCountryCode(country) && !countryConfigOrNull?.flat,
     countText,
     activeFilterCount,
     hasFilters,
@@ -298,6 +359,7 @@ function JobsContent() {
     onFilterOpenChange: setFilterOpen,
     onSearchChange: handleSearchChange,
     onClearSearch: clearSearch,
+    onCountryChange: setCountry,
     onStateChange: setStateAbbr,
     onCityChange: setCity,
     onRadiusChange: setRadius,
@@ -307,6 +369,24 @@ function JobsContent() {
     onSortChange: setSortBy,
     onClearFilters: clearFilters,
   };
+
+  const renderJobCard = (job: NonNullable<typeof displayJobs>[number]) => (
+    <JobCard
+      key={job.id}
+      id={job.id}
+      title={job.title}
+      country={job.country}
+      city={job.city}
+      state={job.state}
+      jobType={job.jobType}
+      workArrangement={job.workArrangement}
+      minHourlyRate={Number(job.minHourlyRate)}
+      status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
+      businessName={job.business.name}
+      href={`/jobs/${job.id}`}
+      applicationCount={job._count.applications}
+    />
+  );
 
   return (
     <div className="md:p-5">
@@ -353,22 +433,21 @@ function JobsContent() {
 
             {!isLoading && !queryError && displayJobs && displayJobs.length > 0 && (
               <div className="space-y-3">
-                {displayJobs.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    id={job.id}
-                    title={job.title}
-                    city={job.city}
-                    state={job.state}
-                    jobType={job.jobType}
-                    workArrangement={job.workArrangement}
-                    minHourlyRate={Number(job.minHourlyRate)}
-                    status={job.status as "ACTIVE" | "PAUSED" | "CLOSED"}
-                    businessName={job.business.name}
-                    href={`/jobs/${job.id}`}
-                    applicationCount={job._count.applications}
-                  />
-                ))}
+                {(localJobs ?? displayJobs).map(renderJobCard)}
+
+                {/* Remote jobs are distance-exempt: when a radius narrows the local list,
+                    they appear below this divider instead of being filtered out. The
+                    divider only shows when there are local results above it. */}
+                {radiusActive && remoteJobs.length > 0 && (localJobs?.length ?? 0) > 0 && (
+                  <div className="flex items-center gap-3 pt-4 pb-1">
+                    <span className="bg-primary/20 h-px flex-1" />
+                    <span className="text-sm font-medium">
+                      Continue scrolling for remote positions
+                    </span>
+                    <span className="bg-primary/20 h-px flex-1" />
+                  </div>
+                )}
+                {radiusActive && remoteJobs.map(renderJobCard)}
               </div>
             )}
           </div>

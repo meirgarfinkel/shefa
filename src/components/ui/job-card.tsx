@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
+import { countryConfig } from "@/lib/constants/countries";
 import { Pill } from "@/components/ui/pill";
 import type { JobType, WorkArrangement } from "@/db/schema";
 import type { z } from "zod";
 import { JobStatusEnum } from "@/lib/schemas/jobPosting";
 
 type JobStatus = z.infer<typeof JobStatusEnum>;
-import { Car, Clock, MapPin, DollarSign } from "lucide-react";
+import { Car, Clock, MapPin } from "lucide-react";
 import { JOB_TYPE_LABELS, ARRANGEMENT_LABELS } from "@/lib/constants/labels";
 import { Panel } from "./panel";
 import { useRouter } from "next/navigation";
@@ -13,6 +14,7 @@ import { useRouter } from "next/navigation";
 interface JobCardProps {
   id: string;
   title: string;
+  country: string;
   city: string;
   state: string;
   jobType: JobType;
@@ -27,6 +29,7 @@ interface JobCardProps {
 
 export function JobCard({
   title,
+  country,
   city,
   state,
   jobType,
@@ -68,8 +71,10 @@ export function JobCard({
           <Car className="text-orange size-4 shrink-0" />
           {ARRANGEMENT_LABELS[workArrangement]}
         </span>
-        <span className="flex items-center">
-          <DollarSign className="text-orange size-3.5 shrink-0" />
+        <span className="flex items-center gap-1.5">
+          <span className="text-orange shrink-0 text-sm font-medium">
+            {countryConfig(country).currencySymbol}
+          </span>
           {minHourlyRate}+ (hourly)
         </span>
       </div>

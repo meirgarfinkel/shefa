@@ -2,6 +2,8 @@
 // so it can be unit-tested without React. The component owns all useState /
 // useEffect / tRPC wiring; everything here is a plain function or constant.
 
+import { countryConfig } from "@/lib/constants/countries";
+
 export type ArrangementValue = "ON_SITE" | "REMOTE" | "HYBRID";
 export type DayValue = "SUN" | "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT";
 export type SortValue = "best" | "newest" | "closest" | "pay";
@@ -22,13 +24,18 @@ export const DAY_OPTIONS: { value: DayValue; label: string }[] = [
   { value: "SAT", label: "Saturday" },
 ];
 
-export const RADIUS_OPTIONS = [
-  { value: "5", label: "Within 5 miles" },
-  { value: "10", label: "Within 10 miles" },
-  { value: "25", label: "Within 25 miles" },
-  { value: "50", label: "Within 50 miles" },
-  { value: "100", label: "Within 100 miles" },
-];
+/**
+ * Radius presets for the given country, labelled in that country's distance unit
+ * (miles for US, km for Israel). The values are plain numbers-as-strings; the unit
+ * is implied by the anchor city's country on the server.
+ */
+export function radiusOptions(country: string): { value: string; label: string }[] {
+  const cfg = countryConfig(country);
+  return cfg.radiusOptions.map((n) => ({
+    value: String(n),
+    label: `Within ${n} ${cfg.distanceUnit}`,
+  }));
+}
 
 export const SORT_LABELS: Record<SortValue, string> = {
   best: "Best match",
@@ -42,6 +49,7 @@ export const FILTER_KEY = "jobs_params";
 /** The full filter state, as parsed from / serialized to URL search params. */
 export type Filters = {
   q: string;
+  country: string;
   stateAbbr: string;
   city: string;
   radius: string;
@@ -118,6 +126,7 @@ export function readFiltersFromParams(params: URLSearchParams): Filters {
   const days = params.get("days");
   return {
     q: params.get("q") ?? "",
+    country: params.get("country") ?? "",
     stateAbbr: params.get("state") ?? "",
     city: params.get("city") ?? "",
     radius: params.get("radius") ?? "any",
@@ -137,6 +146,7 @@ export function readFiltersFromParams(params: URLSearchParams): Filters {
 export function filtersToSearchParams(f: Filters): URLSearchParams {
   const params = new URLSearchParams();
   if (f.q) params.set("q", f.q);
+  if (f.country) params.set("country", f.country);
   if (f.stateAbbr) params.set("state", f.stateAbbr);
   if (f.city) params.set("city", f.city);
   if (f.radius !== "any") params.set("radius", f.radius);
@@ -149,13 +159,14 @@ export function filtersToSearchParams(f: Filters): URLSearchParams {
 
 type FilterDerivationInput = Pick<
   Filters,
-  "q" | "stateAbbr" | "city" | "radius" | "jobType" | "arrangements" | "workDays"
+  "q" | "country" | "stateAbbr" | "city" | "radius" | "jobType" | "arrangements" | "workDays"
 >;
 
 /** Whether any search/filter is currently narrowing the results. */
 export function hasActiveFilters(f: FilterDerivationInput): boolean {
   return (
     !!f.q ||
+    !!f.country ||
     !!f.city ||
     !!f.stateAbbr ||
     f.radius !== "any" ||
@@ -169,7 +180,7 @@ export function hasActiveFilters(f: FilterDerivationInput): boolean {
 export function activeFilterCount(f: FilterDerivationInput): number {
   return [
     !!f.q,
-    !!f.stateAbbr || !!f.city,
+    !!f.country || !!f.stateAbbr || !!f.city,
     f.radius !== "any",
     f.jobType !== "any",
     f.arrangements.length > 0,

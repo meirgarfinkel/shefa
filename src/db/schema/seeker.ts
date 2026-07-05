@@ -16,6 +16,7 @@ export const seekerProfile = pgTable(
       .references(() => users.id),
     firstName: text("firstName").notNull(),
     lastName: text("lastName").notNull(),
+    country: text("country").notNull().default("US"),
     city: text("city").notNull(),
     state: text("state").notNull(),
     workAuthorization: boolean("workAuthorization").notNull(),
@@ -25,9 +26,6 @@ export const seekerProfile = pgTable(
     about: varchar("about", { length: 1000 }),
     resumeUrl: text("resumeUrl"),
     status: profileStatusEnum("status").notNull().default("ACTIVE"),
-    lastVerifiedAt: timestamp("lastVerifiedAt", { withTimezone: true, mode: "date" })
-      .notNull()
-      .defaultNow(),
     createdAt: timestamp("createdAt", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     updatedAt: timestamp("updatedAt", { withTimezone: true, mode: "date" })
       .notNull()

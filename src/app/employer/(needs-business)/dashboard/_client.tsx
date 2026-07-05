@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
-import { pluralize, getInitials } from "@/lib/utils";
+import { pluralize, getInitials, formatHourlyRate } from "@/lib/utils";
 import { CloseJobModal } from "@/components/close-job-modal";
 
 function timeAgo(date: Date | string): string {
@@ -247,7 +247,7 @@ export function EmployerDashboardClient({
                 {filteredJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="bg-primary/30 cursor-pointer rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                    className="bg-primary/30 cursor-pointer rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-100 hover:shadow-sm hover:backdrop-blur-sm"
                     onClick={() => router.push(`/jobs/${job.id}`)}
                   >
                     <div className="min-w-0">
@@ -261,7 +261,8 @@ export function EmployerDashboardClient({
                       </div>
                       <p className="mt-0.5 text-xs">
                         {multiBusiness && <> {job.business.name}</>}
-                        {" · "} {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
+                        {" · "} {job.city}, {job.state} ·{" "}
+                        {formatHourlyRate(job.minHourlyRate, job.country)}
                       </p>
                     </div>
 

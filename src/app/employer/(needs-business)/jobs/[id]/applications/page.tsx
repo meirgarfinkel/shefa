@@ -121,7 +121,7 @@ export default function EmployerJobApplicationsPage({
               return (
                 <li
                   key={app.id}
-                  className="bg-primary/30 hover:bg-primary/5 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-200 hover:shadow-sm hover:backdrop-blur-sm"
+                  className="bg-primary/30 hover:bg-primary/5 rounded-sm border bg-linear-to-b from-white/60 via-transparent to-transparent p-5 shadow-md backdrop-blur-xs duration-100 hover:shadow-sm hover:backdrop-blur-sm"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>

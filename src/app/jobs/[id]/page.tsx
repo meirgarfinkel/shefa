@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createServerCaller } from "@/server/api/server";
 import { getAppUrl } from "@/server/app-url";
 import { buildJobPostingJsonLd, jobPostingUrl } from "@/lib/seo/job-posting";
+import { formatHourlyRate } from "@/lib/utils";
 import { JobDetailClient } from "./_client";
 
 /**
@@ -31,9 +32,10 @@ export async function generateMetadata({
 
   const title = `${job.title} at ${job.business.name} | Shefa`;
   const description =
-    `${job.title} — ${job.business.name}, ${job.city}, ${job.state}. From $${Number(
+    `${job.title} — ${job.business.name}, ${job.city}, ${job.state}. From ${formatHourlyRate(
       job.minHourlyRate,
-    ).toFixed(2)}/hr. ${job.description}`
+      job.country,
+    )}. ${job.description}`
       .replace(/\s+/g, " ")
       .slice(0, 160);
   const url = jobPostingUrl(getAppUrl(), id);

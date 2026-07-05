@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc/provider";
 import { CreateJobPostingSchema, type CreateJobPostingInput } from "@/lib/schemas/jobPosting";
+import { DEFAULT_COUNTRY, countryConfig } from "@/lib/constants/countries";
 
 type FormValues = z.input<typeof CreateJobPostingSchema>;
 import {
@@ -59,6 +60,7 @@ export default function PostJobPage() {
       description: "",
       jobType: undefined,
       workArrangement: undefined,
+      country: DEFAULT_COUNTRY,
       city: "",
       state: "",
       payNotes: "",
@@ -244,7 +246,8 @@ export default function PostJobPage() {
                 render={() => (
                   <FormItem>
                     <FormLabel>
-                      Minimum hourly rate ($) <span className="text-danger">*</span>
+                      Minimum hourly rate ({countryConfig(form.watch("country")).currencySymbol}){" "}
+                      <span className="text-danger">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -300,7 +303,7 @@ export default function PostJobPage() {
                           className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                             field.value?.includes(day.value)
                               ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
-                              : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
+                              : "hover:bg-orange/15 transition-all duration-100 hover:scale-105"
                           }`}
                         >
                           <input
@@ -362,7 +365,7 @@ export default function PostJobPage() {
                       />
                     </FormControl>
                     <FormLabel className="text-sm font-normal">
-                      US work authorization required
+                      {countryConfig(form.watch("country")).name} work authorization required
                     </FormLabel>
                   </CheckboxFormItem>
                 )}

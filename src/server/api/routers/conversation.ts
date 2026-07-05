@@ -225,6 +225,7 @@ export const conversationRouter = createTRPCRouter({
             id: true,
             title: true,
             status: true,
+            country: true,
             city: true,
             state: true,
             jobType: true,

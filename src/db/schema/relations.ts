@@ -33,7 +33,6 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   conversationsAsSeeker: many(conversation, { relationName: "ConversationSeeker" }),
   conversationsAsEmployer: many(conversation, { relationName: "ConversationEmployer" }),
   sentMessages: many(message),
-  verificationPings: many(verificationPing),
   reports: many(report),
   feedback: many(feedback),
 }));
@@ -49,7 +48,6 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
 export const seekerProfileRelations = relations(seekerProfile, ({ one, many }) => ({
   user: one(users, { fields: [seekerProfile.userId], references: [users.id] }),
   languages: many(seekerLanguage),
-  verificationPings: many(verificationPing, { relationName: "SeekerPings" }),
 }));
 
 export const seekerLanguageRelations = relations(seekerLanguage, ({ one }) => ({
@@ -115,12 +113,6 @@ export const messageRelations = relations(message, ({ one }) => ({
 }));
 
 export const verificationPingRelations = relations(verificationPing, ({ one, many }) => ({
-  user: one(users, { fields: [verificationPing.userId], references: [users.id] }),
-  seekerProfile: one(seekerProfile, {
-    fields: [verificationPing.seekerProfileId],
-    references: [seekerProfile.id],
-    relationName: "SeekerPings",
-  }),
   job: one(jobPosting, {
     fields: [verificationPing.jobId],
     references: [jobPosting.id],

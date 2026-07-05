@@ -54,7 +54,6 @@ function makePublicSeekerProfile(overrides: Record<string, unknown> = {}) {
     status: "ACTIVE",
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
-    lastVerifiedAt: new Date("2026-01-01"),
     languages: [{ language: { name: "Spanish" } }],
     ...overrides,
   };
@@ -82,6 +81,7 @@ const createCaller = createCallerFactory(seekerRouter);
 const VALID_INPUT = {
   firstName: "Jane",
   lastName: "Doe",
+  country: "US" as const,
   city: "Brooklyn",
   state: "NY",
   workAuthorization: true,

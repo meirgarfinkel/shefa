@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db as defaultDb } from "@/db";
 import type { DbClient } from "@/db";
 import type { PingResponse } from "@/db/schema";
-import { freshnessToken, verificationPing, seekerProfile, jobPosting } from "@/db/schema";
+import { freshnessToken, verificationPing, jobPosting } from "@/db/schema";
 
 export type RedeemResult =
   | { status: "success"; targetType: string }
@@ -24,10 +24,6 @@ export async function redeemToken(
 
   const now = new Date();
 
-  if (record.targetType === "SEEKER_PROFILE") {
-    await applySeekerAction(record.targetId, record.action, now, db);
-  }
-
   if (record.targetType === "JOB_POSTING") {
     await applyJobAction(record.targetId, record.action, now, db);
   }
@@ -45,34 +41,6 @@ export async function redeemToken(
   }
 
   return { status: "success", targetType: record.targetType };
-}
-
-async function applySeekerAction(
-  seekerProfileId: string,
-  action: PingResponse,
-  now: Date,
-  db: DbClient,
-): Promise<void> {
-  switch (action) {
-    case "CONFIRMED":
-      await db
-        .update(seekerProfile)
-        .set({ lastVerifiedAt: now })
-        .where(eq(seekerProfile.id, seekerProfileId));
-      return;
-
-    case "NOT_LOOKING":
-    case "PAUSED":
-    case "FILLED":
-      await db
-        .update(seekerProfile)
-        .set({ status: "PAUSED" })
-        .where(eq(seekerProfile.id, seekerProfileId));
-      return;
-
-    default:
-      return;
-  }
 }
 
 async function applyJobAction(
@@ -94,7 +62,6 @@ async function applyJobAction(
       return;
 
     case "PAUSED":
-    case "NOT_LOOKING":
       await db.update(jobPosting).set({ status: "PAUSED" }).where(eq(jobPosting.id, jobId));
       return;
 

@@ -41,6 +41,7 @@ export const business = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
+    country: text("country").notNull().default("US"),
     city: text("city").notNull(),
     state: text("state").notNull(),
     website: text("website"),

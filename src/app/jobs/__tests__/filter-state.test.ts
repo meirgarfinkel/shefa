@@ -8,11 +8,13 @@ import {
   filtersToSearchParams,
   hasActiveFilters,
   activeFilterCount,
+  radiusOptions,
   type Filters,
 } from "@/app/jobs/_filter-state";
 
 const emptyFilters: Filters = {
   q: "",
+  country: "",
   stateAbbr: "",
   city: "",
   radius: "any",
@@ -133,11 +135,12 @@ describe("readFiltersFromParams", () => {
   it("parses multi-value and scalar params", () => {
     const f = readFiltersFromParams(
       new URLSearchParams(
-        "q=cook&state=NY&city=Albany&radius=25&jobType=FULL_TIME&arrangements=REMOTE,HYBRID&days=MON,TUE",
+        "q=cook&country=US&state=NY&city=Albany&radius=25&jobType=FULL_TIME&arrangements=REMOTE,HYBRID&days=MON,TUE",
       ),
     );
     expect(f).toEqual({
       q: "cook",
+      country: "US",
       stateAbbr: "NY",
       city: "Albany",
       radius: "25",
@@ -157,6 +160,7 @@ describe("filtersToSearchParams", () => {
   it("omits default-valued fields and round-trips the rest", () => {
     const f: Filters = {
       ...emptyFilters,
+      country: "US",
       stateAbbr: "NY",
       city: "Albany",
       radius: "25",
@@ -165,6 +169,28 @@ describe("filtersToSearchParams", () => {
     };
     const round = readFiltersFromParams(filtersToSearchParams(f));
     expect(round).toEqual({ ...f, sortBy: "pay" });
+  });
+
+  it("round-trips the country filter", () => {
+    const round = readFiltersFromParams(filtersToSearchParams({ ...emptyFilters, country: "IL" }));
+    expect(round.country).toBe("IL");
+  });
+});
+
+describe("radiusOptions", () => {
+  it("labels US radii in miles", () => {
+    const opts = radiusOptions("US");
+    expect(opts[0]).toEqual({ value: "5", label: "Within 5 mi" });
+    expect(opts.every((o) => o.label.endsWith("mi"))).toBe(true);
+  });
+
+  it("labels Israel radii in km", () => {
+    const opts = radiusOptions("IL");
+    expect(opts.every((o) => o.label.endsWith("km"))).toBe(true);
+  });
+
+  it("falls back to the default country for unknown values", () => {
+    expect(radiusOptions("").every((o) => o.label.endsWith("mi"))).toBe(true);
   });
 });
 

@@ -4,7 +4,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "glass glass-hover hover:scale-98 active:scale-96 inline-flex shrink-0 items-center text-nowrap justify-center cursor-pointer transition-transform ease-out duration-150 rounded-lg font-medium outline-none select-none disabled:pointer-events-none disabled:opacity-50",
+  "glass glass-hover hover:scale-98 active:scale-96 inline-flex shrink-0 items-center text-nowrap justify-center cursor-pointer transition-transform ease-out duration-100 rounded-lg font-medium outline-none select-none disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {

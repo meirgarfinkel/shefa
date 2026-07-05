@@ -65,7 +65,7 @@ export const businessRouter = createTRPCRouter({
     const businesses = await ctx.db.query.business.findMany({
       where: eq(business.ownerId, ctx.user.id),
       orderBy: asc(business.name),
-      columns: { id: true, name: true, city: true, state: true },
+      columns: { id: true, name: true, country: true, city: true, state: true },
     });
 
     if (businesses.length === 0) return [];
@@ -82,6 +82,7 @@ export const businessRouter = createTRPCRouter({
     return businesses.map((c) => ({
       id: c.id,
       businessName: c.name,
+      country: c.country,
       city: c.city,
       state: c.state,
       activeJobsCount: countMap.get(c.id) ?? 0,

@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc/provider";
 import { UpdateJobPostingSchema, JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
+import { countryConfig } from "@/lib/constants/countries";
 import {
   Form,
   FormControl,
@@ -73,6 +74,7 @@ type JobRecord = {
   description: string;
   jobType: string;
   workArrangement: string;
+  country: string;
   city: string;
   state: string;
   minHourlyRate: string | number;
@@ -105,6 +107,7 @@ function JobEditForm({
       description: job.description,
       jobType: job.jobType as EditFormValues["jobType"],
       workArrangement: job.workArrangement as EditFormValues["workArrangement"],
+      country: job.country as EditFormValues["country"],
       city: job.city,
       state: job.state,
       minHourlyRate: Number(job.minHourlyRate),
@@ -301,7 +304,8 @@ function JobEditForm({
                   render={() => (
                     <FormItem>
                       <FormLabel>
-                        Minimum hourly rate ($) <span className="text-danger">*</span>
+                        Minimum hourly rate ({countryConfig(form.watch("country")).currencySymbol}){" "}
+                        <span className="text-danger">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -356,7 +360,7 @@ function JobEditForm({
                             className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                               field.value?.includes(day.value)
                                 ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
-                                : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
+                                : "hover:bg-orange/15 transition-all duration-100 hover:scale-105"
                             }`}
                           >
                             <input
@@ -419,7 +423,9 @@ function JobEditForm({
                           disabled={isClosed}
                         />
                       </FormControl>
-                      <FormLabel className="font-normal">US work authorization required</FormLabel>
+                      <FormLabel className="font-normal">
+                        {countryConfig(form.watch("country")).name} work authorization required
+                      </FormLabel>
                     </CheckboxFormItem>
                   )}
                 />

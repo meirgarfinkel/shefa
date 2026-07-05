@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { SUPPORTED_COUNTRIES } from "@/lib/constants/countries";
 
+const Country = z.enum(SUPPORTED_COUNTRIES);
 const DayOfWeek = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
 
 const EducationLevel = z.enum([
@@ -15,6 +17,7 @@ const EducationLevel = z.enum([
 export const CreateSeekerProfileSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
+  country: Country,
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
   workAuthorization: z.boolean(),
@@ -34,6 +37,7 @@ export type CreateSeekerProfileInput = z.infer<typeof CreateSeekerProfileSchema>
 export const UpdateSeekerProfileSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
+  country: Country,
   city: z.string().min(1).max(100),
   state: z.string().min(1).max(100),
   workAuthorization: z.boolean(),

@@ -28,14 +28,17 @@ import {
   type SortValue,
   ARRANGEMENT_OPTIONS,
   DAY_OPTIONS,
-  RADIUS_OPTIONS,
   SORT_LABELS,
   toggleItem,
 } from "@/app/jobs/_filter-state";
+import { SUPPORTED_COUNTRIES, COUNTRY_CONFIG } from "@/lib/constants/countries";
 import { pluralize } from "@/lib/utils";
+
+const COUNTRY_ALL = "all";
 
 export type FilterPanelProps = {
   searchQuery: string;
+  country: string;
   stateAbbr: string;
   city: string;
   radius: string;
@@ -46,6 +49,12 @@ export type FilterPanelProps = {
   filterOpen: boolean;
   states: { abbr: string; name: string }[];
   cities: { name: string }[];
+  /** Radius presets for the selected country, labelled in mi/km. */
+  radiusOptions: { value: string; label: string }[];
+  /** Label for the region dropdown ("State"/"District"). */
+  regionLabel: string;
+  /** Hide the region dropdown for flat countries (Israel) or when no country is chosen. */
+  showRegion: boolean;
   countText: string | null;
   activeFilterCount: number;
   hasFilters: boolean;
@@ -55,6 +64,7 @@ export type FilterPanelProps = {
   onFilterOpenChange: (open: boolean) => void;
   onSearchChange: (value: string) => void;
   onClearSearch: () => void;
+  onCountryChange: (value: string) => void;
   onStateChange: (value: string) => void;
   onCityChange: (value: string) => void;
   onRadiusChange: (value: string) => void;
@@ -69,6 +79,7 @@ export type FilterPanelProps = {
 export function MobileFilterBar(props: FilterPanelProps) {
   const {
     searchQuery,
+    country,
     stateAbbr,
     city,
     radius,
@@ -79,6 +90,9 @@ export function MobileFilterBar(props: FilterPanelProps) {
     filterOpen,
     states,
     cities,
+    radiusOptions,
+    regionLabel,
+    showRegion,
     activeFilterCount,
     hasFilters,
     jobCount,
@@ -87,6 +101,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
     onFilterOpenChange,
     onSearchChange,
     onClearSearch,
+    onCountryChange,
     onStateChange,
     onCityChange,
     onRadiusChange,
@@ -178,23 +193,47 @@ export function MobileFilterBar(props: FilterPanelProps) {
           {/* Location */}
           <div className="space-y-2">
             <p className="px-1 font-medium">Location</p>
-            <Select value={stateAbbr || undefined} onValueChange={onStateChange}>
+            <Select
+              value={country || COUNTRY_ALL}
+              onValueChange={(v) => onCountryChange(v === COUNTRY_ALL ? "" : v)}
+            >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="State" />
+                <SelectValue placeholder="Country" />
               </SelectTrigger>
-              <SelectContent className="max-h-80">
-                <DropdownMenuLabel>State</DropdownMenuLabel>
-                {states.map((s) => (
-                  <SelectItem key={s.abbr} value={s.abbr}>
-                    {s.name}
+              <SelectContent>
+                <DropdownMenuLabel>Country</DropdownMenuLabel>
+                <SelectItem value={COUNTRY_ALL}>All countries</SelectItem>
+                {SUPPORTED_COUNTRIES.map((code) => (
+                  <SelectItem key={code} value={code}>
+                    {COUNTRY_CONFIG[code].name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
+            {showRegion && (
+              <Select value={stateAbbr || undefined} onValueChange={onStateChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={regionLabel} />
+                </SelectTrigger>
+                <SelectContent className="max-h-80">
+                  <DropdownMenuLabel>{regionLabel}</DropdownMenuLabel>
+                  {states.map((s) => (
+                    <SelectItem key={s.abbr} value={s.abbr}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             <Select value={city || undefined} onValueChange={onCityChange} disabled={!stateAbbr}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder={stateAbbr ? "City" : "State first"} />
+                <SelectValue
+                  placeholder={
+                    !country ? "Country first" : stateAbbr ? "City" : `${regionLabel} first`
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="max-h-64">
                 <DropdownMenuLabel>City</DropdownMenuLabel>
@@ -206,14 +245,14 @@ export function MobileFilterBar(props: FilterPanelProps) {
               </SelectContent>
             </Select>
 
-            <Select value={radius} onValueChange={onRadiusChange}>
+            <Select value={radius} onValueChange={onRadiusChange} disabled={!city}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <DropdownMenuLabel>Distance</DropdownMenuLabel>
                 <SelectItem value="any">Any distance</SelectItem>
-                {RADIUS_OPTIONS.map((r) => (
+                {radiusOptions.map((r) => (
                   <SelectItem key={r.value} value={r.value}>
                     {r.label}
                   </SelectItem>
@@ -318,6 +357,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
 export function DesktopFilterSidebar(props: FilterPanelProps) {
   const {
     searchQuery,
+    country,
     stateAbbr,
     city,
     radius,
@@ -327,10 +367,14 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
     sortBy,
     states,
     cities,
+    radiusOptions,
+    regionLabel,
+    showRegion,
     countText,
     hasFilters,
     onSearchChange,
     onClearSearch,
+    onCountryChange,
     onStateChange,
     onCityChange,
     onRadiusChange,
@@ -358,7 +402,7 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
           <button
             type="button"
             onClick={onClearSearch}
-            className="text-popover absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-150"
+            className="text-popover absolute top-1/2 right-2.5 -translate-y-1/2 transition-colors duration-100"
           >
             <XIcon className="size-3.5" />
           </button>
@@ -375,26 +419,51 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <FilterTrigger className="w-full justify-between">
-                {stateAbbr
-                  ? (states.find((s) => s.abbr === stateAbbr)?.name ?? stateAbbr)
-                  : "State"}
+                {country
+                  ? COUNTRY_CONFIG[country as keyof typeof COUNTRY_CONFIG].name
+                  : "All countries"}
               </FilterTrigger>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="max-h-64 overflow-y-auto whitespace-nowrap">
-              <DropdownMenuRadioGroup value={stateAbbr} onValueChange={onStateChange}>
-                {states.map((s) => (
-                  <DropdownMenuRadioItem key={s.abbr} value={s.abbr}>
-                    {s.abbr} — {s.name}
+            <DropdownMenuContent>
+              <DropdownMenuRadioGroup
+                value={country || COUNTRY_ALL}
+                onValueChange={(v) => onCountryChange(v === COUNTRY_ALL ? "" : v)}
+              >
+                <DropdownMenuRadioItem value={COUNTRY_ALL}>All countries</DropdownMenuRadioItem>
+                {SUPPORTED_COUNTRIES.map((code) => (
+                  <DropdownMenuRadioItem key={code} value={code}>
+                    {COUNTRY_CONFIG[code].name}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {showRegion && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <FilterTrigger className="w-full justify-between">
+                  {stateAbbr
+                    ? (states.find((s) => s.abbr === stateAbbr)?.name ?? stateAbbr)
+                    : regionLabel}
+                </FilterTrigger>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="max-h-64 overflow-y-auto whitespace-nowrap">
+                <DropdownMenuRadioGroup value={stateAbbr} onValueChange={onStateChange}>
+                  {states.map((s) => (
+                    <DropdownMenuRadioItem key={s.abbr} value={s.abbr}>
+                      {s.abbr} — {s.name}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <FilterTrigger className="w-full justify-between" disabled={!stateAbbr}>
-                {city || (stateAbbr ? "City" : "State first")}
+                {city || (!country ? "Country first" : stateAbbr ? "City" : `${regionLabel} first`)}
               </FilterTrigger>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="max-h-64 overflow-y-auto">
@@ -410,16 +479,16 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <FilterTrigger className="w-full justify-between">
+              <FilterTrigger className="w-full justify-between" disabled={!city}>
                 {radius === "any"
                   ? "Any distance"
-                  : (RADIUS_OPTIONS.find((r) => r.value === radius)?.label ?? radius)}
+                  : (radiusOptions.find((r) => r.value === radius)?.label ?? radius)}
               </FilterTrigger>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuRadioGroup value={radius} onValueChange={onRadiusChange}>
                 <DropdownMenuRadioItem value="any">Any distance</DropdownMenuRadioItem>
-                {RADIUS_OPTIONS.map((opt) => (
+                {radiusOptions.map((opt) => (
                   <DropdownMenuRadioItem key={opt.value} value={opt.value}>
                     {opt.label}
                   </DropdownMenuRadioItem>

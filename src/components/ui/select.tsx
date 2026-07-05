@@ -37,7 +37,7 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "relative z-10 flex border border-white shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] transition-shadow duration-150 hover:shadow-[inset_1px_-1px_4px_#ffffff66,inset_-1px_1px_4px_#ffffffe6]",
+        "relative z-10 flex border border-white shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] transition-shadow duration-100 hover:shadow-[inset_1px_-1px_4px_#ffffff66,inset_-1px_1px_4px_#ffffffe6]",
         "h-8 min-w-0 items-center justify-between gap-1 rounded-md px-3 text-sm",
         "max-w-35 text-nowrap md:max-w-100",
         "inline-flex shrink-0 cursor-pointer font-medium outline-none select-none hover:scale-98 active:scale-96 disabled:pointer-events-none disabled:opacity-50",
@@ -106,7 +106,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-100 ease-out",
         "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
         "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         className,

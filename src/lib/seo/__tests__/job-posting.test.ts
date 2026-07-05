@@ -15,6 +15,7 @@ function makeJob(overrides: Partial<JobPostingSeoInput> = {}): JobPostingSeoInpu
     description: "Help in a busy kitchen. No experience needed.",
     jobType: "FULL_TIME",
     workArrangement: "ON_SITE",
+    country: "US",
     city: "Brooklyn",
     state: "NY",
     minHourlyRate: "18.50",
@@ -49,6 +50,16 @@ describe("buildJobPostingJsonLd", () => {
     expect(ld.hiringOrganization.name).toBe("Sunrise Diner");
     expect(ld.jobLocation.address.addressLocality).toBe("Brooklyn");
     expect(ld.jobLocation.address.addressRegion).toBe("NY");
+    expect(ld.jobLocation.address.addressCountry).toBe("US");
+  });
+
+  it("emits the job's country and currency for an Israeli posting", () => {
+    const ld = buildJobPostingJsonLd(
+      makeJob({ country: "IL", city: "Tel Aviv", state: "IL" }),
+      BASE,
+    );
+    expect(ld.jobLocation.address.addressCountry).toBe("IL");
+    expect(ld.baseSalary.currency).toBe("ILS");
   });
 
   it("maps minHourlyRate to an hourly MonetaryAmount as a number", () => {

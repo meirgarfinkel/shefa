@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc/provider";
 import { CreateSeekerProfileSchema, type CreateSeekerProfileInput } from "@/lib/schemas/seeker";
+import { DEFAULT_COUNTRY, countryConfig } from "@/lib/constants/countries";
 import {
   Form,
   FormControl,
@@ -59,6 +60,7 @@ export default function SeekerProfileNewPage() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      country: DEFAULT_COUNTRY,
       city: "",
       state: "",
       workAuthorization: false,
@@ -140,7 +142,7 @@ export default function SeekerProfileNewPage() {
                           className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                             field.value?.includes(day.value)
                               ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
-                              : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
+                              : "hover:bg-orange/15 transition-all duration-100 hover:scale-105"
                           }`}
                         >
                           <input
@@ -306,7 +308,7 @@ export default function SeekerProfileNewPage() {
                       />
                     </FormControl>
                     <FormLabel className="text-sm font-normal">
-                      I am authorized to work in the United States
+                      I am authorized to work in {countryConfig(form.watch("country")).name}
                     </FormLabel>
                   </CheckboxFormItem>
                 )}

@@ -35,7 +35,7 @@ export const seekerRouter = createTRPCRouter({
     }
     const profile = await ctx.db.query.seekerProfile.findFirst({
       where: eq(seekerProfile.userId, ctx.user.id),
-      columns: { id: true, city: true, state: true },
+      columns: { id: true, country: true, city: true, state: true },
     });
     return profile ?? null;
   }),

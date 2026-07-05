@@ -87,7 +87,7 @@ function DropdownMenuCheckboxItem({
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
       className={cn(
-        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-100 ease-out",
         "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
         "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         inset && "pl-7",
@@ -120,7 +120,7 @@ function DropdownMenuRadioItem({
       data-slot="dropdown-menu-radio-item"
       data-inset={inset}
       className={cn(
-        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-150 ease-out",
+        "relative mx-1 flex cursor-default items-center rounded-md border border-transparent px-2 py-1 text-sm transition-all duration-100 ease-out",
         "hover:scale-105 hover:border hover:border-white/20 hover:bg-white/50 hover:font-medium",
         "data-[state=checked]:bg-popover data-[state=checked]:text-white",
         inset && "pl-7",

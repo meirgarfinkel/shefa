@@ -37,6 +37,7 @@ export const jobPosting = pgTable(
     description: varchar("description", { length: 5000 }).notNull(),
     jobType: jobTypeEnum("jobType").notNull(),
     workArrangement: workArrangementEnum("workArrangement").notNull(),
+    country: text("country").notNull().default("US"),
     city: text("city").notNull(),
     state: text("state").notNull(),
     lat: doublePrecision("lat").notNull(),

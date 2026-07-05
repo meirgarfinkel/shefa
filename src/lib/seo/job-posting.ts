@@ -1,4 +1,5 @@
 import type { JobType, WorkArrangement } from "@/db/schema";
+import { countryConfig } from "@/lib/constants/countries";
 
 /**
  * Google Jobs eligibility requires server-rendered `JobPosting` structured data on each
@@ -13,6 +14,7 @@ export interface JobPostingSeoInput {
   description: string;
   jobType: JobType;
   workArrangement: WorkArrangement;
+  country: string;
   city: string;
   state: string;
   minHourlyRate: string;
@@ -50,6 +52,7 @@ export function jobPostingUrl(baseUrl: string, id: string): string {
 }
 
 export function buildJobPostingJsonLd(job: JobPostingSeoInput, baseUrl: string) {
+  const { code: countryCode, currency } = countryConfig(job.country);
   return {
     "@context": "https://schema.org/",
     "@type": "JobPosting",
@@ -74,13 +77,13 @@ export function buildJobPostingJsonLd(job: JobPostingSeoInput, baseUrl: string) 
         "@type": "PostalAddress",
         addressLocality: job.city,
         addressRegion: job.state,
-        addressCountry: "US",
+        addressCountry: countryCode,
       },
     },
     ...(job.workArrangement === "REMOTE" && { jobLocationType: "TELECOMMUTE" }),
     baseSalary: {
       "@type": "MonetaryAmount",
-      currency: "USD",
+      currency,
       value: {
         "@type": "QuantitativeValue",
         value: Number(job.minHourlyRate),

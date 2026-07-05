@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/api/root";
 import { trpc } from "@/lib/trpc/provider";
+import { formatHourlyRate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/ui/panel";
 import { Surface } from "@/components/ui/surface";
@@ -227,7 +228,7 @@ export function JobDetailClient({ id, initialJob }: { id: string; initialJob: Jo
               <div>
                 <p className="text-md font-medium tracking-wide">Pay</p>
                 <p className="text-muted mt-1 text-sm font-medium">
-                  From ${Number(job.minHourlyRate).toFixed(2)}/hr
+                  From {formatHourlyRate(job.minHourlyRate, job.country)}
                 </p>
                 {job.payNotes && <p className="text-muted mt-0.5 text-xs">{job.payNotes}</p>}
               </div>

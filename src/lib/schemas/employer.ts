@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { optionalHttpUrl, optionalTrimmedString, requiredTrimmedString } from "@/lib/utils";
+import { SUPPORTED_COUNTRIES } from "@/lib/constants/countries";
 
+const Country = z.enum(SUPPORTED_COUNTRIES);
 const BusinessSize = z.enum(["SIZE_1_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_PLUS"]);
 
 const Industry = z.enum([
@@ -54,6 +56,7 @@ export type UpdateEmployerProfileInput = z.infer<typeof UpdateEmployerProfileSch
 
 const BusinessFields = {
   name: requiredTrimmedString(200),
+  country: Country,
   city: requiredTrimmedString(100),
   state: requiredTrimmedString(100),
   website: optionalHttpUrl,
@@ -68,6 +71,7 @@ export const CreateBusinessSchema = z.object(BusinessFields);
 export const UpdateBusinessSchema = z.object({
   id: z.string(),
   name: BusinessFields.name.optional(),
+  country: BusinessFields.country.optional(),
   city: BusinessFields.city.optional(),
   state: BusinessFields.state.optional(),
   website: BusinessFields.website,

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { trpc } from "@/lib/trpc/provider";
 import { CreateBusinessSchema, type CreateBusinessInput } from "@/lib/schemas/employer";
+import { DEFAULT_COUNTRY } from "@/lib/constants/countries";
 import {
   Form,
   FormControl,
@@ -63,7 +64,7 @@ export default function BusinessNewPage() {
 
   const form = useForm<CreateBusinessInput>({
     resolver: zodResolver(CreateBusinessSchema),
-    defaultValues: { name: "", city: "", state: "" },
+    defaultValues: { name: "", country: DEFAULT_COUNTRY, city: "", state: "" },
   });
 
   const createBusiness = trpc.business.create.useMutation({

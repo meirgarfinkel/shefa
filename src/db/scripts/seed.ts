@@ -793,27 +793,64 @@ const CITIES_BY_STATE: Record<string, { name: string; lat: number; lon: number }
   ],
 };
 
-async function main() {
-  console.log("Seeding languages...");
-  await db
-    .insert(language)
-    .values(LANGUAGES.map((name) => ({ id: createId(), name })))
-    .onConflictDoNothing();
-  console.log(`  ${LANGUAGES.length} languages seeded.`);
+// Israel is modeled as a single flat region — the UI has no district dropdown for it,
+// so every Israeli city hangs off this one catch-all "state" row (abbr "IL"). This keeps
+// the City→State join and lookupCityCoords working unchanged. See countries.ts (flat).
+const ISRAEL_REGION = { name: "Israel", abbr: "IL", lat: 31.4118, lon: 35.0818 };
 
-  console.log("Seeding states and cities...");
+const ISRAEL_CITIES: { name: string; lat: number; lon: number }[] = [
+  { name: "Jerusalem", lat: 31.7683, lon: 35.2137 },
+  { name: "Tel Aviv", lat: 32.0853, lon: 34.7818 },
+  { name: "Haifa", lat: 32.794, lon: 34.9896 },
+  { name: "Rishon LeZion", lat: 31.973, lon: 34.8066 },
+  { name: "Petah Tikva", lat: 32.084, lon: 34.8878 },
+  { name: "Ashdod", lat: 31.804, lon: 34.6553 },
+  { name: "Netanya", lat: 32.3215, lon: 34.8532 },
+  { name: "Be'er Sheva", lat: 31.253, lon: 34.7915 },
+  { name: "Bnei Brak", lat: 32.0807, lon: 34.8338 },
+  { name: "Holon", lat: 32.0117, lon: 34.7725 },
+  { name: "Ramat Gan", lat: 32.0684, lon: 34.8248 },
+  { name: "Ashkelon", lat: 31.6688, lon: 34.5715 },
+  { name: "Rehovot", lat: 31.8928, lon: 34.8113 },
+  { name: "Bat Yam", lat: 32.0171, lon: 34.7457 },
+  { name: "Beit Shemesh", lat: 31.7509, lon: 34.9887 },
+  { name: "Kfar Saba", lat: 32.175, lon: 34.907 },
+  { name: "Herzliya", lat: 32.1624, lon: 34.8443 },
+  { name: "Hadera", lat: 32.434, lon: 34.9196 },
+  { name: "Modi'in", lat: 31.8969, lon: 35.0104 },
+  { name: "Nazareth", lat: 32.7021, lon: 35.2978 },
+  { name: "Ra'anana", lat: 32.1848, lon: 34.8713 },
+  { name: "Lod", lat: 31.9514, lon: 34.8953 },
+  { name: "Ramla", lat: 31.9288, lon: 34.8667 },
+  { name: "Nahariya", lat: 33.0059, lon: 35.0944 },
+  { name: "Givatayim", lat: 32.0722, lon: 34.8125 },
+  { name: "Hod HaSharon", lat: 32.15, lon: 34.888 },
+  { name: "Kiryat Gat", lat: 31.61, lon: 34.7642 },
+  { name: "Eilat", lat: 29.5577, lon: 34.9519 },
+  { name: "Acre", lat: 32.9281, lon: 35.0818 },
+  { name: "Tiberias", lat: 32.7959, lon: 35.5308 },
+  { name: "Afula", lat: 32.6078, lon: 35.2897 },
+  { name: "Nes Ziona", lat: 31.9293, lon: 34.7986 },
+];
+
+/** Upsert one country's regions and their cities. Returns the number of cities seeded. */
+async function seedRegions(
+  country: string,
+  regions: { name: string; abbr: string; lat: number; lon: number }[],
+  citiesByAbbr: Record<string, { name: string; lat: number; lon: number }[]>,
+): Promise<number> {
   let cityCount = 0;
-  for (const s of STATES) {
+  for (const s of regions) {
     const [row] = await db
       .insert(state)
-      .values({ id: createId(), name: s.name, abbr: s.abbr, lat: s.lat, lon: s.lon })
+      .values({ id: createId(), country, name: s.name, abbr: s.abbr, lat: s.lat, lon: s.lon })
       .onConflictDoUpdate({
-        target: state.abbr,
+        target: [state.country, state.abbr],
         set: { name: s.name, lat: s.lat, lon: s.lon },
       })
       .returning({ id: state.id });
 
-    const cities = CITIES_BY_STATE[s.abbr] ?? [];
+    const cities = citiesByAbbr[s.abbr] ?? [];
     if (cities.length > 0) {
       await db
         .insert(city)
@@ -833,7 +870,21 @@ async function main() {
       cityCount += cities.length;
     }
   }
-  console.log(`  ${STATES.length} states and ${cityCount} cities seeded.`);
+  return cityCount;
+}
+
+async function main() {
+  console.log("Seeding languages...");
+  await db
+    .insert(language)
+    .values(LANGUAGES.map((name) => ({ id: createId(), name })))
+    .onConflictDoNothing();
+  console.log(`  ${LANGUAGES.length} languages seeded.`);
+
+  console.log("Seeding states and cities...");
+  const usCityCount = await seedRegions("US", STATES, CITIES_BY_STATE);
+  const ilCityCount = await seedRegions("IL", [ISRAEL_REGION], { IL: ISRAEL_CITIES });
+  console.log(`  ${STATES.length} US states + Israel; ${usCityCount + ilCityCount} cities seeded.`);
 }
 
 main()

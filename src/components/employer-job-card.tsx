@@ -8,7 +8,7 @@ import { CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { JobStatus } from "@/db/schema";
 import type { JobClosureReasonEnum } from "@/lib/schemas/jobPosting";
-import { cn } from "@/lib/utils";
+import { cn, formatHourlyRate } from "@/lib/utils";
 import { Panel } from "./ui/panel";
 
 type JobClosureReason = z.infer<typeof JobClosureReasonEnum>;
@@ -20,6 +20,7 @@ export type EmployerJobCardJob = {
   id: string;
   title: string;
   status: JobStatus;
+  country: string;
   city: string;
   state: string;
   minHourlyRate: string | number;
@@ -133,7 +134,7 @@ export function EmployerJobCard({
             {" · "}
           </>
         )}{" "}
-        {job.city}, {job.state} · ${Number(job.minHourlyRate).toFixed(0)}/hr
+        {job.city}, {job.state} · {formatHourlyRate(job.minHourlyRate, job.country)}
       </p>
 
       <div className="relative z-10 mt-3 flex flex-wrap justify-between gap-y-2">

@@ -83,6 +83,7 @@ const createCaller = createCallerFactory(businessRouter);
 
 const VALID_CREATE_INPUT = {
   name: "Acme Corp",
+  country: "US" as const,
   city: "New York",
   state: "NY",
 };

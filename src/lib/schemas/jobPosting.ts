@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { optionalTrimmedString, requiredTrimmedString } from "@/lib/utils";
+import { SUPPORTED_COUNTRIES } from "@/lib/constants/countries";
 
+const Country = z.enum(SUPPORTED_COUNTRIES);
 const DayOfWeek = z.enum(["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]);
 type DayOfWeekValue = z.infer<typeof DayOfWeek>;
 const JobType = z.enum(["FULL_TIME", "PART_TIME", "EITHER"]);
@@ -21,6 +23,7 @@ const JobPostingFields = {
   description: requiredTrimmedString(5000),
   jobType: JobType,
   workArrangement: WorkArrangement,
+  country: Country,
   city: requiredTrimmedString(100),
   state: requiredTrimmedString(100),
   minHourlyRate: z.number().positive(),
@@ -43,6 +46,7 @@ export const UpdateJobPostingSchema = z.object({
   description: JobPostingFields.description.optional(),
   jobType: JobPostingFields.jobType.optional(),
   workArrangement: JobPostingFields.workArrangement.optional(),
+  country: JobPostingFields.country.optional(),
   city: JobPostingFields.city.optional(),
   state: JobPostingFields.state.optional(),
   minHourlyRate: JobPostingFields.minHourlyRate.optional(),
@@ -59,9 +63,12 @@ export const ListJobPostingsSchema = z.object({
   status: z.array(JobStatusEnum).optional(),
   businessId: z.string().optional(),
   myJobs: z.boolean().optional(),
+  country: JobPostingFields.country.optional(),
   city: JobPostingFields.city.optional(),
   state: JobPostingFields.state.optional(),
-  radiusMiles: z.number().positive().max(500).optional(),
+  // Radius is in the anchor city's country unit (miles for US, km for IL). It only
+  // constrains ON_SITE/HYBRID jobs; REMOTE jobs are never distance-filtered.
+  radius: z.number().positive().max(500).optional(),
   jobType: z.array(JobPostingFields.jobType).optional(),
   workArrangement: z.array(JobPostingFields.workArrangement).optional(),
   workDays: z.array(DayOfWeek).optional(),

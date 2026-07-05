@@ -87,6 +87,7 @@ const MOCK_JOB = {
   description: "Help in the kitchen.",
   jobType: "FULL_TIME",
   workArrangement: "ON_SITE",
+  country: "US",
   city: "Brooklyn",
   state: "NY",
   minHourlyRate: "15.00",
@@ -104,6 +105,7 @@ const MOCK_JOB = {
   business: {
     id: BUSINESS_ID,
     name: "Mama's Kitchen",
+    country: "US",
     city: "Brooklyn",
     state: "NY",
     industry: "FOOD_SERVICE",
@@ -120,7 +122,13 @@ const MOCK_JOB_SEARCH_RESULT = {
   lat: 40.65,
   lon: -73.95,
   requiredLanguages: [],
-  business: { id: BUSINESS_ID, name: "Mama's Kitchen", city: "Brooklyn", state: "NY" },
+  business: {
+    id: BUSINESS_ID,
+    name: "Mama's Kitchen",
+    country: "US",
+    city: "Brooklyn",
+    state: "NY",
+  },
 };
 const MOCK_JOB_CLOSED = { ...MOCK_JOB, status: "CLOSED" };
 
@@ -129,6 +137,7 @@ const VALID_CREATE_INPUT = {
   description: "Help in the kitchen.",
   jobType: "FULL_TIME" as const,
   workArrangement: "ON_SITE" as const,
+  country: "US" as const,
   city: "Brooklyn",
   state: "NY",
   minHourlyRate: 15,
@@ -390,7 +399,7 @@ describe("jobPosting.list", () => {
 
   // ── New filter fields ──
 
-  it("applies state filter as geo fallback when radiusMiles given but geocoding fails", async () => {
+  it("applies state filter as geo fallback when radius given but geocoding fails", async () => {
     // City lookup returns null → geo fallback uses text matching
     db.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -407,17 +416,17 @@ describe("jobPosting.list", () => {
       }),
     });
     const caller = createCaller(makeCtx(null, db));
-    await caller.list({ state: "NY", radiusMiles: 25 });
+    await caller.list({ country: "US", state: "NY", radius: 25 });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
-  it("omits state from where when no radiusMiles provided", async () => {
+  it("omits state from where when no radius provided", async () => {
     const caller = createCaller(makeCtx(null, db));
     await caller.list({ state: "NY" });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
-  it("applies city filter as geo fallback when radiusMiles given but geocoding fails", async () => {
+  it("applies city filter as geo fallback when radius given but geocoding fails", async () => {
     db.select.mockReturnValue({
       from: vi.fn().mockReturnValue({
         innerJoin: vi.fn().mockReturnValue({
@@ -433,7 +442,7 @@ describe("jobPosting.list", () => {
       }),
     });
     const caller = createCaller(makeCtx(null, db));
-    await caller.list({ city: "Brooklyn", radiusMiles: 25 });
+    await caller.list({ country: "US", city: "Brooklyn", radius: 25 });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
   });
 
@@ -469,8 +478,62 @@ describe("jobPosting.list", () => {
 
   it("non-owner still sees only ACTIVE even when other filters are applied", async () => {
     const caller = createCaller(makeCtx("SEEKER", db));
-    await caller.list({ state: "NY", radiusMiles: 25, jobType: ["FULL_TIME"] });
+    await caller.list({ country: "US", state: "NY", radius: 25, jobType: ["FULL_TIME"] });
     expect(db.query.jobPosting.findMany).toHaveBeenCalled();
+  });
+
+  // ── Multi-country search semantics ──
+
+  it("applies the country filter when provided", async () => {
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ country: "IL" });
+    expect(db.query.jobPosting.findMany).toHaveBeenCalled();
+  });
+
+  it("uses per-country haversine constants (km for an Israel anchor)", async () => {
+    // City lookup resolves to a Tel Aviv-ish coord so the geo SQL runs.
+    db.select.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ lat: 32.08, lon: 34.78 }]),
+          }),
+        }),
+        where: vi.fn().mockReturnValue({
+          groupBy: vi.fn().mockResolvedValue([]),
+          limit: vi.fn().mockResolvedValue([{ lat: 32.08, lon: 34.78 }]),
+        }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      }),
+    });
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ country: "IL", city: "Tel Aviv", state: "IL", radius: 25 });
+    // The haversine SQL must use the km Earth radius (6371), not miles (3959).
+    const sqlArg = db.execute.mock.calls[0]?.[0];
+    const sqlText = JSON.stringify(sqlArg);
+    expect(sqlText).toContain("6371");
+    expect(sqlText).not.toContain("3959");
+  });
+
+  it("radius geo query excludes REMOTE jobs (they are appended distance-exempt)", async () => {
+    db.select.mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        innerJoin: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue([{ lat: 40.65, lon: -73.95 }]),
+          }),
+        }),
+        where: vi.fn().mockReturnValue({
+          groupBy: vi.fn().mockResolvedValue([]),
+          limit: vi.fn().mockResolvedValue([{ lat: 40.65, lon: -73.95 }]),
+        }),
+        groupBy: vi.fn().mockResolvedValue([]),
+      }),
+    });
+    const caller = createCaller(makeCtx(null, db));
+    await caller.list({ country: "US", city: "Brooklyn", state: "NY", radius: 25 });
+    const sqlText = JSON.stringify(db.execute.mock.calls[0]?.[0]);
+    expect(sqlText).toContain("REMOTE");
   });
 });
 

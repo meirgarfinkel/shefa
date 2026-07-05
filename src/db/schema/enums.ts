@@ -21,10 +21,9 @@ export const applicationStatusEnum = pgEnum("ApplicationStatus", [
   "REJECTED",
   "CLOSED",
 ]);
-export const pingTypeEnum = pgEnum("PingType", ["SEEKER_STILL_LOOKING", "JOB_STILL_OPEN"]);
+export const pingTypeEnum = pgEnum("PingType", ["JOB_STILL_OPEN"]);
 export const pingResponseEnum = pgEnum("PingResponse", [
   "CONFIRMED",
-  "NOT_LOOKING",
   "FILLED",
   "PAUSED",
   "NO_RESPONSE",

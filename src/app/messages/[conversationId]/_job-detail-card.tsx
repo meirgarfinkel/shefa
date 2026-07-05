@@ -7,11 +7,13 @@ import { Pill } from "@/components/ui/pill";
 import { ResponsiveBadge } from "@/components/ui/responsive-badge";
 import type { JobStatus } from "@/db/schema";
 import { JOB_TYPE_LABELS, ARRANGEMENT_LABELS, DAY_LABELS, DAY_ORDER } from "@/lib/constants/labels";
+import { formatHourlyRate } from "@/lib/utils";
 
 export type ConvJob = {
   id: string;
   title: string;
   status: JobStatus;
+  country: string;
   city: string;
   state: string;
   jobType: string;
@@ -89,7 +91,7 @@ export function JobDetailCard({ job }: { job: ConvJob }) {
             <div>
               <p className="text-md font-medium tracking-wide">Pay</p>
               <p className="text-muted mt-1 text-sm font-medium">
-                From ${Number(job.minHourlyRate).toFixed(2)}/hr
+                From {formatHourlyRate(Number(job.minHourlyRate), job.country)}
               </p>
               {job.payNotes && <p className="text-muted mt-0.5 text-xs">{job.payNotes}</p>}
             </div>

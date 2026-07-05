@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   eq,
   and,
+  or,
   ne,
   arrayOverlaps,
   desc,
@@ -31,6 +32,7 @@ import {
 } from "@/db/schema";
 import { assertActorActive } from "@/server/api/guards";
 import { notifyGoogleIndex, jobIndexUrl } from "@/server/indexing";
+import { COUNTRY_CONFIG } from "@/lib/constants/countries";
 
 // Hard cap on rows returned by the public list. The client only ever displays the top 50
 // (see sortJobs), so a generous cap bounds the query without changing what users see.
@@ -40,12 +42,19 @@ async function lookupCityCoords(
   db: DbClient,
   cityName: string,
   stateAbbr: string,
+  country: string,
 ): Promise<{ lat: number; lon: number } | null> {
   const [record] = await db
     .select({ lat: city.lat, lon: city.lon })
     .from(city)
     .innerJoin(state, eq(city.stateId, state.id))
-    .where(and(sql`lower(${city.name}) = lower(${cityName})`, eq(state.abbr, stateAbbr)))
+    .where(
+      and(
+        sql`lower(${city.name}) = lower(${cityName})`,
+        eq(state.abbr, stateAbbr),
+        eq(state.country, country),
+      ),
+    )
     .limit(1);
   return record ?? null;
 }
@@ -65,7 +74,7 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     const { businessId, requiredLanguageIds, ...fields } = input;
-    const coords = await lookupCityCoords(ctx.db, fields.city, fields.state);
+    const coords = await lookupCityCoords(ctx.db, fields.city, fields.state, fields.country);
     if (!coords) {
       throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid city/state" });
     }
@@ -109,19 +118,24 @@ export const jobPostingRouter = createTRPCRouter({
       }
     }
 
+    // A radius search anchors to a city in a specific country; the distance unit and
+    // haversine constants come from that country (miles for US, km for IL). Only
+    // ON_SITE/HYBRID jobs are distance-constrained — REMOTE jobs are appended separately
+    // (see the geo condition below), since distance is meaningless for them.
     let geoIds: string[] | undefined;
 
-    if (input.radiusMiles && input.city && input.state) {
-      const coords = await lookupCityCoords(ctx.db, input.city, input.state);
+    if (input.radius && input.country && input.city && input.state) {
+      const coords = await lookupCityCoords(ctx.db, input.city, input.state, input.country);
 
       if (coords) {
+        const { earthRadius, degPerUnit } = COUNTRY_CONFIG[input.country];
         // Bounding-box pre-filter so the (lat, lon) btree index can prune candidates
-        // before the exact haversine refinement runs. ~69 miles per degree of latitude;
-        // longitude degrees shrink by cos(latitude). The box is a superset of the circle,
-        // so the `dist <=` clause still does the precise radius cut.
-        const latDelta = input.radiusMiles / 69.0;
+        // before the exact haversine refinement runs. `degPerUnit` is the distance-unit
+        // per degree of latitude; longitude degrees shrink by cos(latitude). The box is a
+        // superset of the circle, so the `dist <=` clause still does the precise cut.
+        const latDelta = input.radius / degPerUnit;
         const cosLat = Math.cos((coords.lat * Math.PI) / 180);
-        const lonDelta = input.radiusMiles / (69.0 * Math.max(0.01, Math.abs(cosLat)));
+        const lonDelta = input.radius / (degPerUnit * Math.max(0.01, Math.abs(cosLat)));
         const minLat = coords.lat - latDelta;
         const maxLat = coords.lat + latDelta;
         const minLon = coords.lon - lonDelta;
@@ -131,7 +145,7 @@ export const jobPostingRouter = createTRPCRouter({
           sql`
         SELECT id FROM (
           SELECT id,
-            3959 * acos(
+            ${earthRadius} * acos(
               LEAST(1.0, GREATEST(-1.0,
                 sin(radians(${coords.lat})) * sin(radians(lat)) +
                 cos(radians(${coords.lat})) * cos(radians(lat)) *
@@ -141,10 +155,11 @@ export const jobPostingRouter = createTRPCRouter({
           FROM "JobPosting"
           WHERE lat IS NOT NULL
             AND lon IS NOT NULL
+            AND "workArrangement" <> 'REMOTE'
             AND lat BETWEEN ${minLat} AND ${maxLat}
             AND lon BETWEEN ${minLon} AND ${maxLon}
         ) _sub
-        WHERE dist <= ${input.radiusMiles}
+        WHERE dist <= ${input.radius}
         ORDER BY dist
         LIMIT ${LIST_LIMIT}
       `,
@@ -165,15 +180,22 @@ export const jobPostingRouter = createTRPCRouter({
           ? inArray(jobPosting.status, input.status)
           : undefined
         : eq(jobPosting.status, "ACTIVE"),
-      // Geo filter
+      // Country filter — scopes both the local radius results and the remote jobs.
+      input.country ? eq(jobPosting.country, input.country) : undefined,
+      // Geo filter: ON_SITE/HYBRID are constrained to the radius; REMOTE jobs are always
+      // let through (distance-exempt) so the client can render them below a divider.
       geoIds !== undefined
-        ? geoIds.length > 0
-          ? inArray(jobPosting.id, geoIds)
-          : sql`false`
-        : input.radiusMiles
-          ? and(
-              input.city ? ilike(jobPosting.city, `%${input.city}%`) : undefined,
-              input.state ? ilike(jobPosting.state, `%${input.state}%`) : undefined,
+        ? or(
+            geoIds.length > 0 ? inArray(jobPosting.id, geoIds) : sql`false`,
+            eq(jobPosting.workArrangement, "REMOTE"),
+          )
+        : input.radius
+          ? or(
+              and(
+                input.city ? ilike(jobPosting.city, `%${input.city}%`) : undefined,
+                input.state ? ilike(jobPosting.state, `%${input.state}%`) : undefined,
+              ),
+              eq(jobPosting.workArrangement, "REMOTE"),
             )
           : undefined,
       input.jobType?.length ? inArray(jobPosting.jobType, input.jobType) : undefined,
@@ -200,7 +222,7 @@ export const jobPostingRouter = createTRPCRouter({
       where: whereClause,
       with: {
         requiredLanguages: { with: { language: true } },
-        business: { columns: { id: true, name: true, city: true, state: true } },
+        business: { columns: { id: true, name: true, country: true, city: true, state: true } },
       },
       orderBy: desc(jobPosting.createdAt),
       limit: LIST_LIMIT,
@@ -224,9 +246,14 @@ export const jobPostingRouter = createTRPCRouter({
 
     if (input.sortBy === "closest" && geoIds) {
       const byId = new Map(withCounts.map((r) => [r.id, r]));
-      return geoIds
+      const geoSet = new Set(geoIds);
+      // Local (ON_SITE/HYBRID) jobs ordered nearest-first...
+      const local = geoIds
         .map((id) => byId.get(id))
         .filter((r): r is NonNullable<typeof r> => r !== undefined);
+      // ...then the distance-exempt remote jobs, which have no meaningful ordering here.
+      const rest = withCounts.filter((r) => !geoSet.has(r.id));
+      return [...local, ...rest];
     }
 
     return withCounts;
@@ -238,7 +265,7 @@ export const jobPostingRouter = createTRPCRouter({
       with: {
         requiredLanguages: { with: { language: true } },
         business: {
-          columns: { id: true, name: true, city: true, state: true, industry: true },
+          columns: { id: true, name: true, country: true, city: true, state: true, industry: true },
           with: {
             owner: {
               columns: { id: true },
@@ -270,6 +297,7 @@ export const jobPostingRouter = createTRPCRouter({
       business: {
         id: co.id,
         name: co.name,
+        country: co.country,
         city: co.city,
         state: co.state,
         industry: co.industry,
@@ -289,7 +317,7 @@ export const jobPostingRouter = createTRPCRouter({
 
     const posting = await ctx.db.query.jobPosting.findFirst({
       where: eq(jobPosting.id, id),
-      columns: { id: true, employerId: true, status: true, city: true, state: true },
+      columns: { id: true, employerId: true, status: true, country: true, city: true, state: true },
     });
 
     if (!posting) throw new TRPCError({ code: "NOT_FOUND" });
@@ -299,10 +327,11 @@ export const jobPostingRouter = createTRPCRouter({
     }
 
     let coords: { lat: number; lon: number } | null = null;
-    if (fields.city !== undefined || fields.state !== undefined) {
+    if (fields.country !== undefined || fields.city !== undefined || fields.state !== undefined) {
+      const resolvedCountry = fields.country ?? posting.country;
       const resolvedCity = fields.city ?? posting.city;
       const resolvedState = fields.state ?? posting.state;
-      coords = await lookupCityCoords(ctx.db, resolvedCity, resolvedState);
+      coords = await lookupCityCoords(ctx.db, resolvedCity, resolvedState, resolvedCountry);
       if (!coords) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid city/state" });
       }
@@ -375,7 +404,7 @@ export const jobPostingRouter = createTRPCRouter({
         where: inArray(jobPosting.id, ids),
         with: {
           requiredLanguages: { with: { language: true } },
-          business: { columns: { id: true, name: true, city: true, state: true } },
+          business: { columns: { id: true, name: true, country: true, city: true, state: true } },
         },
       });
 

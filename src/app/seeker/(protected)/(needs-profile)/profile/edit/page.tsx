@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { signOut } from "next-auth/react";
 import { trpc } from "@/lib/trpc/provider";
 import { UpdateSeekerProfileSchema, type UpdateSeekerProfileInput } from "@/lib/schemas/seeker";
+import { countryConfig } from "@/lib/constants/countries";
 import {
   Form,
   FormControl,
@@ -63,6 +64,7 @@ const EDUCATION_OPTIONS = [
 type SeekerProfileData = {
   firstName: string;
   lastName: string;
+  country: string;
   city: string;
   state: string;
   workAuthorization: boolean;
@@ -86,6 +88,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
     defaultValues: {
       firstName: profile.firstName,
       lastName: profile.lastName,
+      country: profile.country as UpdateSeekerProfileInput["country"],
       city: profile.city,
       state: profile.state,
       workAuthorization: profile.workAuthorization,
@@ -176,7 +179,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                           className={`glass bg-message-green/15 flex cursor-pointer rounded-full px-3 py-1.5 text-sm ${
                             field.value?.includes(day.value)
                               ? "bg-popover/90 border-none text-white shadow-[inset_1px_-1px_4px_rgba(255,255,255,0.5),inset_-1px_1px_4px_rgb(255,255,255)]"
-                              : "hover:bg-orange/15 transition-all duration-200 hover:scale-105"
+                              : "hover:bg-orange/15 transition-all duration-100 hover:scale-105"
                           }`}
                         >
                           <input
@@ -314,7 +317,7 @@ function SeekerProfileEditForm({ profile }: { profile: SeekerProfileData }) {
                       />
                     </FormControl>
                     <FormLabel className="text-sm font-normal">
-                      I am authorized to work in the United States
+                      I am authorized to work in {countryConfig(form.watch("country")).name}
                     </FormLabel>
                   </CheckboxFormItem>
                 )}

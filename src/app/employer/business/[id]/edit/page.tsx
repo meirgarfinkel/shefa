@@ -67,6 +67,7 @@ const INDUSTRIES = [
 type BusinessRecord = {
   id: string;
   name: string;
+  country: string;
   city: string;
   state: string;
   website: string | null;
@@ -87,6 +88,7 @@ function BusinessEditForm({ business }: { business: BusinessRecord }) {
     defaultValues: {
       id: business.id,
       name: business.name,
+      country: business.country as UpdateBusinessInput["country"],
       city: business.city,
       state: business.state,
       website: business.website ?? undefined,

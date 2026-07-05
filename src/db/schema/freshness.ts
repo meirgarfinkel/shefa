@@ -1,8 +1,6 @@
 import { pgTable, text, timestamp, index } from "drizzle-orm/pg-core";
 import { createId } from "@paralleldrive/cuid2";
 import { pingTypeEnum, pingResponseEnum } from "./enums";
-import { users } from "./auth";
-import { seekerProfile } from "./seeker";
 import { jobPosting } from "./job";
 
 export const verificationPing = pgTable(
@@ -15,14 +13,9 @@ export const verificationPing = pgTable(
     sentAt: timestamp("sentAt", { withTimezone: true, mode: "date" }).notNull().defaultNow(),
     respondedAt: timestamp("respondedAt", { withTimezone: true, mode: "date" }),
     response: pingResponseEnum("response"),
-    userId: text("userId").references(() => users.id),
-    seekerProfileId: text("seekerProfileId").references(() => seekerProfile.id),
     jobId: text("jobId").references(() => jobPosting.id),
   },
-  (t) => [
-    index("VerificationPing_userId_idx").on(t.userId),
-    index("VerificationPing_jobId_idx").on(t.jobId),
-  ],
+  (t) => [index("VerificationPing_jobId_idx").on(t.jobId)],
 );
 
 export const freshnessToken = pgTable(
