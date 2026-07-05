@@ -1,5 +1,5 @@
 {
-  "id": "24759615-1f5b-4ffa-8da2-0acfb3c0c29e",
+  "id": "084562a9-68ef-474e-81b3-ea358202d830",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -89,6 +89,13 @@
           "primaryKey": true,
           "notNull": true
         },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'US'"
+        },
         "name": {
           "name": "name",
           "type": "text",
@@ -114,19 +121,35 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "State_country_idx": {
+          "name": "State_country_idx",
+          "columns": [
+            {
+              "expression": "country",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "State_name_unique": {
-          "name": "State_name_unique",
+        "State_country_abbr_key": {
+          "name": "State_country_abbr_key",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": ["country", "abbr"]
         },
-        "State_abbr_unique": {
-          "name": "State_abbr_unique",
+        "State_country_name_key": {
+          "name": "State_country_name_key",
           "nullsNotDistinct": false,
-          "columns": ["abbr"]
+          "columns": ["country", "name"]
         }
       },
       "policies": {},
@@ -520,6 +543,13 @@
           "primaryKey": false,
           "notNull": true
         },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'US'"
+        },
         "city": {
           "name": "city",
           "type": "text",
@@ -577,13 +607,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'ACTIVE'"
-        },
-        "lastVerifiedAt": {
-          "name": "lastVerifiedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         },
         "createdAt": {
           "name": "createdAt",
@@ -661,6 +684,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'US'"
         },
         "city": {
           "name": "city",
@@ -953,6 +983,13 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
+        },
+        "country": {
+          "name": "country",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'US'"
         },
         "city": {
           "name": "city",
@@ -1911,18 +1948,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "userId": {
-          "name": "userId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "seekerProfileId": {
-          "name": "seekerProfileId",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "jobId": {
           "name": "jobId",
           "type": "text",
@@ -1931,21 +1956,6 @@
         }
       },
       "indexes": {
-        "VerificationPing_userId_idx": {
-          "name": "VerificationPing_userId_idx",
-          "columns": [
-            {
-              "expression": "userId",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "VerificationPing_jobId_idx": {
           "name": "VerificationPing_jobId_idx",
           "columns": [
@@ -1963,24 +1973,6 @@
         }
       },
       "foreignKeys": {
-        "VerificationPing_userId_User_id_fk": {
-          "name": "VerificationPing_userId_User_id_fk",
-          "tableFrom": "VerificationPing",
-          "tableTo": "User",
-          "columnsFrom": ["userId"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "VerificationPing_seekerProfileId_SeekerProfile_id_fk": {
-          "name": "VerificationPing_seekerProfileId_SeekerProfile_id_fk",
-          "tableFrom": "VerificationPing",
-          "tableTo": "SeekerProfile",
-          "columnsFrom": ["seekerProfileId"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "VerificationPing_jobId_JobPosting_id_fk": {
           "name": "VerificationPing_jobId_JobPosting_id_fk",
           "tableFrom": "VerificationPing",
@@ -2359,12 +2351,12 @@
     "public.PingResponse": {
       "name": "PingResponse",
       "schema": "public",
-      "values": ["CONFIRMED", "NOT_LOOKING", "FILLED", "PAUSED", "NO_RESPONSE"]
+      "values": ["CONFIRMED", "FILLED", "PAUSED", "NO_RESPONSE"]
     },
     "public.PingType": {
       "name": "PingType",
       "schema": "public",
-      "values": ["SEEKER_STILL_LOOKING", "JOB_STILL_OPEN"]
+      "values": ["JOB_STILL_OPEN"]
     },
     "public.ProfileStatus": {
       "name": "ProfileStatus",

@@ -9,8 +9,8 @@ CREATE TYPE "public"."JobClosureReason" AS ENUM('FILLED_ON_SHEFA', 'FILLED_ELSEW
 CREATE TYPE "public"."JobStatus" AS ENUM('ACTIVE', 'PAUSED', 'CLOSED');--> statement-breakpoint
 CREATE TYPE "public"."JobType" AS ENUM('FULL_TIME', 'PART_TIME', 'EITHER');--> statement-breakpoint
 CREATE TYPE "public"."NotificationFrequency" AS ENUM('PER_MESSAGE', 'DAILY_DIGEST', 'OFF');--> statement-breakpoint
-CREATE TYPE "public"."PingResponse" AS ENUM('CONFIRMED', 'NOT_LOOKING', 'FILLED', 'PAUSED', 'NO_RESPONSE');--> statement-breakpoint
-CREATE TYPE "public"."PingType" AS ENUM('SEEKER_STILL_LOOKING', 'JOB_STILL_OPEN');--> statement-breakpoint
+CREATE TYPE "public"."PingResponse" AS ENUM('CONFIRMED', 'FILLED', 'PAUSED', 'NO_RESPONSE');--> statement-breakpoint
+CREATE TYPE "public"."PingType" AS ENUM('JOB_STILL_OPEN');--> statement-breakpoint
 CREATE TYPE "public"."ProfileStatus" AS ENUM('ACTIVE', 'PAUSED', 'SUSPENDED', 'DELETED');--> statement-breakpoint
 CREATE TYPE "public"."ReportStatus" AS ENUM('OPEN', 'REVIEWED', 'ACTIONED', 'DISMISSED');--> statement-breakpoint
 CREATE TYPE "public"."ReportTargetType" AS ENUM('USER', 'JOB', 'MESSAGE');--> statement-breakpoint
@@ -27,12 +27,13 @@ CREATE TABLE "City" (
 --> statement-breakpoint
 CREATE TABLE "State" (
 	"id" text PRIMARY KEY NOT NULL,
+	"country" text DEFAULT 'US' NOT NULL,
 	"name" text NOT NULL,
 	"abbr" text NOT NULL,
 	"lat" double precision NOT NULL,
 	"lon" double precision NOT NULL,
-	CONSTRAINT "State_name_unique" UNIQUE("name"),
-	CONSTRAINT "State_abbr_unique" UNIQUE("abbr")
+	CONSTRAINT "State_country_abbr_key" UNIQUE("country","abbr"),
+	CONSTRAINT "State_country_name_key" UNIQUE("country","name")
 );
 --> statement-breakpoint
 CREATE TABLE "Language" (
@@ -89,6 +90,7 @@ CREATE TABLE "SeekerProfile" (
 	"userId" text NOT NULL,
 	"firstName" text NOT NULL,
 	"lastName" text NOT NULL,
+	"country" text DEFAULT 'US' NOT NULL,
 	"city" text NOT NULL,
 	"state" text NOT NULL,
 	"workAuthorization" boolean NOT NULL,
@@ -98,7 +100,6 @@ CREATE TABLE "SeekerProfile" (
 	"about" varchar(1000),
 	"resumeUrl" text,
 	"status" "ProfileStatus" DEFAULT 'ACTIVE' NOT NULL,
-	"lastVerifiedAt" timestamp with time zone DEFAULT now() NOT NULL,
 	"createdAt" timestamp with time zone DEFAULT now() NOT NULL,
 	"updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "SeekerProfile_userId_unique" UNIQUE("userId")
@@ -108,6 +109,7 @@ CREATE TABLE "Business" (
 	"id" text PRIMARY KEY NOT NULL,
 	"ownerId" text NOT NULL,
 	"name" text NOT NULL,
+	"country" text DEFAULT 'US' NOT NULL,
 	"city" text NOT NULL,
 	"state" text NOT NULL,
 	"website" text,
@@ -146,6 +148,7 @@ CREATE TABLE "JobPosting" (
 	"description" varchar(5000) NOT NULL,
 	"jobType" "JobType" NOT NULL,
 	"workArrangement" "WorkArrangement" NOT NULL,
+	"country" text DEFAULT 'US' NOT NULL,
 	"city" text NOT NULL,
 	"state" text NOT NULL,
 	"lat" double precision NOT NULL,
@@ -218,8 +221,6 @@ CREATE TABLE "VerificationPing" (
 	"sentAt" timestamp with time zone DEFAULT now() NOT NULL,
 	"respondedAt" timestamp with time zone,
 	"response" "PingResponse",
-	"userId" text,
-	"seekerProfileId" text,
 	"jobId" text
 );
 --> statement-breakpoint
@@ -272,13 +273,12 @@ ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_jobId_JobPosting_id_fk" 
 ALTER TABLE "Message" ADD CONSTRAINT "Message_conversationId_Conversation_id_fk" FOREIGN KEY ("conversationId") REFERENCES "public"."Conversation"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "Message" ADD CONSTRAINT "Message_senderId_User_id_fk" FOREIGN KEY ("senderId") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "FreshnessToken" ADD CONSTRAINT "FreshnessToken_pingId_VerificationPing_id_fk" FOREIGN KEY ("pingId") REFERENCES "public"."VerificationPing"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_seekerProfileId_SeekerProfile_id_fk" FOREIGN KEY ("seekerProfileId") REFERENCES "public"."SeekerProfile"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "VerificationPing" ADD CONSTRAINT "VerificationPing_jobId_JobPosting_id_fk" FOREIGN KEY ("jobId") REFERENCES "public"."JobPosting"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "NotificationPreferences" ADD CONSTRAINT "NotificationPreferences_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "Report" ADD CONSTRAINT "Report_reporterId_User_id_fk" FOREIGN KEY ("reporterId") REFERENCES "public"."User"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "Feedback" ADD CONSTRAINT "Feedback_userId_User_id_fk" FOREIGN KEY ("userId") REFERENCES "public"."User"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "City_stateId_idx" ON "City" USING btree ("stateId");--> statement-breakpoint
+CREATE INDEX "State_country_idx" ON "State" USING btree ("country");--> statement-breakpoint
 CREATE INDEX "Account_userId_idx" ON "Account" USING btree ("userId");--> statement-breakpoint
 CREATE INDEX "Session_userId_idx" ON "Session" USING btree ("userId");--> statement-breakpoint
 CREATE INDEX "User_role_idx" ON "User" USING btree ("role");--> statement-breakpoint
@@ -308,7 +308,6 @@ CREATE INDEX "Message_conversationId_createdAt_idx" ON "Message" USING btree ("c
 CREATE INDEX "Message_conversationId_readAt_idx" ON "Message" USING btree ("conversationId","readAt");--> statement-breakpoint
 CREATE INDEX "FreshnessToken_targetType_targetId_idx" ON "FreshnessToken" USING btree ("targetType","targetId");--> statement-breakpoint
 CREATE INDEX "FreshnessToken_expiresAt_idx" ON "FreshnessToken" USING btree ("expiresAt");--> statement-breakpoint
-CREATE INDEX "VerificationPing_userId_idx" ON "VerificationPing" USING btree ("userId");--> statement-breakpoint
 CREATE INDEX "VerificationPing_jobId_idx" ON "VerificationPing" USING btree ("jobId");--> statement-breakpoint
 CREATE INDEX "Report_status_idx" ON "Report" USING btree ("status");--> statement-breakpoint
 CREATE INDEX "Report_targetType_targetId_idx" ON "Report" USING btree ("targetType","targetId");--> statement-breakpoint
