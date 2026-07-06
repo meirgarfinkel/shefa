@@ -112,7 +112,7 @@ export function EmployerJobCard({
                     ? "text-danger"
                     : daysUntilAutoPause <= 14
                       ? "text-orange"
-                      : "text-white",
+                      : "text-popover",
                 )}
               >
                 auto-pauses in {daysUntilAutoPause}d

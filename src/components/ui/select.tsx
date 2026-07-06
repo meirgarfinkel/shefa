@@ -65,7 +65,7 @@ function SelectContent({
       <SelectPrimitive.Content
         data-slot="select-content"
         className={cn(
-          "relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md border bg-white/10 p-1 shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] backdrop-blur-2xl",
+          "relative z-50 max-h-(--radix-select-content-available-height) space-y-1 overflow-auto rounded-md border border-white bg-white/10 px-2 py-1 backdrop-blur-2xl",
           className,
         )}
         position={position}

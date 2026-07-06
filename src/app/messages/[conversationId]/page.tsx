@@ -280,7 +280,7 @@ export default function ConversationPage({
               <div key={msg.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[75%] rounded-b-2xl border-none px-4 py-2.5 text-white shadow-[inset_1px_-1px_10px_#ffffff66,inset_-4px_4px_10px_#ffffff] ${
-                    isMine ? "bg-message-green rounded-tl-2xl" : "bg-message-gray rounded-tr-2xl"
+                    isMine ? "bg-message-green rounded-tl-2xl" : "bg-message-gray/80 rounded-tr-2xl"
                   }`}
                 >
                   <p className="wrap-break-word whitespace-pre-wrap">{msg.body}</p>

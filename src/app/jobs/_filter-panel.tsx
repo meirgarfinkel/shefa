@@ -130,24 +130,6 @@ export function MobileFilterBar(props: FilterPanelProps) {
           )}
         </Button>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <FilterTrigger>{SORT_LABELS[sortBy]}</FilterTrigger>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuLabel>Sort by</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              value={sortBy}
-              onValueChange={(v) => onSortChange(v as SortValue)}
-            >
-              <DropdownMenuRadioItem value="best">Best match</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="newest">Newest</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="closest">Closest</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="pay">Salary</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         <div className="ml-auto flex items-center gap-2">
           {!isLoading && jobCount !== undefined && (
             <span className="text-sm">{pluralize(jobCount, "job")}</span>

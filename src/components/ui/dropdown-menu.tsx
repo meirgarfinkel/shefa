@@ -34,7 +34,7 @@ function DropdownMenuContent({
         sideOffset={sideOffset}
         align={align}
         className={cn(
-          "relative z-50 max-h-(--radix-select-content-available-height) overflow-auto rounded-md border bg-white/10 px-2 py-1 shadow-[-2px_2px_8px_#00000033,inset_2px_-2px_8px_#ffffff66,inset_-5px_2px_8px_#ffffffe6] backdrop-blur-2xl",
+          "relative z-50 max-h-(--radix-select-content-available-height) overflow-auto rounded-md border border-white bg-white/10 px-2 py-1 backdrop-blur-2xl",
           className,
         )}
         {...props}
