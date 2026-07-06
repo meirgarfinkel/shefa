@@ -2,15 +2,20 @@ import { cn } from "@/lib/utils";
 
 type PillProps = React.ComponentProps<"span"> & {
   variant?: "default" | "dark" | "success" | "warning" | "danger" | "light";
+  size?: "default" | "sm";
 };
 
-export function Pill({ className, variant = "default", ...props }: PillProps) {
+export function Pill({ className, variant = "default", size = "default", ...props }: PillProps) {
   return (
     <span
       data-slot="pill"
       className={cn(
         // base
-        "bg-secondary/60 text-popover rounded-full bg-linear-to-b from-white/10 via-transparent to-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap shadow-xl",
+        "bg-secondary/60 text-popover rounded-full border border-white font-medium whitespace-nowrap shadow-[-2px_2px_3px_#00000033,inset_1px_-1px_5px_#ffffff66,inset_-2px_2px_6px_#ffffff]",
+
+        // size
+        size === "default" && "px-3 py-1.5 text-sm",
+        size === "sm" && "px-2 py-0.5 text-xs",
 
         // variants
         variant === "dark" && "bg-card/60",

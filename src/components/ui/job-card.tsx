@@ -54,7 +54,7 @@ export function JobCard({
           <h3 className="truncate text-lg font-medium capitalize">{title}</h3>
           <p className="mt-0.5 text-xs">{businessName}</p>
         </div>
-        {applicationCount > 0 && <Pill>{applicationCount} Applied</Pill>}
+        {applicationCount > 0 && <Pill size="sm">{applicationCount} Applied</Pill>}
       </div>
 
       {/* Meta row spread across full card width */}
