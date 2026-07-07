@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/server/api/root";
@@ -112,6 +113,7 @@ function ApplyDialog({
 }
 
 export function JobDetailClient({ id, initialJob }: { id: string; initialJob: JobDetail }) {
+  const router = useRouter();
   const { data: session } = useSession();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [applicationJustSubmitted, setApplicationJustSubmitted] = useState(false);
@@ -150,6 +152,16 @@ export function JobDetailClient({ id, initialJob }: { id: string; initialJob: Jo
   const noProfile = isSeeker && !seekerProfileLoading && !seekerProfile;
   const currentStatus = myStatus?.status;
 
+  const handleBack = () => {
+    // Only use history back when we actually navigated here client-side (e.g. from
+    // the listings page); otherwise a direct/shared link would back out of the site.
+    if (window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/jobs");
+    }
+  };
+
   const applicationClosed = currentStatus === "CLOSED";
 
   const hasApplied = applicationJustSubmitted || (!!currentStatus && currentStatus !== "CLOSED");
@@ -161,7 +173,18 @@ export function JobDetailClient({ id, initialJob }: { id: string; initialJob: Jo
   return (
     <div className="p-5">
       <div className="mx-auto max-w-2xl">
-        <Link href="/jobs" className="hover:text-orange">
+        <Link
+          href="/jobs"
+          onClick={(e) => {
+            // Let modifier-clicks, middle-click, and right-click behave like a normal
+            // link (open in new tab, copy link, etc.); only intercept a plain click to
+            // use history back so scroll position on the listings page is preserved.
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            handleBack();
+          }}
+          className="hover:text-orange"
+        >
           ← Back to listings
         </Link>
 

@@ -136,19 +136,19 @@ export function EmployerDashboardClient({
 
       {/* Quick actions */}
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <Button asChild>
+        <Button className="px-2" asChild>
           <Link href="/employer/jobs/new">
             <BriefcaseIcon className="mr-1 size-4" />
             Post a job
           </Link>
         </Button>
-        <Button asChild>
+        <Button className="px-2" asChild>
           <Link href="/messages">
             <MessageSquareIcon className="mr-1 size-4" />
             Messages
           </Link>
         </Button>
-        <Button asChild>
+        <Button className="px-2" asChild>
           <Link href="/employer/business/new">
             <PlusIcon className="mr-1 size-4" />
             Add business
@@ -158,7 +158,7 @@ export function EmployerDashboardClient({
         {/* My businesses modal */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="px-2">
               <BuildingIcon className="mr-1 size-4" />
               My businesses
             </Button>
@@ -206,7 +206,10 @@ export function EmployerDashboardClient({
               {multiBusiness && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <FilterTrigger activeCount={allSelected ? undefined : selectedIds.size}>
+                    <FilterTrigger
+                      className="bg-transparent px-2"
+                      activeCount={allSelected ? undefined : selectedIds.size}
+                    >
                       Businesses
                     </FilterTrigger>
                   </DropdownMenuTrigger>

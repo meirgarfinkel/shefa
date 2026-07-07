@@ -124,22 +124,22 @@ export function MobileFilterBar(props: FilterPanelProps) {
           <SlidersHorizontalIcon className="size-3.5" />
           Filters
           {activeFilterCount > 0 && (
-            <span className="bg-popover ml-0.5 rounded-full px-1.5 text-sm text-white">
+            <span className="bg-popover gap-1 rounded-full px-1.5 text-sm text-white">
               {activeFilterCount}
             </span>
           )}
         </Button>
+        {!isLoading && jobCount !== undefined && (
+          <span className="mx-auto text-sm">{pluralize(jobCount, "job")}</span>
+        )}
 
-        <div className="ml-auto flex items-center gap-2">
-          {!isLoading && jobCount !== undefined && (
-            <span className="text-sm">{pluralize(jobCount, "job")}</span>
-          )}
-          {isEmployer && (
+        {isEmployer && (
+          <div className="ml-auto flex items-center gap-2">
             <Button asChild size="sm" className="h-7 px-2 text-sm">
               <Link href="/employer/jobs/new">Post job</Link>
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* ── Mobile filter dialog ── */}
@@ -179,7 +179,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
               value={country || COUNTRY_ALL}
               onValueChange={(v) => onCountryChange(v === COUNTRY_ALL ? "" : v)}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-message-green/10 w-full max-w-none">
                 <SelectValue placeholder="Country" />
               </SelectTrigger>
               <SelectContent>
@@ -195,7 +195,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
 
             {showRegion && (
               <Select value={stateAbbr || undefined} onValueChange={onStateChange}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger className="bg-message-green/10 w-full max-w-none">
                   <SelectValue placeholder={regionLabel} />
                 </SelectTrigger>
                 <SelectContent className="max-h-80">
@@ -210,7 +210,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
             )}
 
             <Select value={city || undefined} onValueChange={onCityChange} disabled={!stateAbbr}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-message-green/10 w-full max-w-none">
                 <SelectValue
                   placeholder={
                     !country ? "Country first" : stateAbbr ? "City" : `${regionLabel} first`
@@ -228,7 +228,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
             </Select>
 
             <Select value={radius} onValueChange={onRadiusChange} disabled={!city}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-message-green/10 w-full max-w-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -247,7 +247,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
           <div className="space-y-2">
             <p className="px-1 font-medium">Job type</p>
             <Select value={jobType} onValueChange={onJobTypeChange}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="bg-message-green/10 w-full max-w-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -261,7 +261,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger
-                  className="w-full justify-between bg-white/60 font-normal"
+                  className="bg-message-green/10 font-md w-full justify-between rounded-md"
                   activeCount={arrangements.length}
                 >
                   Arrangement
@@ -286,7 +286,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <FilterTrigger
-                  className="w-full justify-between bg-white/60 font-normal"
+                  className="bg-message-green/10 font-md w-full justify-between rounded-md"
                   activeCount={workDays.length}
                 >
                   Days
@@ -310,7 +310,7 @@ export function MobileFilterBar(props: FilterPanelProps) {
           <div className="space-y-2">
             <p className="px-1 font-medium">Sort by</p>
             <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortValue)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full max-w-none">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -324,8 +324,8 @@ export function MobileFilterBar(props: FilterPanelProps) {
 
           <div>
             {hasFilters && (
-              <Button variant="ghost" onClick={onClearFilters}>
-                Clear all
+              <Button variant="destructive" onClick={onClearFilters}>
+                Reset filters
               </Button>
             )}
           </div>
@@ -567,7 +567,7 @@ export function DesktopFilterSidebar(props: FilterPanelProps) {
 
       {hasFilters && (
         <Button variant="secondary" onClick={onClearFilters} className="w-full">
-          Clear filters
+          Reset filters
         </Button>
       )}
     </aside>

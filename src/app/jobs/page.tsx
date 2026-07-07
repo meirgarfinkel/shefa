@@ -14,6 +14,7 @@ import {
   type SortValue,
   type Filters,
   FILTER_KEY,
+  SCROLL_KEY,
   parseSortParam,
   sortJobs,
   radiusOptions,
@@ -54,6 +55,13 @@ function JobsContent() {
 
   const locationInitialized = useRef(false);
   const [filterOpen, setFilterOpen] = useState(false);
+
+  // The list scrolls inside its own container on desktop but scrolls the window on
+  // mobile, so neither the browser's native scroll restoration nor a single scrollY
+  // reliably covers both — we persist and restore both positions ourselves.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const scrollRestored = useRef(false);
+  const navigatingAway = useRef(false);
 
   const countryConfigOrNull = isCountryCode(country) ? COUNTRY_CONFIG[country] : null;
 
@@ -203,6 +211,59 @@ function JobsContent() {
     if (qs) sessionStorage.setItem(FILTER_KEY, qs);
   }, [searchParams]);
 
+  // Continuously persist scroll position so it survives navigating to a job detail
+  // page and back — neither the container div's scrollTop nor window.scrollY is
+  // restored natively (the container isn't the document, and the page remounts).
+  //
+  // Next.js resets window.scrollTo(0, 0) while this page is still mounted and
+  // transitioning to the job detail route, which would otherwise be caught by this
+  // same scroll listener and clobber the real position with 0. navigatingAway stops
+  // that — it's set by saveScrollNow, called from JobCard right before it navigates,
+  // which also captures the real position before Next's reset can happen.
+  const saveScrollNow = useCallback(() => {
+    navigatingAway.current = true;
+    sessionStorage.setItem(
+      SCROLL_KEY,
+      JSON.stringify({
+        search: searchParamsRef.current.toString(),
+        container: scrollContainerRef.current?.scrollTop ?? 0,
+        window: window.scrollY,
+      }),
+    );
+  }, []);
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    let ticking = false;
+    let lastSave = 0;
+    const save = () => {
+      ticking = false;
+      if (navigatingAway.current) return;
+      const now = performance.now();
+      if (now - lastSave < 25) return; // cap writes to ~40/sec
+      lastSave = now;
+      sessionStorage.setItem(
+        SCROLL_KEY,
+        JSON.stringify({
+          search: searchParamsRef.current.toString(),
+          container: container?.scrollTop ?? 0,
+          window: window.scrollY,
+        }),
+      );
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(save);
+    };
+    container?.addEventListener("scroll", onScroll);
+    window.addEventListener("scroll", onScroll);
+    return () => {
+      container?.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   // First-time setup: auto-fill location from user profile when no URL params
   // and no sessionStorage data exists.
   useEffect(() => {
@@ -263,6 +324,26 @@ function JobsContent() {
     if (!jobs) return undefined;
     return sortJobs(jobs, sortBy, refCity);
   }, [searchResults, listResults, isSearchMode, sortBy, refCity]);
+
+  // Restore scroll position once the list has actual content to scroll through.
+  // The double rAF waits for React to commit and the browser to paint, so the
+  // container has its real scrollable height before we set scrollTop.
+  useEffect(() => {
+    if (isLoading || displayJobs === undefined || scrollRestored.current) return;
+    scrollRestored.current = true;
+
+    const raw = sessionStorage.getItem(SCROLL_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw) as { search: string; container: number; window: number };
+    if (saved.search !== searchParams.toString()) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = saved.container;
+        window.scrollTo(0, saved.window);
+      });
+    });
+  }, [isLoading, displayJobs, searchParams]);
 
   // When a distance radius is active, split results into nearby (on-site/hybrid) jobs and
   // the distance-exempt remote jobs, which render below a divider. Search mode and the
@@ -385,6 +466,7 @@ function JobsContent() {
       businessName={job.business.name}
       href={`/jobs/${job.id}`}
       applicationCount={job._count.applications}
+      onNavigate={saveScrollNow}
     />
   );
 
@@ -408,7 +490,10 @@ function JobsContent() {
           <DesktopFilterSidebar {...filterProps} />
 
           {/* ── Jobs list ── */}
-          <div className="min-w-0 flex-1 pb-8 md:-ml-2 md:overflow-y-auto md:pl-2">
+          <div
+            ref={scrollContainerRef}
+            className="min-w-0 flex-1 pb-8 md:-ml-2 md:overflow-y-auto md:pl-2"
+          >
             {isLoading && <div className="py-16 text-center">Loading listings…</div>}
 
             {!isLoading && queryError && (

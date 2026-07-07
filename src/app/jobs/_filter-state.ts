@@ -46,6 +46,9 @@ export const SORT_LABELS: Record<SortValue, string> = {
 
 export const FILTER_KEY = "jobs_params";
 
+// Key for persisting scroll position across navigation to a job detail page and back.
+export const SCROLL_KEY = "jobs_scroll";
+
 /** The full filter state, as parsed from / serialized to URL search params. */
 export type Filters = {
   q: string;

@@ -25,6 +25,8 @@ interface JobCardProps {
   href: string;
   applicationCount: number;
   className?: string;
+  /** Called synchronously before navigating, e.g. to persist scroll position. */
+  onNavigate?: () => void;
 }
 
 export function JobCard({
@@ -39,6 +41,7 @@ export function JobCard({
   href,
   applicationCount,
   className,
+  onNavigate,
 }: JobCardProps) {
   const router = useRouter();
   return (
@@ -47,7 +50,10 @@ export function JobCard({
         "bg-primary/10 glass-hover relative cursor-pointer shadow-[-2px_3px_6px_#00000033,inset_10px_-10px_8px_#ffffff66,inset_-10px_10px_8px_#ffffff]",
         className,
       )}
-      onClick={() => router.push(`${href}`)}
+      onClick={() => {
+        onNavigate?.();
+        router.push(`${href}`);
+      }}
     >
       <div className="mb-3 flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
